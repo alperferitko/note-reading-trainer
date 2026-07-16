@@ -9,7 +9,7 @@ test("GitHub Pages output uses portable relative asset paths", async () => {
 
   assert.match(html, /\.\/assets\/[^\"']+\.js/);
   assert.match(html, /\.\/assets\/[^\"']+\.css/);
-  assert.match(html, /href="\.\/favicon\.png"/);
+  assert.match(html, /href="\.\/nota-nota-icon\.png"/);
   assert.match(html, /content="https:\/\/notanota\.online\/og-social\.png"/);
   assert.match(html, /property="og:image:width" content="1729"/);
   assert.match(html, /name="twitter:card" content="summary_large_image"/);
@@ -26,7 +26,7 @@ test("GitHub Pages output contains every referenced local asset", async () => {
   assert.ok(paths.length >= 3);
   await Promise.all(paths.map((path) => access(new URL(path, output))));
   await access(new URL(".nojekyll", output));
-  await access(new URL("favicon.png", output));
+  await access(new URL("nota-nota-icon.png", output));
   await access(new URL("og-social.png", output));
 
   const assetFiles = await readdir(new URL("assets/", output));

@@ -17,10 +17,13 @@
 /.next/
 /.vinext/
 /out/
+/out-pages/
 
 # misc
 .DS_Store
 *.pem
+*.key
+*.log
 
 # debug
 npm-debug.log*
@@ -48,20 +51,24 @@ next-env.d.ts
 # local package cache
 /.npm-cache/
 
-# generated build output
-/build/
+# generated build output (preserve the Sites Vite source plugin)
+/build/*
+!/build/sites-vite-plugin.ts
 
 # Cloudflare local secrets
 .dev.vars
 .dev.vars.*
 
-# local AI tooling
-/.openai/
+# local AI tooling (preserve the hosting declaration imported by Vite)
+/.openai/*
+!/.openai/hosting.json
 /.agents/
 
 # local databases
 *.db
 *.db-journal
+*.db-shm
+*.db-wal
 *.sqlite
 *.sqlite3
 

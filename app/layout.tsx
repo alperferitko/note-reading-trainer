@@ -7,7 +7,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const host = requestHeaders.get("host") ?? "localhost:3000";
   const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.includes("localhost") ? "http" : "https");
   const image = `${protocol}://${host}/og-social.png`;
-  const icon = `${protocol}://${host}/favicon.png`;
+  const icon = `${protocol}://${host}/nota-nota-icon.png`;
 
   return {
     title: "Nota Nota — Note Reading / Porte Çalışması",

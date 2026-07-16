@@ -48,7 +48,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /autoCorrect="off"/);
   assert.match(page, /spellCheck=\{false\}/);
   assert.match(page, /className="mobile-answer-pad"/);
-  assert.match(page, /onClick=\{\(\) => handleAnswer\(name\)\}/);
+  assert.match(page, /value=\{name\} onClick=\{chooseAnswer\}/);
   assert.match(styles, /@media \(hover: none\) and \(pointer: coarse\)/);
   assert.match(styles, /\.mobile-answer-pad \{ display: none; \}/);
   assert.doesNotMatch(styles, /:has\(\.answer-line input:focus\)/);

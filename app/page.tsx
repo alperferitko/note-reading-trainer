@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type LevelId = "temel" | "yakin" | "tam";
 type ModeId = "porte" | "konum";
@@ -359,13 +359,21 @@ export default function Home() {
 
   function submitAnswer(event: FormEvent) {
     event.preventDefault();
-    handleAnswer(answer);
+    // Runs from the form submit event, never during render.
+    // eslint-disable-next-line react-hooks/purity
+    recordAnswer(answer, Date.now());
   }
 
-  function handleAnswer(nextAnswer: string) {
+  function chooseAnswer(event: MouseEvent<HTMLButtonElement>) {
+    // Runs from a note-button click, never during render.
+    // eslint-disable-next-line react-hooks/purity
+    recordAnswer(event.currentTarget.value, Date.now());
+  }
+
+  function recordAnswer(nextAnswer: string, answeredAt: number) {
     if (!current || feedback || !normalizeAnswer(nextAnswer)) return;
 
-    const elapsed = Math.max(0.1, (Date.now() - questionStartedAt) / 1000);
+    const elapsed = Math.max(0.1, (answeredAt - questionStartedAt) / 1000);
     const normalized = normalizeAnswer(nextAnswer);
     const correct = normalized === normalizeAnswer(current.solfege) || normalized === normalizeAnswer(current.letter);
     setAnswer(nextAnswer);
@@ -536,7 +544,7 @@ export default function Home() {
                 <div className="mobile-answer-pad" aria-label={copy.choicesLabel}>
                   <span>{copy.choicesLabel}</span>
                   <div>
-                    {answerChoices.map((name) => <button type="button" key={name} onClick={() => handleAnswer(name)}>{name}</button>)}
+                    {answerChoices.map((name) => <button type="button" key={name} value={name} onClick={chooseAnswer}>{name}</button>)}
                   </div>
                 </div>
               </form>

@@ -300,6 +300,7 @@ export default function Home() {
   const [answerTimes, setAnswerTimes] = useState<number[]>([]);
   const [questionStartedAt, setQuestionStartedAt] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const answerFormRef = useRef<HTMLFormElement>(null);
   const copy = COPY[locale];
   const levels = LEVELS[locale];
 
@@ -333,7 +334,71 @@ export default function Home() {
   }, [locale]);
 
   useEffect(() => {
-    if (stage === "quiz" && !feedback) inputRef.current?.focus();
+    if (stage === "quiz" && !feedback) inputRef.current?.focus({ preventScroll: true });
+  }, [stage, feedback, current?.id]);
+
+  useEffect(() => {
+    if (stage !== "quiz" || feedback || !window.matchMedia("(max-width: 620px)").matches) return;
+
+    const input = inputRef.current;
+    const form = answerFormRef.current;
+    const viewport = window.visualViewport;
+    if (!input || !form) return;
+
+    let animationFrame = 0;
+    let settleTimers: number[] = [];
+
+    function pinAnswerForm() {
+      window.cancelAnimationFrame(animationFrame);
+      animationFrame = window.requestAnimationFrame(() => {
+        if (document.activeElement !== input) return;
+
+        if (!viewport) {
+          form.scrollIntoView({ block: "end" });
+          return;
+        }
+
+        const visibleBottom = viewport.offsetTop + viewport.height;
+        const formBottom = form.getBoundingClientRect().bottom;
+        const offset = formBottom + 12 - visibleBottom;
+        if (Math.abs(offset) > 2) window.scrollBy(0, offset);
+      });
+    }
+
+    function schedulePin() {
+      settleTimers.forEach((timer) => window.clearTimeout(timer));
+      settleTimers = [80, 240, 480].map((delay) => window.setTimeout(pinAnswerForm, delay));
+      pinAnswerForm();
+    }
+
+    function handleFocus() {
+      document.documentElement.classList.add("quiz-keyboard-open");
+      schedulePin();
+    }
+
+    function handleBlur() {
+      document.documentElement.classList.remove("quiz-keyboard-open");
+      settleTimers.forEach((timer) => window.clearTimeout(timer));
+    }
+
+    input.addEventListener("focus", handleFocus);
+    input.addEventListener("blur", handleBlur);
+    viewport?.addEventListener("resize", schedulePin);
+    viewport?.addEventListener("scroll", schedulePin);
+    window.addEventListener("orientationchange", schedulePin);
+
+    if (document.activeElement === input) handleFocus();
+
+    return () => {
+      input.removeEventListener("focus", handleFocus);
+      input.removeEventListener("blur", handleBlur);
+      viewport?.removeEventListener("resize", schedulePin);
+      viewport?.removeEventListener("scroll", schedulePin);
+      window.removeEventListener("orientationchange", schedulePin);
+      window.cancelAnimationFrame(animationFrame);
+      settleTimers.forEach((timer) => window.clearTimeout(timer));
+      document.documentElement.classList.remove("quiz-keyboard-open");
+    };
   }, [stage, feedback, current?.id]);
 
   function changeLocale(nextLocale: Locale) {
@@ -505,7 +570,7 @@ export default function Home() {
             )}
 
             {!feedback ? (
-              <form className="answer-form" onSubmit={submitAnswer}>
+              <form ref={answerFormRef} className="answer-form" onSubmit={submitAnswer}>
                 <label htmlFor="answer">{copy.answerLabel}</label>
                 <div className="answer-line">
                   <input

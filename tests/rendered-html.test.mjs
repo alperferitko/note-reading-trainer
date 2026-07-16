@@ -42,8 +42,8 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /Staff \+ ledger lines/);
   assert.match(page, /letter: "C"/);
   assert.match(page, /nota-nota-locale/);
-  assert.match(page, /window\.visualViewport/);
-  assert.match(page, /quiz-keyboard-open/);
+  assert.match(page, /\(hover: hover\) and \(pointer: fine\)/);
   assert.match(page, /focus\(\{ preventScroll: true \}\)/);
+  assert.doesNotMatch(page, /window\.visualViewport|window\.scrollBy|quiz-keyboard-open/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
 });

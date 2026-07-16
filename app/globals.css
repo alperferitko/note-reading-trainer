@@ -271,6 +271,22 @@ footer span:first-child { font-family: Georgia, serif; font-size: 14px; text-tra
   .answer-line button { min-height: 48px; border-radius: 2px; }
   .note-hints { justify-content: center; }
   .note-hints button { min-width: 40px; min-height: 40px; }
+  .quiz-shell:has(.answer-line input:focus) { min-height: 0; padding-block: 8px; }
+  .quiz-shell:has(.answer-line input:focus) .progress-row { margin-bottom: 8px; }
+  .quiz-shell:has(.answer-line input:focus) .question-card { min-height: 0; padding: 30px 12px 12px; box-shadow: none; }
+  .quiz-shell:has(.answer-line input:focus) .question-number { top: 9px; left: 12px; }
+  .quiz-shell:has(.answer-line input:focus) .question-prompt { margin-bottom: 0; font-size: 20px; }
+  .quiz-shell:has(.answer-line input:focus) .location-question { min-height: 84px; }
+  .quiz-shell:has(.answer-line input:focus) .location-question strong { margin-top: 5px; font-size: 32px; }
+  .quiz-shell:has(.answer-line input:focus) .location-question p { display: none; }
+  .quiz-shell:has(.answer-line input:focus) .staff:not(.staff--compact) { height: 92px; margin: -4px 0 0; transform: translateX(-50%) scale(.46); }
+  .quiz-shell:has(.answer-line input:focus) .answer-form { margin-top: 4px; }
+  .quiz-shell:has(.answer-line input:focus) .answer-form > label { margin-bottom: 5px; }
+  .quiz-shell:has(.answer-line input:focus) .answer-line { grid-template-columns: minmax(0, 1fr) auto; gap: 0; }
+  .quiz-shell:has(.answer-line input:focus) .answer-line input { border-right: 0; border-radius: 2px 0 0 2px; scroll-margin-block: 20px; }
+  .quiz-shell:has(.answer-line input:focus) .answer-line button { min-height: 0; border-radius: 0 2px 2px 0; }
+  .quiz-shell:has(.answer-line input:focus) .note-hints,
+  .quiz-shell:has(.answer-line input:focus) .text-button { display: none; }
   .feedback { grid-template-columns: 34px 1fr; }
   .feedback button { grid-column: 1 / -1; min-height: 46px; }
   .results-card { grid-template-columns: 1fr; }

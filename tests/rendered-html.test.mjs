@@ -30,6 +30,7 @@ test("Nota Nota çalışma ekranını sunar", async () => {
 
 test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğunda tutar", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
   const packageJson = await readFile(new URL("../package.json", import.meta.url), "utf8");
 
   assert.match(page, /shuffledWithoutRuns/);
@@ -44,6 +45,9 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /nota-nota-locale/);
   assert.match(page, /\(hover: hover\) and \(pointer: fine\)/);
   assert.match(page, /focus\(\{ preventScroll: true \}\)/);
+  assert.match(page, /autoCorrect="off"/);
+  assert.match(page, /spellCheck=\{false\}/);
+  assert.match(styles, /\.quiz-shell:has\(\.answer-line input:focus\)/);
   assert.doesNotMatch(page, /window\.visualViewport|window\.scrollBy|quiz-keyboard-open/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
 });

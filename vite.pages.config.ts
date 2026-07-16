@@ -7,7 +7,9 @@ const fromProjectRoot = (path: string) =>
 
 export default defineConfig({
   root: fromProjectRoot("./github-pages"),
-  base: "/note-reading-trainer/",
+  // Relative assets keep both the repository URL and the custom apex domain
+  // working during DNS propagation and after GitHub enables the redirect.
+  base: "./",
   publicDir: fromProjectRoot("./public"),
   plugins: [react()],
   css: {

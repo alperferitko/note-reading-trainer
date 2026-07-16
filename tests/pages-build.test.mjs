@@ -4,12 +4,12 @@ import test from "node:test";
 
 const output = new URL("../out-pages/", import.meta.url);
 
-test("GitHub Pages output uses the repository base path", async () => {
+test("GitHub Pages output uses portable relative asset paths", async () => {
   const html = await readFile(new URL("index.html", output), "utf8");
 
-  assert.match(html, /\/note-reading-trainer\/assets\/[^\"']+\.js/);
-  assert.match(html, /\/note-reading-trainer\/assets\/[^\"']+\.css/);
-  assert.match(html, /href="\/note-reading-trainer\/og\.png"/);
+  assert.match(html, /\.\/assets\/[^\"']+\.js/);
+  assert.match(html, /\.\/assets\/[^\"']+\.css/);
+  assert.match(html, /href="\.\/og\.png"/);
   assert.doesNotMatch(html, /(?:src|href)="\/assets\//);
   assert.doesNotMatch(html, /(?:localhost|127\.0\.0\.1|file:\/\/)/i);
 });
@@ -17,7 +17,7 @@ test("GitHub Pages output uses the repository base path", async () => {
 test("GitHub Pages output contains every referenced local asset", async () => {
   const html = await readFile(new URL("index.html", output), "utf8");
   const paths = [
-    ...html.matchAll(/(?:src|href)="\/note-reading-trainer\/([^\"#?]+)[\"#?]/g),
+    ...html.matchAll(/(?:src|href)="\.\/([^\"#?]+)[\"#?]/g),
   ].map((match) => match[1]);
 
   assert.ok(paths.length >= 3);

@@ -60,7 +60,10 @@ installs locked dependencies, runs lint and tests, builds the static frontend,
 validates the output, uploads `out-pages/`, and deploys it with GitHub's official
 Pages actions.
 
-Expected live demo:
+Primary live site:
+[https://notanota.online/](https://notanota.online/)
+
+GitHub Pages fallback:
 [https://alperferitko.github.io/note-reading-trainer/](https://alperferitko.github.io/note-reading-trainer/)
 
 GitHub Pages serves only static frontend files. The repository also preserves

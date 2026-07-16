@@ -359,10 +359,10 @@ export default function Home() {
 
   function submitAnswer(event: FormEvent) {
     event.preventDefault();
-    checkAnswer(answer);
+    handleAnswer(answer);
   }
 
-  function checkAnswer(nextAnswer: string) {
+  function handleAnswer(nextAnswer: string) {
     if (!current || feedback || !normalizeAnswer(nextAnswer)) return;
 
     const elapsed = Math.max(0.1, (Date.now() - questionStartedAt) / 1000);
@@ -536,7 +536,7 @@ export default function Home() {
                 <div className="mobile-answer-pad" aria-label={copy.choicesLabel}>
                   <span>{copy.choicesLabel}</span>
                   <div>
-                    {answerChoices.map((name) => <button type="button" key={name} onClick={() => checkAnswer(name)}>{name}</button>)}
+                    {answerChoices.map((name) => <button type="button" key={name} onClick={() => handleAnswer(name)}>{name}</button>)}
                   </div>
                 </div>
               </form>

@@ -359,11 +359,16 @@ export default function Home() {
 
   function submitAnswer(event: FormEvent) {
     event.preventDefault();
-    if (!current || feedback || !normalizeAnswer(answer)) return;
+    checkAnswer(answer);
+  }
+
+  function checkAnswer(nextAnswer: string) {
+    if (!current || feedback || !normalizeAnswer(nextAnswer)) return;
 
     const elapsed = Math.max(0.1, (Date.now() - questionStartedAt) / 1000);
-    const normalized = normalizeAnswer(answer);
+    const normalized = normalizeAnswer(nextAnswer);
     const correct = normalized === normalizeAnswer(current.solfege) || normalized === normalizeAnswer(current.letter);
+    setAnswer(nextAnswer);
     setAnswerTimes((times) => [...times, elapsed]);
     setFeedback({ correct, note: current });
 
@@ -525,8 +530,14 @@ export default function Home() {
                   />
                   <button type="submit" disabled={!normalizeAnswer(answer)}>{copy.check} <span aria-hidden="true">↵</span></button>
                 </div>
-                <div className="note-hints" aria-label={copy.choicesLabel}>
+                <div className="note-hints note-hints--desktop" aria-label={copy.choicesLabel}>
                   {answerChoices.map((name) => <button type="button" key={name} onClick={() => { setAnswer(name); inputRef.current?.focus(); }}>{name}</button>)}
+                </div>
+                <div className="mobile-answer-pad" aria-label={copy.choicesLabel}>
+                  <span>{copy.choicesLabel}</span>
+                  <div>
+                    {answerChoices.map((name) => <button type="button" key={name} onClick={() => checkAnswer(name)}>{name}</button>)}
+                  </div>
                 </div>
               </form>
             ) : (

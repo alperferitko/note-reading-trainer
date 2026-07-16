@@ -518,7 +518,9 @@ export default function Home() {
                     onChange={(event) => setAnswer(event.target.value)}
                     placeholder={copy.placeholder}
                     autoComplete="off"
+                    autoCorrect="off"
                     autoCapitalize="none"
+                    spellCheck={false}
                     enterKeyHint="done"
                   />
                   <button type="submit" disabled={!normalizeAnswer(answer)}>{copy.check} <span aria-hidden="true">↵</span></button>

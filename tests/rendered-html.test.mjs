@@ -47,7 +47,11 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /focus\(\{ preventScroll: true \}\)/);
   assert.match(page, /autoCorrect="off"/);
   assert.match(page, /spellCheck=\{false\}/);
-  assert.match(styles, /\.quiz-shell:has\(\.answer-line input:focus\)/);
+  assert.match(page, /className="mobile-answer-pad"/);
+  assert.match(page, /onClick=\{\(\) => checkAnswer\(name\)\}/);
+  assert.match(styles, /@media \(hover: none\) and \(pointer: coarse\)/);
+  assert.match(styles, /\.mobile-answer-pad \{ display: none; \}/);
+  assert.doesNotMatch(styles, /:has\(\.answer-line input:focus\)/);
   assert.doesNotMatch(page, /window\.visualViewport|window\.scrollBy|quiz-keyboard-open/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
 });

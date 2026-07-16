@@ -5,40 +5,204 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 type LevelId = "temel" | "yakin" | "tam";
 type ModeId = "porte" | "konum";
 type Stage = "setup" | "quiz" | "done";
+type Locale = "tr" | "en";
 
 type NoteQuestion = {
   id: string;
-  name: "Do" | "Re" | "Mi" | "Fa" | "Sol" | "La" | "Si";
+  solfege: "Do" | "Re" | "Mi" | "Fa" | "Sol" | "La" | "Si";
+  letter: "C" | "D" | "E" | "F" | "G" | "A" | "B";
   position: number;
-  location: string;
-  shortLocation: string;
+  location: Record<Locale, string>;
+  shortLocation: Record<Locale, string>;
 };
 
-const NOTE_NAMES = ["Do", "Re", "Mi", "Fa", "Sol", "La", "Si"] as const;
+type Copy = {
+  homeLabel: string;
+  kicker: string;
+  heroLine1: string;
+  heroLine2: string;
+  heroLead: string;
+  scribble: string;
+  rangeEyebrow: string;
+  chooseRange: string;
+  questionStyle: string;
+  chooseMode: string;
+  modes: Record<ModeId, { title: string; description: string }>;
+  start: string;
+  setupNote: string;
+  progress: string;
+  completedLabel: (total: number, completed: number) => string;
+  remaining: (count: number) => string;
+  question: (number: number) => string;
+  prompt: string;
+  positionLabel: string;
+  answerLabel: string;
+  placeholder: string;
+  check: string;
+  choicesLabel: string;
+  correct: string;
+  incorrect: string;
+  correctCopy: (name: string) => string;
+  wrongPrefix: string;
+  wrongSuffix: string;
+  next: string;
+  results: string;
+  endSession: string;
+  sessionComplete: string;
+  greatWork: string;
+  completedCopy: (level: string) => string;
+  firstTry: string;
+  uniqueQuestions: string;
+  firstTryCorrect: string;
+  totalWrong: string;
+  averageResponse: string;
+  reviewList: string;
+  hardest: string;
+  wrongCount: (count: number) => string;
+  perfect: string;
+  repeat: string;
+  changeLevel: string;
+  footer: string;
+  seconds: string;
+};
+
+const COPY: Record<Locale, Copy> = {
+  tr: {
+    homeLabel: "Nota Nota ana sayfa",
+    kicker: "Sol anahtarı · doğal notalar",
+    heroLine1: "Notayı gör.",
+    heroLine2: "İsmini söyle.",
+    heroLead: "Porte üzerindeki notaları ezberlemek için kısa, odaklı ve her seferinde farklı bir çalışma.",
+    scribble: "Her gün biraz daha akıcı.",
+    rangeEyebrow: "Çalışma alanı",
+    chooseRange: "Seviyeni seç",
+    questionStyle: "Soru biçimi",
+    chooseMode: "Nasıl çalışacaksın?",
+    modes: {
+      porte: { title: "Porteden oku", description: "Notayı gör, ismini yaz" },
+      konum: { title: "Konumu oku", description: "Konumu gör, ismini yaz" },
+    },
+    start: "Oturumu başlat",
+    setupNote: "Her nota bir kez eklenir · Liste her oturumda yeniden karıştırılır",
+    progress: "İlerleme",
+    completedLabel: (total, completed) => `${total} sorudan ${completed} tamamlandı`,
+    remaining: (count) => `${count} nota kaldı`,
+    question: (number) => `Soru ${number}`,
+    prompt: "Bu notanın adı nedir?",
+    positionLabel: "Konum",
+    answerLabel: "Cevabını yaz",
+    placeholder: "Do, Re, Mi…",
+    check: "Kontrol et",
+    choicesLabel: "Kullanılabilecek cevaplar",
+    correct: "Doğru",
+    incorrect: "Yanlış",
+    correctCopy: (name) => `${name} notasını bildin.`,
+    wrongPrefix: "Doğru cevap",
+    wrongSuffix: "Bu nota listenin sonuna eklendi.",
+    next: "Sonraki",
+    results: "Sonuçlar",
+    endSession: "Oturumu bitir",
+    sessionComplete: "Oturum tamamlandı",
+    greatWork: "Harika iş!",
+    completedCopy: (level) => `${level} listesindeki bütün notaları en az bir kez doğru cevapladın.`,
+    firstTry: "ilk deneme",
+    uniqueQuestions: "Benzersiz soru",
+    firstTryCorrect: "İlk denemede doğru",
+    totalWrong: "Toplam yanlış",
+    averageResponse: "Ortalama cevap",
+    reviewList: "Tekrar listesi",
+    hardest: "En çok zorlayan notalar",
+    wrongCount: (count) => `${count} yanlış`,
+    perfect: "Hiç yanlış yok. Bu oturum pürüzsüz geçti!",
+    repeat: "Aynı ayarlarla yeniden çalış",
+    changeLevel: "Seviyeyi değiştir",
+    footer: "Ezber değil, akıcılık.",
+    seconds: "sn",
+  },
+  en: {
+    homeLabel: "Nota Nota home",
+    kicker: "Treble clef · natural notes",
+    heroLine1: "See the note.",
+    heroLine2: "Name it.",
+    heroLead: "Build fluent note recognition with short, focused sessions that reshuffle every time.",
+    scribble: "A little more fluent every day.",
+    rangeEyebrow: "Practice range",
+    chooseRange: "Choose your range",
+    questionStyle: "Question style",
+    chooseMode: "How do you want to practise?",
+    modes: {
+      porte: { title: "Read the staff", description: "See a note, type its letter name" },
+      konum: { title: "Read the position", description: "Read the position, type its letter name" },
+    },
+    start: "Start session",
+    setupNote: "Each note appears once · The order is reshuffled for every session",
+    progress: "Progress",
+    completedLabel: (total, completed) => `${completed} of ${total} questions completed`,
+    remaining: (count) => `${count} ${count === 1 ? "note" : "notes"} left`,
+    question: (number) => `Question ${number}`,
+    prompt: "What is this note's letter name?",
+    positionLabel: "Staff position",
+    answerLabel: "Type your answer",
+    placeholder: "C, D, E…",
+    check: "Check answer",
+    choicesLabel: "Available letter names",
+    correct: "Correct",
+    incorrect: "Incorrect",
+    correctCopy: (name) => `You identified ${name} correctly.`,
+    wrongPrefix: "The correct answer is",
+    wrongSuffix: "This note was moved to the end of the queue.",
+    next: "Next",
+    results: "Results",
+    endSession: "End session",
+    sessionComplete: "Session complete",
+    greatWork: "Nicely done!",
+    completedCopy: (level) => `You correctly identified every note in the ${level} range at least once.`,
+    firstTry: "first try",
+    uniqueQuestions: "Unique questions",
+    firstTryCorrect: "Correct on first try",
+    totalWrong: "Incorrect answers",
+    averageResponse: "Average response",
+    reviewList: "Review list",
+    hardest: "Notes to revisit",
+    wrongCount: (count) => `${count} incorrect`,
+    perfect: "Perfect run — no incorrect answers.",
+    repeat: "Practise again with the same settings",
+    changeLevel: "Change range",
+    footer: "Build fluency, not guesswork.",
+    seconds: "sec",
+  },
+};
 
 const ALL_NOTES: NoteQuestion[] = [
-  { id: "c4", name: "Do", position: -2, location: "portenin altındaki 1. ek çizgi üzerinde", shortLocation: "Alt 1. ek çizgi" },
-  { id: "d4", name: "Re", position: -1, location: "1. çizginin altındaki aralıkta", shortLocation: "1. çizginin altı" },
-  { id: "e4", name: "Mi", position: 0, location: "1. çizgi üzerinde", shortLocation: "1. çizgi" },
-  { id: "f4", name: "Fa", position: 1, location: "1. aralıkta", shortLocation: "1. aralık" },
-  { id: "g4", name: "Sol", position: 2, location: "2. çizgi üzerinde", shortLocation: "2. çizgi" },
-  { id: "a4", name: "La", position: 3, location: "2. aralıkta", shortLocation: "2. aralık" },
-  { id: "b4", name: "Si", position: 4, location: "3. çizgi üzerinde", shortLocation: "3. çizgi" },
-  { id: "c5", name: "Do", position: 5, location: "3. aralıkta", shortLocation: "3. aralık" },
-  { id: "d5", name: "Re", position: 6, location: "4. çizgi üzerinde", shortLocation: "4. çizgi" },
-  { id: "e5", name: "Mi", position: 7, location: "4. aralıkta", shortLocation: "4. aralık" },
-  { id: "f5", name: "Fa", position: 8, location: "5. çizgi üzerinde", shortLocation: "5. çizgi" },
-  { id: "g5", name: "Sol", position: 9, location: "5. çizginin üstündeki aralıkta", shortLocation: "5. çizginin üstü" },
-  { id: "a5", name: "La", position: 10, location: "portenin üstündeki 1. ek çizgi üzerinde", shortLocation: "Üst 1. ek çizgi" },
-  { id: "b5", name: "Si", position: 11, location: "1. ek çizginin üstündeki aralıkta", shortLocation: "Üst ek çizginin üstü" },
-  { id: "c6", name: "Do", position: 12, location: "portenin üstündeki 2. ek çizgi üzerinde", shortLocation: "Üst 2. ek çizgi" },
+  { id: "c4", solfege: "Do", letter: "C", position: -2, location: { tr: "portenin altındaki 1. ek çizgi üzerinde", en: "on the first ledger line below the staff" }, shortLocation: { tr: "Alt 1. ek çizgi", en: "1st ledger line below" } },
+  { id: "d4", solfege: "Re", letter: "D", position: -1, location: { tr: "1. çizginin altındaki aralıkta", en: "in the space below the staff" }, shortLocation: { tr: "1. çizginin altı", en: "Space below the staff" } },
+  { id: "e4", solfege: "Mi", letter: "E", position: 0, location: { tr: "1. çizgi üzerinde", en: "on the first line" }, shortLocation: { tr: "1. çizgi", en: "1st line" } },
+  { id: "f4", solfege: "Fa", letter: "F", position: 1, location: { tr: "1. aralıkta", en: "in the first space" }, shortLocation: { tr: "1. aralık", en: "1st space" } },
+  { id: "g4", solfege: "Sol", letter: "G", position: 2, location: { tr: "2. çizgi üzerinde", en: "on the second line" }, shortLocation: { tr: "2. çizgi", en: "2nd line" } },
+  { id: "a4", solfege: "La", letter: "A", position: 3, location: { tr: "2. aralıkta", en: "in the second space" }, shortLocation: { tr: "2. aralık", en: "2nd space" } },
+  { id: "b4", solfege: "Si", letter: "B", position: 4, location: { tr: "3. çizgi üzerinde", en: "on the third line" }, shortLocation: { tr: "3. çizgi", en: "3rd line" } },
+  { id: "c5", solfege: "Do", letter: "C", position: 5, location: { tr: "3. aralıkta", en: "in the third space" }, shortLocation: { tr: "3. aralık", en: "3rd space" } },
+  { id: "d5", solfege: "Re", letter: "D", position: 6, location: { tr: "4. çizgi üzerinde", en: "on the fourth line" }, shortLocation: { tr: "4. çizgi", en: "4th line" } },
+  { id: "e5", solfege: "Mi", letter: "E", position: 7, location: { tr: "4. aralıkta", en: "in the fourth space" }, shortLocation: { tr: "4. aralık", en: "4th space" } },
+  { id: "f5", solfege: "Fa", letter: "F", position: 8, location: { tr: "5. çizgi üzerinde", en: "on the fifth line" }, shortLocation: { tr: "5. çizgi", en: "5th line" } },
+  { id: "g5", solfege: "Sol", letter: "G", position: 9, location: { tr: "5. çizginin üstündeki aralıkta", en: "in the space above the staff" }, shortLocation: { tr: "5. çizginin üstü", en: "Space above the staff" } },
+  { id: "a5", solfege: "La", letter: "A", position: 10, location: { tr: "portenin üstündeki 1. ek çizgi üzerinde", en: "on the first ledger line above the staff" }, shortLocation: { tr: "Üst 1. ek çizgi", en: "1st ledger line above" } },
+  { id: "b5", solfege: "Si", letter: "B", position: 11, location: { tr: "1. ek çizginin üstündeki aralıkta", en: "in the space above the first ledger line" }, shortLocation: { tr: "Üst ek çizginin üstü", en: "Above the 1st ledger line" } },
+  { id: "c6", solfege: "Do", letter: "C", position: 12, location: { tr: "portenin üstündeki 2. ek çizgi üzerinde", en: "on the second ledger line above the staff" }, shortLocation: { tr: "Üst 2. ek çizgi", en: "2nd ledger line above" } },
 ];
 
-const LEVELS: { id: LevelId; eyebrow: string; title: string; description: string; count: number }[] = [
-  { id: "temel", eyebrow: "Seviye 1", title: "Temel porte", description: "Beş çizgi ve dört aralıktaki notalar", count: 9 },
-  { id: "yakin", eyebrow: "Seviye 2", title: "Yakın çevre", description: "Temel porte, komşu aralıklar ve yakın ek çizgiler", count: 13 },
-  { id: "tam", eyebrow: "Seviye 3", title: "Tam doğal sesler", description: "Alt Do’dan üst Do’ya bütün doğal notalar", count: 15 },
-];
+const LEVELS: Record<Locale, { id: LevelId; eyebrow: string; title: string; description: string; count: number }[]> = {
+  tr: [
+    { id: "temel", eyebrow: "Seviye 1", title: "Temel porte", description: "Beş çizgi ve dört aralıktaki notalar", count: 9 },
+    { id: "yakin", eyebrow: "Seviye 2", title: "Yakın çevre", description: "Temel porte, komşu aralıklar ve yakın ek çizgiler", count: 13 },
+    { id: "tam", eyebrow: "Seviye 3", title: "Tam doğal sesler", description: "Alt Do’dan üst Do’ya bütün doğal notalar", count: 15 },
+  ],
+  en: [
+    { id: "temel", eyebrow: "Level 1", title: "Notes on the staff", description: "The nine notes on the five lines and four spaces", count: 9 },
+    { id: "yakin", eyebrow: "Level 2", title: "Staff + ledger lines", description: "The staff, adjacent spaces, and the nearest ledger lines", count: 13 },
+    { id: "tam", eyebrow: "Level 3", title: "Full natural range", description: "Every natural note from middle C to high C", count: 15 },
+  ],
+};
 
 function questionsFor(level: LevelId) {
   if (level === "temel") return ALL_NOTES.filter((note) => note.position >= 0 && note.position <= 8);
@@ -74,7 +238,11 @@ function normalizeAnswer(value: string) {
     .replace(/[^a-z]/g, "");
 }
 
-function Staff({ note, compact = false }: { note: NoteQuestion; compact?: boolean }) {
+function noteName(note: NoteQuestion, locale: Locale) {
+  return locale === "tr" ? note.solfege : note.letter;
+}
+
+function Staff({ note, locale, compact = false }: { note: NoteQuestion; locale: Locale; compact?: boolean }) {
   const step = compact ? 10 : 14;
   const firstLineY = compact ? 72 : 98;
   const noteY = firstLineY - note.position * (step / 2);
@@ -88,7 +256,7 @@ function Staff({ note, compact = false }: { note: NoteQuestion; compact?: boolea
   });
 
   return (
-    <div className={`staff ${compact ? "staff--compact" : ""}`} aria-label={`${note.name}, ${note.location}`} role="img">
+    <div className={`staff ${compact ? "staff--compact" : ""}`} aria-label={`${noteName(note, locale)}, ${note.location[locale]}`} role="img">
       <span className="clef" aria-hidden="true">𝄞</span>
       <div className="staff-lines" aria-hidden="true">
         {[0, 1, 2, 3, 4].map((index) => (
@@ -118,6 +286,7 @@ function Stat({ label, value, accent }: { label: string; value: string | number;
 }
 
 export default function Home() {
+  const [locale, setLocale] = useState<Locale>("tr");
   const [stage, setStage] = useState<Stage>("setup");
   const [level, setLevel] = useState<LevelId>("temel");
   const [mode, setMode] = useState<ModeId>("porte");
@@ -131,12 +300,15 @@ export default function Home() {
   const [answerTimes, setAnswerTimes] = useState<number[]>([]);
   const [questionStartedAt, setQuestionStartedAt] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const copy = COPY[locale];
+  const levels = LEVELS[locale];
 
   const uniqueCount = questionsFor(level).length;
   const current = queue[0];
   const displayedNote = feedback?.note ?? current;
   const answeredCorrectly = uniqueCount - queue.length;
-  const selectedLevel = LEVELS.find((item) => item.id === level)!;
+  const selectedLevel = levels.find((item) => item.id === level)!;
+  const answerChoices = locale === "tr" ? ["Do", "Re", "Mi", "Fa", "Sol", "La", "Si"] : ["C", "D", "E", "F", "G", "A", "B"];
 
   const hardestNotes = useMemo(() => {
     return Object.entries(wrongByNote)
@@ -147,12 +319,30 @@ export default function Home() {
   }, [wrongByNote]);
 
   useEffect(() => {
+    const requestedLocale = new URLSearchParams(window.location.search).get("lang");
+    const savedLocale = window.localStorage.getItem("nota-nota-locale");
+    const nextLocale = requestedLocale === "tr" || requestedLocale === "en" ? requestedLocale : savedLocale;
+    if (nextLocale !== "tr" && nextLocale !== "en") return;
+    const timer = window.setTimeout(() => setLocale(nextLocale), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = locale;
+    window.localStorage.setItem("nota-nota-locale", locale);
+  }, [locale]);
+
+  useEffect(() => {
     if (stage === "quiz" && !feedback) inputRef.current?.focus();
   }, [stage, feedback, current?.id]);
 
+  function changeLocale(nextLocale: Locale) {
+    setLocale(nextLocale);
+    setAnswer("");
+  }
+
   function startSession() {
-    const freshQueue = shuffledWithoutRuns(questionsFor(level));
-    setQueue(freshQueue);
+    setQueue(shuffledWithoutRuns(questionsFor(level)));
     setAttempts({});
     setWrongByNote({});
     setFirstTryCorrect(0);
@@ -169,7 +359,8 @@ export default function Home() {
     if (!current || feedback || !normalizeAnswer(answer)) return;
 
     const elapsed = Math.max(0.1, (Date.now() - questionStartedAt) / 1000);
-    const correct = normalizeAnswer(answer) === normalizeAnswer(current.name);
+    const normalized = normalizeAnswer(answer);
+    const correct = normalized === normalizeAnswer(current.solfege) || normalized === normalizeAnswer(current.letter);
     setAnswerTimes((times) => [...times, elapsed]);
     setFeedback({ correct, note: current });
 
@@ -207,47 +398,53 @@ export default function Home() {
   });
 
   const averageTime = answerTimes.length
-    ? `${(answerTimes.reduce((sum, value) => sum + value, 0) / answerTimes.length).toFixed(1).replace(".", ",")} sn`
-    : "0,0 sn";
+    ? `${(answerTimes.reduce((sum, value) => sum + value, 0) / answerTimes.length).toFixed(1).replace(".", locale === "tr" ? "," : ".")} ${copy.seconds}`
+    : `0${locale === "tr" ? "," : "."}0 ${copy.seconds}`;
   const firstTryRate = uniqueCount ? Math.round((firstTryCorrect / uniqueCount) * 100) : 0;
 
   return (
     <main>
       <header className="site-header">
-        <button className="brand" type="button" onClick={() => setStage("setup")} aria-label="Nota Nota ana sayfa">
+        <button className="brand" type="button" onClick={() => setStage("setup")} aria-label={copy.homeLabel}>
           <span className="brand-mark" aria-hidden="true">♪</span>
           <span>Nota Nota</span>
         </button>
-        {stage === "quiz" && (
-          <div className="session-meta">
-            <span>{selectedLevel.title}</span>
-            <span className="meta-dot" />
-            <span>{mode === "porte" ? "Porteden oku" : "Konumu oku"}</span>
+        <div className="header-actions">
+          {stage === "quiz" && (
+            <div className="session-meta">
+              <span>{selectedLevel.title}</span>
+              <span className="meta-dot" />
+              <span>{copy.modes[mode].title}</span>
+            </div>
+          )}
+          <div className="language-switch" role="group" aria-label={locale === "tr" ? "Dil seçimi" : "Language selection"}>
+            <button type="button" className={locale === "tr" ? "is-active" : ""} onClick={() => changeLocale("tr")} aria-pressed={locale === "tr"}>TR</button>
+            <button type="button" className={locale === "en" ? "is-active" : ""} onClick={() => changeLocale("en")} aria-pressed={locale === "en"}>EN</button>
           </div>
-        )}
+        </div>
       </header>
 
       {stage === "setup" && (
         <section className="setup-shell">
           <div className="hero-copy">
-            <p className="kicker">Sol anahtarı · doğal notalar</p>
-            <h1>Notayı gör.<br /><em>İsmini söyle.</em></h1>
-            <p className="hero-lead">Porte üzerindeki notaları ezberlemek için kısa, odaklı ve her seferinde farklı bir çalışma.</p>
+            <p className="kicker">{copy.kicker}</p>
+            <h1>{copy.heroLine1}<br /><em>{copy.heroLine2}</em></h1>
+            <p className="hero-lead">{copy.heroLead}</p>
             <div className="hero-staff" aria-hidden="true">
-              <Staff note={ALL_NOTES[6]} compact />
-              <span className="scribble">Her gün biraz daha akıcı.</span>
+              <Staff note={ALL_NOTES[6]} locale={locale} compact />
+              <span className="scribble">{copy.scribble}</span>
             </div>
           </div>
 
           <div className="setup-panel">
             <div className="step-heading">
               <span>01</span>
-              <div><p>Çalışma alanı</p><h2>Seviyeni seç</h2></div>
+              <div><p>{copy.rangeEyebrow}</p><h2>{copy.chooseRange}</h2></div>
             </div>
             <div className="level-grid">
-              {LEVELS.map((item) => (
+              {levels.map((item) => (
                 <button key={item.id} type="button" className={`level-card ${level === item.id ? "is-selected" : ""}`} onClick={() => setLevel(item.id)}>
-                  <span className="level-top"><small>{item.eyebrow}</small><b>{item.count} nota</b></span>
+                  <span className="level-top"><small>{item.eyebrow}</small><b>{item.count} {locale === "tr" ? "nota" : "notes"}</b></span>
                   <strong>{item.title}</strong>
                   <span>{item.description}</span>
                   <i aria-hidden="true">{level === item.id ? "✓" : ""}</i>
@@ -258,25 +455,25 @@ export default function Home() {
             <div className="divider" />
             <div className="step-heading compact-heading">
               <span>02</span>
-              <div><p>Soru biçimi</p><h2>Nasıl çalışacaksın?</h2></div>
+              <div><p>{copy.questionStyle}</p><h2>{copy.chooseMode}</h2></div>
             </div>
             <div className="mode-grid">
               <button type="button" className={`mode-card ${mode === "porte" ? "is-selected" : ""}`} onClick={() => setMode("porte")}>
                 <span className="mode-icon" aria-hidden="true">𝄞</span>
-                <span><strong>Porteden oku</strong><small>Notayı gör, ismini yaz</small></span>
+                <span><strong>{copy.modes.porte.title}</strong><small>{copy.modes.porte.description}</small></span>
                 <i aria-hidden="true">{mode === "porte" ? "●" : "○"}</i>
               </button>
               <button type="button" className={`mode-card ${mode === "konum" ? "is-selected" : ""}`} onClick={() => setMode("konum")}>
                 <span className="mode-icon mode-icon--text" aria-hidden="true">1.</span>
-                <span><strong>Konumu oku</strong><small>Konumu gör, ismini yaz</small></span>
+                <span><strong>{copy.modes.konum.title}</strong><small>{copy.modes.konum.description}</small></span>
                 <i aria-hidden="true">{mode === "konum" ? "●" : "○"}</i>
               </button>
             </div>
 
             <button className="primary-button" type="button" onClick={startSession}>
-              Oturumu başlat <span aria-hidden="true">→</span>
+              {copy.start} <span aria-hidden="true">→</span>
             </button>
-            <p className="setup-note">Her nota bir kez eklenir · Liste her oturumda yeniden karıştırılır</p>
+            <p className="setup-note">{copy.setupNote}</p>
           </div>
         </section>
       )}
@@ -285,64 +482,65 @@ export default function Home() {
         <section className="quiz-shell">
           <div className="progress-row">
             <div>
-              <span className="progress-label">İlerleme</span>
+              <span className="progress-label">{copy.progress}</span>
               <strong>{answeredCorrectly}<small> / {uniqueCount}</small></strong>
             </div>
-            <div className="progress-track" aria-label={`${uniqueCount} sorudan ${answeredCorrectly} tamamlandı`}>
+            <div className="progress-track" aria-label={copy.completedLabel(uniqueCount, answeredCorrectly)}>
               <span style={{ width: `${(answeredCorrectly / uniqueCount) * 100}%` }} />
             </div>
-            <span className="remaining">{queue.length} nota kaldı</span>
+            <span className="remaining">{copy.remaining(queue.length)}</span>
           </div>
 
           <div className="question-card">
-            <div className="question-number">Soru {Math.min(answeredCorrectly + 1, uniqueCount)}</div>
-            <p className="question-prompt">Bu notanın adı nedir?</p>
+            <div className="question-number">{copy.question(Math.min(answeredCorrectly + 1, uniqueCount))}</div>
+            <p className="question-prompt">{copy.prompt}</p>
             {mode === "porte" ? (
-              <Staff note={displayedNote} />
+              <Staff note={displayedNote} locale={locale} />
             ) : (
               <div className="location-question">
-                <span>Konum</span>
-                <strong>{displayedNote.shortLocation}</strong>
-                <p>{displayedNote.location.charAt(0).toUpperCase() + displayedNote.location.slice(1)}</p>
+                <span>{copy.positionLabel}</span>
+                <strong>{displayedNote.shortLocation[locale]}</strong>
+                <p>{displayedNote.location[locale].charAt(0).toUpperCase() + displayedNote.location[locale].slice(1)}</p>
               </div>
             )}
 
             {!feedback ? (
               <form className="answer-form" onSubmit={submitAnswer}>
-                <label htmlFor="answer">Cevabını yaz</label>
+                <label htmlFor="answer">{copy.answerLabel}</label>
                 <div className="answer-line">
                   <input
                     id="answer"
                     ref={inputRef}
                     value={answer}
                     onChange={(event) => setAnswer(event.target.value)}
-                    placeholder="Do, Re, Mi…"
+                    placeholder={copy.placeholder}
                     autoComplete="off"
                     autoCapitalize="none"
+                    enterKeyHint="done"
                   />
-                  <button type="submit" disabled={!normalizeAnswer(answer)}>Kontrol et <span aria-hidden="true">↵</span></button>
+                  <button type="submit" disabled={!normalizeAnswer(answer)}>{copy.check} <span aria-hidden="true">↵</span></button>
                 </div>
-                <div className="note-hints" aria-label="Kullanılabilecek cevaplar">
-                  {NOTE_NAMES.map((name) => <button type="button" key={name} onClick={() => { setAnswer(name); inputRef.current?.focus(); }}>{name}</button>)}
+                <div className="note-hints" aria-label={copy.choicesLabel}>
+                  {answerChoices.map((name) => <button type="button" key={name} onClick={() => { setAnswer(name); inputRef.current?.focus(); }}>{name}</button>)}
                 </div>
               </form>
             ) : (
               <div className={`feedback ${feedback.correct ? "feedback--correct" : "feedback--wrong"}`} aria-live="polite">
                 <span className="feedback-icon" aria-hidden="true">{feedback.correct ? "✓" : "×"}</span>
                 <div>
-                  <strong>{feedback.correct ? "Doğru" : "Yanlış"}</strong>
+                  <strong>{feedback.correct ? copy.correct : copy.incorrect}</strong>
                   {feedback.correct ? (
-                    <p>{feedback.note.name} notasını bildin.</p>
+                    <p>{copy.correctCopy(noteName(feedback.note, locale))}</p>
                   ) : (
-                    <p>Doğru cevap <b>{feedback.note.name}</b> — {feedback.note.location}. Bu nota listenin sonuna eklendi.</p>
+                    <p>{copy.wrongPrefix} <b>{noteName(feedback.note, locale)}</b> — {feedback.note.location[locale]}. {copy.wrongSuffix}</p>
                   )}
                 </div>
-                <button type="button" onClick={nextQuestion}>{queue.length ? "Sonraki" : "Sonuçlar"} <span aria-hidden="true">→</span></button>
+                <button type="button" onClick={nextQuestion}>{queue.length ? copy.next : copy.results} <span aria-hidden="true">→</span></button>
               </div>
             )}
           </div>
 
-          <button className="text-button" type="button" onClick={() => setStage("setup")}>Oturumu bitir</button>
+          <button className="text-button" type="button" onClick={() => setStage("setup")}>{copy.endSession}</button>
         </section>
       )}
 
@@ -350,44 +548,44 @@ export default function Home() {
         <section className="results-shell">
           <div className="results-intro">
             <span className="result-flourish" aria-hidden="true">♪</span>
-            <p className="kicker">Oturum tamamlandı</p>
-            <h1>Harika iş!</h1>
-            <p>{selectedLevel.title} listesindeki bütün notaları en az bir kez doğru cevapladın.</p>
+            <p className="kicker">{copy.sessionComplete}</p>
+            <h1>{copy.greatWork}</h1>
+            <p>{copy.completedCopy(selectedLevel.title)}</p>
           </div>
 
           <div className="results-card">
             <div className="score-ring" style={{ "--score": `${firstTryRate * 3.6}deg` } as React.CSSProperties}>
-              <div><strong>%{firstTryRate}</strong><span>ilk deneme</span></div>
+              <div><strong>%{firstTryRate}</strong><span>{copy.firstTry}</span></div>
             </div>
             <div className="stats-grid">
-              <Stat label="Benzersiz soru" value={uniqueCount} />
-              <Stat label="İlk denemede doğru" value={firstTryCorrect} accent />
-              <Stat label="Toplam yanlış" value={totalWrong} />
-              <Stat label="Ortalama cevap" value={averageTime} />
+              <Stat label={copy.uniqueQuestions} value={uniqueCount} />
+              <Stat label={copy.firstTryCorrect} value={firstTryCorrect} accent />
+              <Stat label={copy.totalWrong} value={totalWrong} />
+              <Stat label={copy.averageResponse} value={averageTime} />
             </div>
           </div>
 
           <div className="hardest-card">
-            <div><p className="kicker">Tekrar listesi</p><h2>En çok zorlayan notalar</h2></div>
+            <div><p className="kicker">{copy.reviewList}</p><h2>{copy.hardest}</h2></div>
             {hardestNotes.length ? (
               <div className="hardest-list">
                 {hardestNotes.map(({ note, count }) => (
-                  <div key={note.id}><span className="note-pill">{note.name}</span><span>{note.shortLocation}</span><b>{count} yanlış</b></div>
+                  <div key={note.id}><span className="note-pill">{noteName(note, locale)}</span><span>{note.shortLocation[locale]}</span><b>{copy.wrongCount(count)}</b></div>
                 ))}
               </div>
             ) : (
-              <p className="perfect-copy">Hiç yanlış yok. Bu oturum pürüzsüz geçti!</p>
+              <p className="perfect-copy">{copy.perfect}</p>
             )}
           </div>
 
           <div className="result-actions">
-            <button className="primary-button" type="button" onClick={startSession}>Aynı ayarlarla yeniden çalış <span>↻</span></button>
-            <button className="secondary-button" type="button" onClick={() => setStage("setup")}>Seviyeyi değiştir</button>
+            <button className="primary-button" type="button" onClick={startSession}>{copy.repeat} <span>↻</span></button>
+            <button className="secondary-button" type="button" onClick={() => setStage("setup")}>{copy.changeLevel}</button>
           </div>
         </section>
       )}
 
-      <footer><span>Nota Nota</span><p>Ezber değil, akıcılık.</p><span>𝄞</span></footer>
+      <footer><span>Nota Nota</span><p>{copy.footer}</p><span>𝄞</span></footer>
     </main>
   );
 }

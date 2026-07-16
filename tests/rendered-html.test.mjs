@@ -21,7 +21,7 @@ test("Nota Nota çalışma ekranını sunar", async () => {
 
   const html = await response.text();
   assert.match(html, /<html lang="tr">/i);
-  assert.match(html, /<title>Nota Nota — Porte Çalışması<\/title>/i);
+  assert.match(html, /<title>Nota Nota — Note Reading \/ Porte Çalışması<\/title>/i);
   assert.match(html, /Notayı gör/);
   assert.match(html, /Temel porte/);
   assert.match(html, /Tam doğal sesler/);
@@ -38,5 +38,9 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /toLocaleLowerCase\("tr-TR"\)/);
   assert.match(page, /firstTryCorrect/);
   assert.match(page, /wrongByNote/);
+  assert.match(page, /Treble clef · natural notes/);
+  assert.match(page, /Staff \+ ledger lines/);
+  assert.match(page, /letter: "C"/);
+  assert.match(page, /nota-nota-locale/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
 });

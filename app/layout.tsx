@@ -9,19 +9,20 @@ export async function generateMetadata(): Promise<Metadata> {
   const image = `${protocol}://${host}/og.png`;
 
   return {
-    title: "Nota Nota — Porte Çalışması",
-    description: "Sol anahtarındaki doğal notaları görerek ve konumlarını okuyarak çalış.",
+    title: "Nota Nota — Note Reading / Porte Çalışması",
+    description: "Treble-clef note reading practice in Turkish and English. Sol anahtarındaki doğal notaları Türkçe veya İngilizce çalış.",
     openGraph: {
       title: "Nota Nota",
-      description: "Notayı gör. İsmini söyle.",
+      description: "See the note. Name it. · Notayı gör. İsmini söyle.",
       type: "website",
       locale: "tr_TR",
-      images: [{ url: image, width: 1536, height: 1024, alt: "Nota Nota porte çalışması" }],
+      alternateLocale: ["en_US"],
+      images: [{ url: image, width: 1536, height: 1024, alt: "Nota Nota bilingual treble-clef note reading practice" }],
     },
     twitter: {
       card: "summary_large_image",
       title: "Nota Nota",
-      description: "Notayı gör. İsmini söyle.",
+      description: "See the note. Name it. · Notayı gör. İsmini söyle.",
       images: [image],
     },
   };

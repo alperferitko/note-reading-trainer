@@ -44,3 +44,29 @@ next-env.d.ts
 /.git/
 /.sites-git/
 /.tools/
+
+# local package cache
+/.npm-cache/
+
+# generated build output
+/build/
+
+# Cloudflare local secrets
+.dev.vars
+.dev.vars.*
+
+# local AI tooling
+/.openai/
+/.agents/
+
+# local databases
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# TypeScript cache
+*.tsbuildinfo
+
+# allow public environment variable template
+!.env.example

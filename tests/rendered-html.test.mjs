@@ -32,10 +32,21 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
   const packageJson = await readFile(new URL("../package.json", import.meta.url), "utf8");
+  const migration = await readFile(
+    new URL("../supabase/migrations/202607170001_notanota_community.sql", import.meta.url),
+    "utf8",
+  );
 
   assert.match(page, /shuffledWithoutRuns/);
   assert.match(page, /Math\.abs\(item\.position - previous\.position\) !== 1/);
-  assert.match(page, /\[\.\.\.items\.slice\(1\), items\[0\]\]/);
+  assert.match(
+    page,
+    /\[\.\.\.items\.slice\(1\), \{ \.\.\.items\[0\], misses: items\[0\]\.misses \+ 1 \}\]/,
+  );
+  assert.match(page, /sessionType === "endless"/);
+  assert.match(page, /nextEndlessNote/);
+  assert.match(page, /questionKey\.current\+\+/);
+  assert.match(page, /<CommunityResult/);
   assert.match(page, /toLocaleLowerCase\("tr-TR"\)/);
   assert.match(page, /firstTryCorrect/);
   assert.match(page, /wrongByNote/);
@@ -54,4 +65,19 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.doesNotMatch(styles, /:has\(\.answer-line input:focus\)/);
   assert.doesNotMatch(page, /window\.visualViewport|window\.scrollBy|quiz-keyboard-open/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
+  assert.match(migration, /p_wrong_count <> 0/i);
+  assert.match(
+    migration,
+    /p_session_type = 'standard' and p_correct_count <> v_expected_count/i,
+  );
+  assert.match(
+    migration,
+    /excluded\.correct_count > public\.best_scores\.correct_count/i,
+  );
+  assert.match(
+    migration,
+    /excluded\.total_response_time_ms::bigint \* public\.best_scores\.correct_count::bigint/i,
+  );
+  assert.match(migration, /profiles_username_format/i);
+  assert.match(migration, /security definer/i);
 });

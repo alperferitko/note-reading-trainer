@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent, MouseEvent, useEffect, useMemo, useRef, useState } from "react";
+import { CommunityHeader, CommunityLegalLink, CommunityProvider, CommunityResult } from "./community";
+import type { ScoreSubmission, SessionType } from "@/lib/leaderboard";
 
 type LevelId = "temel" | "yakin" | "tam";
 type ModeId = "porte" | "konum";
@@ -14,6 +16,12 @@ type NoteQuestion = {
   position: number;
   location: Record<Locale, string>;
   shortLocation: Record<Locale, string>;
+};
+
+type QueuedQuestion = {
+  key: number;
+  misses: number;
+  note: NoteQuestion;
 };
 
 type Copy = {
@@ -173,6 +181,33 @@ const COPY: Record<Locale, Copy> = {
   },
 };
 
+const EXTRA_COPY = {
+  tr: {
+    sessionEyebrow: "Oturum türü",
+    chooseSession: "Nasıl bir oturum istiyorsun?",
+    standard: { title: "Normal mod", description: "Bütün notaları hatasız ve olabildiğince hızlı tamamla" },
+    endless: { title: "Sonsuz mod", description: "Sen bitirene kadar rastgele notalarla devam et" },
+    endlessSetupNote: "Sorular sürekli yenilenir · Oturumu istediğin zaman bitirebilirsin",
+    correctAnswers: "Doğru cevap",
+    noMistakes: "Hatasız seri",
+    endedSession: (count: number) => `Sonsuz oturumu ${count} doğru cevapla tamamladın.`,
+    stoppedSession: (count: number) => `Oturumu ${count} doğru cevapla bitirdin.`,
+    endlessProgress: "Sonsuz çalışma",
+  },
+  en: {
+    sessionEyebrow: "Session type",
+    chooseSession: "How long do you want to practise?",
+    standard: { title: "Standard mode", description: "Complete every note perfectly and as quickly as possible" },
+    endless: { title: "Endless mode", description: "Keep receiving random notes until you choose to stop" },
+    endlessSetupNote: "Questions keep coming · End the session whenever you want",
+    correctAnswers: "Correct answers",
+    noMistakes: "Perfect streak",
+    endedSession: (count: number) => `You ended the endless session with ${count} correct answers.`,
+    stoppedSession: (count: number) => `You ended the session with ${count} correct answers.`,
+    endlessProgress: "Endless practice",
+  },
+} as const;
+
 const ALL_NOTES: NoteQuestion[] = [
   { id: "c4", solfege: "Do", letter: "C", position: -2, location: { tr: "portenin altındaki 1. ek çizgi üzerinde", en: "on the first ledger line below the staff" }, shortLocation: { tr: "Alt 1. ek çizgi", en: "1st ledger line below" } },
   { id: "d4", solfege: "Re", letter: "D", position: -1, location: { tr: "1. çizginin altındaki aralıkta", en: "in the space below the staff" }, shortLocation: { tr: "1. çizginin altı", en: "Space below the staff" } },
@@ -226,6 +261,12 @@ function shuffledWithoutRuns<T extends { position: number }>(items: T[]) {
   }
 
   return result;
+}
+
+function nextEndlessNote(pool: NoteQuestion[], previous?: NoteQuestion) {
+  const safe = pool.filter((note) => !previous || (note.id !== previous.id && Math.abs(note.position - previous.position) !== 1));
+  const choices = safe.length ? safe : pool.filter((note) => note.id !== previous?.id);
+  return choices[Math.floor(Math.random() * choices.length)] ?? pool[0];
 }
 
 function normalizeAnswer(value: string) {
@@ -290,23 +331,28 @@ export default function Home() {
   const [stage, setStage] = useState<Stage>("setup");
   const [level, setLevel] = useState<LevelId>("temel");
   const [mode, setMode] = useState<ModeId>("porte");
-  const [queue, setQueue] = useState<NoteQuestion[]>([]);
+  const [sessionType, setSessionType] = useState<SessionType>("standard");
+  const [queue, setQueue] = useState<QueuedQuestion[]>([]);
   const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState<{ correct: boolean; note: NoteQuestion } | null>(null);
-  const [attempts, setAttempts] = useState<Record<string, number>>({});
   const [wrongByNote, setWrongByNote] = useState<Record<string, number>>({});
   const [firstTryCorrect, setFirstTryCorrect] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
   const [totalWrong, setTotalWrong] = useState(0);
   const [answerTimes, setAnswerTimes] = useState<number[]>([]);
   const [questionStartedAt, setQuestionStartedAt] = useState(0);
+  const [endedEarly, setEndedEarly] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const questionKey = useRef(0);
   const copy = COPY[locale];
+  const extra = EXTRA_COPY[locale];
   const levels = LEVELS[locale];
 
   const uniqueCount = questionsFor(level).length;
-  const current = queue[0];
+  const currentItem = queue[0];
+  const current = currentItem?.note;
   const displayedNote = feedback?.note ?? current;
-  const answeredCorrectly = uniqueCount - queue.length;
+  const answeredCorrectly = sessionType === "standard" ? uniqueCount - queue.length : correctCount;
   const selectedLevel = levels.find((item) => item.id === level)!;
   const answerChoices = locale === "tr" ? ["Do", "Re", "Mi", "Fa", "Sol", "La", "Si"] : ["C", "D", "E", "F", "G", "A", "B"];
 
@@ -337,7 +383,7 @@ export default function Home() {
 
     const hasDesktopPointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
     if (hasDesktopPointer) inputRef.current?.focus({ preventScroll: true });
-  }, [stage, feedback, current?.id]);
+  }, [stage, feedback, currentItem?.key]);
 
   function changeLocale(nextLocale: Locale) {
     setLocale(nextLocale);
@@ -345,14 +391,20 @@ export default function Home() {
   }
 
   function startSession() {
-    setQueue(shuffledWithoutRuns(questionsFor(level)));
-    setAttempts({});
+    const initialQueue = shuffledWithoutRuns(questionsFor(level)).map((note) => ({
+      key: questionKey.current++,
+      misses: 0,
+      note,
+    }));
+    setQueue(initialQueue);
     setWrongByNote({});
     setFirstTryCorrect(0);
+    setCorrectCount(0);
     setTotalWrong(0);
     setAnswerTimes([]);
     setAnswer("");
     setFeedback(null);
+    setEndedEarly(false);
     setQuestionStartedAt(Date.now());
     setStage("quiz");
   }
@@ -371,9 +423,9 @@ export default function Home() {
   }
 
   function recordAnswer(nextAnswer: string, answeredAt: number) {
-    if (!current || feedback || !normalizeAnswer(nextAnswer)) return;
+    if (!current || !currentItem || feedback || !normalizeAnswer(nextAnswer)) return;
 
-    const elapsed = Math.max(0.1, (answeredAt - questionStartedAt) / 1000);
+    const elapsed = Math.max(100, answeredAt - questionStartedAt);
     const normalized = normalizeAnswer(nextAnswer);
     const correct = normalized === normalizeAnswer(current.solfege) || normalized === normalizeAnswer(current.letter);
     setAnswer(nextAnswer);
@@ -381,13 +433,19 @@ export default function Home() {
     setFeedback({ correct, note: current });
 
     if (correct) {
-      if ((attempts[current.id] ?? 0) === 0) setFirstTryCorrect((count) => count + 1);
-      setQueue((items) => items.slice(1));
+      if (currentItem.misses === 0) setFirstTryCorrect((count) => count + 1);
+      setCorrectCount((count) => count + 1);
+      setQueue((items) => {
+        const remaining = items.slice(1);
+        if (sessionType === "standard") return remaining;
+        const previous = remaining.at(-1)?.note ?? current;
+        const nextNote = nextEndlessNote(questionsFor(level), previous);
+        return [...remaining, { key: questionKey.current++, misses: 0, note: nextNote }];
+      });
     } else {
-      setAttempts((values) => ({ ...values, [current.id]: (values[current.id] ?? 0) + 1 }));
       setWrongByNote((values) => ({ ...values, [current.id]: (values[current.id] ?? 0) + 1 }));
       setTotalWrong((count) => count + 1);
-      setQueue((items) => [...items.slice(1), items[0]]);
+      setQueue((items) => [...items.slice(1), { ...items[0], misses: items[0].misses + 1 }]);
     }
   }
 
@@ -402,6 +460,12 @@ export default function Home() {
     }
   }
 
+  function endSession() {
+    setEndedEarly(true);
+    setFeedback(null);
+    setStage("done");
+  }
+
   useEffect(() => {
     function handleKeydown(event: KeyboardEvent) {
       if (stage === "quiz" && feedback && event.key === "Enter") {
@@ -413,12 +477,24 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handleKeydown);
   });
 
+  const totalResponseTimeMs = answerTimes.reduce((sum, value) => sum + value, 0);
   const averageTime = answerTimes.length
-    ? `${(answerTimes.reduce((sum, value) => sum + value, 0) / answerTimes.length).toFixed(1).replace(".", locale === "tr" ? "," : ".")} ${copy.seconds}`
+    ? `${(totalResponseTimeMs / answerTimes.length / 1000).toFixed(1).replace(".", locale === "tr" ? "," : ".")} ${copy.seconds}`
     : `0${locale === "tr" ? "," : "."}0 ${copy.seconds}`;
-  const firstTryRate = uniqueCount ? Math.round((firstTryCorrect / uniqueCount) * 100) : 0;
+  const rateDenominator = sessionType === "standard" ? uniqueCount : correctCount;
+  const firstTryRate = rateDenominator ? Math.round((firstTryCorrect / rateDenominator) * 100) : 0;
+  const leaderboardEligible = totalWrong === 0 && correctCount > 0 && (sessionType === "endless" || correctCount === uniqueCount);
+  const scoreSubmission: ScoreSubmission = {
+    sessionType,
+    level,
+    questionMode: mode,
+    correctCount,
+    wrongCount: totalWrong,
+    totalResponseTimeMs,
+  };
 
   return (
+    <CommunityProvider locale={locale}>
     <main>
       <header className="site-header">
         <button className="brand" type="button" onClick={() => setStage("setup")} aria-label={copy.homeLabel}>
@@ -431,8 +507,11 @@ export default function Home() {
               <span>{selectedLevel.title}</span>
               <span className="meta-dot" />
               <span>{copy.modes[mode].title}</span>
+              <span className="meta-dot" />
+              <span>{sessionType === "standard" ? extra.standard.title : extra.endless.title}</span>
             </div>
           )}
+          <CommunityHeader />
           <div className="language-switch" role="group" aria-label={locale === "tr" ? "Dil seçimi" : "Language selection"}>
             <button type="button" className={locale === "tr" ? "is-active" : ""} onClick={() => changeLocale("tr")} aria-pressed={locale === "tr"}>TR</button>
             <button type="button" className={locale === "en" ? "is-active" : ""} onClick={() => changeLocale("en")} aria-pressed={locale === "en"}>EN</button>
@@ -486,10 +565,28 @@ export default function Home() {
               </button>
             </div>
 
+            <div className="divider" />
+            <div className="step-heading compact-heading">
+              <span>03</span>
+              <div><p>{extra.sessionEyebrow}</p><h2>{extra.chooseSession}</h2></div>
+            </div>
+            <div className="mode-grid session-type-grid">
+              <button type="button" className={`mode-card ${sessionType === "standard" ? "is-selected" : ""}`} onClick={() => setSessionType("standard")}>
+                <span className="mode-icon mode-icon--text" aria-hidden="true">✓</span>
+                <span><strong>{extra.standard.title}</strong><small>{extra.standard.description}</small></span>
+                <i aria-hidden="true">{sessionType === "standard" ? "●" : "○"}</i>
+              </button>
+              <button type="button" className={`mode-card ${sessionType === "endless" ? "is-selected" : ""}`} onClick={() => setSessionType("endless")}>
+                <span className="mode-icon" aria-hidden="true">∞</span>
+                <span><strong>{extra.endless.title}</strong><small>{extra.endless.description}</small></span>
+                <i aria-hidden="true">{sessionType === "endless" ? "●" : "○"}</i>
+              </button>
+            </div>
+
             <button className="primary-button" type="button" onClick={startSession}>
               {copy.start} <span aria-hidden="true">→</span>
             </button>
-            <p className="setup-note">{copy.setupNote}</p>
+            <p className="setup-note">{sessionType === "standard" ? copy.setupNote : extra.endlessSetupNote}</p>
           </div>
         </section>
       )}
@@ -498,17 +595,17 @@ export default function Home() {
         <section className="quiz-shell">
           <div className="progress-row">
             <div>
-              <span className="progress-label">{copy.progress}</span>
-              <strong>{answeredCorrectly}<small> / {uniqueCount}</small></strong>
+              <span className="progress-label">{sessionType === "standard" ? copy.progress : extra.endlessProgress}</span>
+              <strong>{answeredCorrectly}{sessionType === "standard" && <small> / {uniqueCount}</small>}</strong>
             </div>
-            <div className="progress-track" aria-label={copy.completedLabel(uniqueCount, answeredCorrectly)}>
-              <span style={{ width: `${(answeredCorrectly / uniqueCount) * 100}%` }} />
+            <div className={`progress-track ${sessionType === "endless" ? "progress-track--endless" : ""}`} aria-label={sessionType === "standard" ? copy.completedLabel(uniqueCount, answeredCorrectly) : `${answeredCorrectly} ${extra.correctAnswers}`}>
+              <span style={{ width: sessionType === "standard" ? `${(answeredCorrectly / uniqueCount) * 100}%` : "100%" }} />
             </div>
-            <span className="remaining">{copy.remaining(queue.length)}</span>
+            <span className="remaining">{sessionType === "standard" ? copy.remaining(queue.length) : totalWrong === 0 ? extra.noMistakes : `${totalWrong} · ${copy.totalWrong}`}</span>
           </div>
 
           <div className="question-card">
-            <div className="question-number">{copy.question(Math.min(answeredCorrectly + 1, uniqueCount))}</div>
+            <div className="question-number">{copy.question(sessionType === "standard" ? Math.min(answeredCorrectly + 1, uniqueCount) : answerTimes.length + (feedback ? 0 : 1))}</div>
             <p className="question-prompt">{copy.prompt}</p>
             {mode === "porte" ? (
               <Staff note={displayedNote} locale={locale} />
@@ -559,12 +656,12 @@ export default function Home() {
                     <p>{copy.wrongPrefix} <b>{noteName(feedback.note, locale)}</b> — {feedback.note.location[locale]}. {copy.wrongSuffix}</p>
                   )}
                 </div>
-                <button type="button" onClick={nextQuestion}>{queue.length ? copy.next : copy.results} <span aria-hidden="true">→</span></button>
+                <button type="button" onClick={nextQuestion}>{sessionType === "endless" || queue.length ? copy.next : copy.results} <span aria-hidden="true">→</span></button>
               </div>
             )}
           </div>
 
-          <button className="text-button" type="button" onClick={() => setStage("setup")}>{copy.endSession}</button>
+          <button className="text-button" type="button" onClick={endSession}>{copy.endSession}</button>
         </section>
       )}
 
@@ -574,7 +671,7 @@ export default function Home() {
             <span className="result-flourish" aria-hidden="true">♪</span>
             <p className="kicker">{copy.sessionComplete}</p>
             <h1>{copy.greatWork}</h1>
-            <p>{copy.completedCopy(selectedLevel.title)}</p>
+            <p>{sessionType === "endless" ? extra.endedSession(correctCount) : endedEarly ? extra.stoppedSession(correctCount) : copy.completedCopy(selectedLevel.title)}</p>
           </div>
 
           <div className="results-card">
@@ -582,12 +679,14 @@ export default function Home() {
               <div><strong>%{firstTryRate}</strong><span>{copy.firstTry}</span></div>
             </div>
             <div className="stats-grid">
-              <Stat label={copy.uniqueQuestions} value={uniqueCount} />
+              <Stat label={sessionType === "standard" ? copy.uniqueQuestions : extra.correctAnswers} value={sessionType === "standard" ? uniqueCount : correctCount} />
               <Stat label={copy.firstTryCorrect} value={firstTryCorrect} accent />
               <Stat label={copy.totalWrong} value={totalWrong} />
               <Stat label={copy.averageResponse} value={averageTime} />
             </div>
           </div>
+
+          <CommunityResult score={scoreSubmission} eligible={leaderboardEligible} />
 
           <div className="hardest-card">
             <div><p className="kicker">{copy.reviewList}</p><h2>{copy.hardest}</h2></div>
@@ -609,7 +708,8 @@ export default function Home() {
         </section>
       )}
 
-      <footer><span>Nota Nota</span><p>{copy.footer}</p><span>𝄞</span></footer>
+      <footer><span>Nota Nota</span><p>{copy.footer}</p><CommunityLegalLink /><span>𝄞</span></footer>
     </main>
+    </CommunityProvider>
   );
 }

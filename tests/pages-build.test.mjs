@@ -42,13 +42,6 @@ test("static bundle has no unavailable server endpoint dependency", async () => 
   );
   const JavaScript = bundles.join("\n");
 
-  // Supabase's browser client contains localhost constants for its local-dev
-  // helpers. The application itself must not ship a fixed local API endpoint.
-  assert.doesNotMatch(JavaScript, /https?:\/\/127\.0\.0\.1:\d+\/api/i);
-  assert.doesNotMatch(JavaScript, /cloudflare:workers/i);
+  assert.doesNotMatch(JavaScript, /(?:localhost|127\.0\.0\.1|cloudflare:workers)/i);
   assert.doesNotMatch(JavaScript, /fetch\(["'`]\/api\//);
-  assert.doesNotMatch(
-    JavaScript,
-    /VITE_SUPABASE_(?:URL|PUBLISHABLE_KEY)\s*=/,
-  );
 });

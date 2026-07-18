@@ -283,6 +283,52 @@ function noteName(note: NoteQuestion, locale: Locale) {
   return locale === "tr" ? note.solfege : note.letter;
 }
 
+function UiIcon({ name }: { name: "note" | "check" | "close" }) {
+  if (name === "note") {
+    return (
+      <svg className="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M16.8 3.2v10.4a3.9 3.9 0 1 1-1.8-3.28V6.05L9.4 7.48v8.07a3.9 3.9 0 1 1-1.8-3.28V6.08L16.8 3.2Z" fill="currentColor" />
+      </svg>
+    );
+  }
+
+  if (name === "check") {
+    return (
+      <svg className="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="m5.5 12.5 4.1 4.1 8.9-9.2" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg className="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="m7 7 10 10M17 7 7 17" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+const RANGE_PREVIEW_POSITIONS: Record<LevelId, number[]> = {
+  temel: [0, 2, 4, 6, 8],
+  yakin: [-2, 1, 4, 7, 10],
+  tam: [-2, 1, 5, 8, 12],
+};
+
+function RangePreview({ level }: { level: LevelId }) {
+  return (
+    <span className="range-preview" aria-hidden="true">
+      <span className="range-preview-clef">𝄞</span>
+      <span className="range-preview-lines" />
+      {RANGE_PREVIEW_POSITIONS[level].map((position, index) => (
+        <span
+          className={`range-preview-note ${position <= -2 || position >= 10 ? "has-ledger" : ""}`}
+          key={position}
+          style={{ left: `${35 + index * 13}%`, top: `${50 - position * 4}px` }}
+        />
+      ))}
+    </span>
+  );
+}
+
 function Staff({ note, locale, compact = false }: { note: NoteQuestion; locale: Locale; compact?: boolean }) {
   const step = compact ? 10 : 14;
   const firstLineY = compact ? 72 : 98;
@@ -495,19 +541,19 @@ export default function Home() {
 
   return (
     <CommunityProvider locale={locale}>
-    <main>
+    <main className="app-shell">
       <header className="site-header">
         <button className="brand" type="button" onClick={() => setStage("setup")} aria-label={copy.homeLabel}>
-          <span className="brand-mark" aria-hidden="true">♪</span>
+          <span className="brand-mark" aria-hidden="true"><UiIcon name="note" /></span>
           <span>Nota Nota</span>
         </button>
         <div className="header-actions">
           {stage === "quiz" && (
             <div className="session-meta">
               <span>{selectedLevel.title}</span>
-              <span className="meta-dot" />
+              <span className="meta-dot" aria-hidden="true" />
               <span>{copy.modes[mode].title}</span>
-              <span className="meta-dot" />
+              <span className="meta-dot" aria-hidden="true" />
               <span>{sessionType === "standard" ? extra.standard.title : extra.endless.title}</span>
             </div>
           )}
@@ -538,11 +584,12 @@ export default function Home() {
             </div>
             <div className="level-grid">
               {levels.map((item) => (
-                <button key={item.id} type="button" className={`level-card ${level === item.id ? "is-selected" : ""}`} onClick={() => setLevel(item.id)}>
+                <button key={item.id} type="button" className={`level-card ${level === item.id ? "is-selected" : ""}`} onClick={() => setLevel(item.id)} aria-pressed={level === item.id}>
+                  <RangePreview level={item.id} />
                   <span className="level-top"><small>{item.eyebrow}</small><b>{item.count} {locale === "tr" ? "nota" : "notes"}</b></span>
                   <strong>{item.title}</strong>
                   <span>{item.description}</span>
-                  <i aria-hidden="true">{level === item.id ? "✓" : ""}</i>
+                  <i className="level-indicator" aria-hidden="true">{level === item.id && <UiIcon name="check" />}</i>
                 </button>
               ))}
             </div>
@@ -553,15 +600,15 @@ export default function Home() {
               <div><p>{copy.questionStyle}</p><h2>{copy.chooseMode}</h2></div>
             </div>
             <div className="mode-grid">
-              <button type="button" className={`mode-card ${mode === "porte" ? "is-selected" : ""}`} onClick={() => setMode("porte")}>
-                <span className="mode-icon" aria-hidden="true">𝄞</span>
+              <button type="button" className={`mode-card ${mode === "porte" ? "is-selected" : ""}`} onClick={() => setMode("porte")} aria-pressed={mode === "porte"}>
+                <span className="mode-icon mode-icon--clef" aria-hidden="true">𝄞</span>
                 <span><strong>{copy.modes.porte.title}</strong><small>{copy.modes.porte.description}</small></span>
-                <i aria-hidden="true">{mode === "porte" ? "●" : "○"}</i>
+                <i className="selection-indicator" aria-hidden="true" />
               </button>
-              <button type="button" className={`mode-card ${mode === "konum" ? "is-selected" : ""}`} onClick={() => setMode("konum")}>
+              <button type="button" className={`mode-card ${mode === "konum" ? "is-selected" : ""}`} onClick={() => setMode("konum")} aria-pressed={mode === "konum"}>
                 <span className="mode-icon mode-icon--text" aria-hidden="true">1.</span>
                 <span><strong>{copy.modes.konum.title}</strong><small>{copy.modes.konum.description}</small></span>
-                <i aria-hidden="true">{mode === "konum" ? "●" : "○"}</i>
+                <i className="selection-indicator" aria-hidden="true" />
               </button>
             </div>
 
@@ -571,15 +618,15 @@ export default function Home() {
               <div><p>{extra.sessionEyebrow}</p><h2>{extra.chooseSession}</h2></div>
             </div>
             <div className="mode-grid session-type-grid">
-              <button type="button" className={`mode-card ${sessionType === "standard" ? "is-selected" : ""}`} onClick={() => setSessionType("standard")}>
-                <span className="mode-icon mode-icon--text" aria-hidden="true">✓</span>
+              <button type="button" className={`mode-card ${sessionType === "standard" ? "is-selected" : ""}`} onClick={() => setSessionType("standard")} aria-pressed={sessionType === "standard"}>
+                <span className="mode-icon mode-icon--check" aria-hidden="true"><UiIcon name="check" /></span>
                 <span><strong>{extra.standard.title}</strong><small>{extra.standard.description}</small></span>
-                <i aria-hidden="true">{sessionType === "standard" ? "●" : "○"}</i>
+                <i className="selection-indicator" aria-hidden="true" />
               </button>
-              <button type="button" className={`mode-card ${sessionType === "endless" ? "is-selected" : ""}`} onClick={() => setSessionType("endless")}>
-                <span className="mode-icon" aria-hidden="true">∞</span>
+              <button type="button" className={`mode-card ${sessionType === "endless" ? "is-selected" : ""}`} onClick={() => setSessionType("endless")} aria-pressed={sessionType === "endless"}>
+                <span className="mode-icon mode-icon--infinity" aria-hidden="true">∞</span>
                 <span><strong>{extra.endless.title}</strong><small>{extra.endless.description}</small></span>
-                <i aria-hidden="true">{sessionType === "endless" ? "●" : "○"}</i>
+                <i className="selection-indicator" aria-hidden="true" />
               </button>
             </div>
 
@@ -598,7 +645,14 @@ export default function Home() {
               <span className="progress-label">{sessionType === "standard" ? copy.progress : extra.endlessProgress}</span>
               <strong>{answeredCorrectly}{sessionType === "standard" && <small> / {uniqueCount}</small>}</strong>
             </div>
-            <div className={`progress-track ${sessionType === "endless" ? "progress-track--endless" : ""}`} aria-label={sessionType === "standard" ? copy.completedLabel(uniqueCount, answeredCorrectly) : `${answeredCorrectly} ${extra.correctAnswers}`}>
+            <div
+              className={`progress-track ${sessionType === "endless" ? "progress-track--endless" : ""}`}
+              aria-label={sessionType === "standard" ? copy.completedLabel(uniqueCount, answeredCorrectly) : `${answeredCorrectly} ${extra.correctAnswers}`}
+              role={sessionType === "standard" ? "progressbar" : undefined}
+              aria-valuemin={sessionType === "standard" ? 0 : undefined}
+              aria-valuemax={sessionType === "standard" ? uniqueCount : undefined}
+              aria-valuenow={sessionType === "standard" ? answeredCorrectly : undefined}
+            >
               <span style={{ width: sessionType === "standard" ? `${(answeredCorrectly / uniqueCount) * 100}%` : "100%" }} />
             </div>
             <span className="remaining">{sessionType === "standard" ? copy.remaining(queue.length) : totalWrong === 0 ? extra.noMistakes : `${totalWrong} · ${copy.totalWrong}`}</span>
@@ -635,10 +689,10 @@ export default function Home() {
                   />
                   <button type="submit" disabled={!normalizeAnswer(answer)}>{copy.check} <span aria-hidden="true">↵</span></button>
                 </div>
-                <div className="note-hints note-hints--desktop" aria-label={copy.choicesLabel}>
+                <div className="note-hints note-hints--desktop" role="group" aria-label={copy.choicesLabel}>
                   {answerChoices.map((name) => <button type="button" key={name} onClick={() => { setAnswer(name); inputRef.current?.focus(); }}>{name}</button>)}
                 </div>
-                <div className="mobile-answer-pad" aria-label={copy.choicesLabel}>
+                <div className="mobile-answer-pad" role="group" aria-label={copy.choicesLabel}>
                   <span>{copy.choicesLabel}</span>
                   <div>
                     {answerChoices.map((name) => <button type="button" key={name} value={name} onClick={chooseAnswer}>{name}</button>)}
@@ -647,7 +701,7 @@ export default function Home() {
               </form>
             ) : (
               <div className={`feedback ${feedback.correct ? "feedback--correct" : "feedback--wrong"}`} aria-live="polite">
-                <span className="feedback-icon" aria-hidden="true">{feedback.correct ? "✓" : "×"}</span>
+                <span className="feedback-icon" aria-hidden="true"><UiIcon name={feedback.correct ? "check" : "close"} /></span>
                 <div>
                   <strong>{feedback.correct ? copy.correct : copy.incorrect}</strong>
                   {feedback.correct ? (
@@ -668,7 +722,7 @@ export default function Home() {
       {stage === "done" && (
         <section className="results-shell">
           <div className="results-intro">
-            <span className="result-flourish" aria-hidden="true">♪</span>
+            <span className="result-flourish" aria-hidden="true"><UiIcon name="note" /></span>
             <p className="kicker">{copy.sessionComplete}</p>
             <h1>{copy.greatWork}</h1>
             <p>{sessionType === "endless" ? extra.endedSession(correctCount) : endedEarly ? extra.stoppedSession(correctCount) : copy.completedCopy(selectedLevel.title)}</p>

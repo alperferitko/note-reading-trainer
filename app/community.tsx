@@ -242,7 +242,11 @@ function Modal({ title, closeLabel, onClose, children }: { title: string; closeL
       <section className="modal-card" role="dialog" aria-modal="true" aria-labelledby="community-modal-title">
         <header>
           <h2 id="community-modal-title">{title}</h2>
-          <button type="button" onClick={onClose} aria-label={closeLabel}>×</button>
+          <button type="button" onClick={onClose} aria-label={closeLabel}>
+            <svg className="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="m7 7 10 10M17 7 7 17" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+            </svg>
+          </button>
         </header>
         {children}
       </section>
@@ -378,16 +382,16 @@ function LeaderboardPanel({ locale }: { locale: Locale }) {
   return (
     <div className="leaderboard-panel">
       <div className="leaderboard-filters">
-        <select value={sessionType} onChange={(event) => setSessionType(event.target.value as SessionType)}>
+        <select aria-label={locale === "tr" ? "Oturum türü" : "Session type"} value={sessionType} onChange={(event) => setSessionType(event.target.value as SessionType)}>
           <option value="standard">{text.standard}</option>
           <option value="endless">{text.endless}</option>
         </select>
-        <select value={level} onChange={(event) => setLevel(event.target.value as PracticeLevel)}>
+        <select aria-label={locale === "tr" ? "Çalışma alanı" : "Practice range"} value={level} onChange={(event) => setLevel(event.target.value as PracticeLevel)}>
           <option value="temel">{locale === "tr" ? "Temel porte" : "Notes on the staff"}</option>
           <option value="yakin">{locale === "tr" ? "Yakın çevre" : "Staff + ledger lines"}</option>
           <option value="tam">{locale === "tr" ? "Tam doğal sesler" : "Full natural range"}</option>
         </select>
-        <select value={questionMode} onChange={(event) => setQuestionMode(event.target.value as QuestionMode)}>
+        <select aria-label={locale === "tr" ? "Soru biçimi" : "Question style"} value={questionMode} onChange={(event) => setQuestionMode(event.target.value as QuestionMode)}>
           <option value="porte">{text.staff}</option>
           <option value="konum">{text.position}</option>
         </select>

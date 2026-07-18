@@ -35,6 +35,7 @@ test("Nota Nota çalışma ekranını sunar", async () => {
 
 test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğunda tutar", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const community = await readFile(new URL("../app/community.tsx", import.meta.url), "utf8");
   const insights = await readFile(new URL("../lib/session-insights.mjs", import.meta.url), "utf8");
   const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
   const packageJson = await readFile(new URL("../package.json", import.meta.url), "utf8");
@@ -53,6 +54,11 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /nextEndlessNote/);
   assert.match(page, /questionKey\.current\+\+/);
   assert.match(page, /<CommunityResult/);
+  assert.match(community, /nota-nota-pending-score/);
+  assert.match(community, /rememberPendingScore\(score\)/);
+  assert.match(community, /openPanel\("auth", text\.scoreSignInWarning\)/);
+  assert.match(community, /community-result-note/);
+  assert.match(community, /community-auth-notice/);
   assert.match(insights, /toLocaleLowerCase\("tr-TR"\)/);
   assert.match(page, /firstTryCorrect/);
   assert.match(page, /wrongByNote/);

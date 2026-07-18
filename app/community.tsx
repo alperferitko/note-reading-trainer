@@ -7,6 +7,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import {
@@ -25,6 +26,51 @@ import { communityConfigured, supabase } from "@/lib/supabase";
 
 type Locale = "tr" | "en";
 type Panel = "auth" | "account" | "leaderboard" | "legal" | "confirm" | null;
+type AccountStatus = "saved" | "not_better" | "ineligible" | "backend_pending" | null;
+
+const PENDING_SCORE_KEY = "nota-nota-pending-score";
+const PENDING_SCORE_TTL_MS = 24 * 60 * 60 * 1000;
+
+function rememberPendingScore(score: ScoreSubmission) {
+  try {
+    window.localStorage.setItem(PENDING_SCORE_KEY, JSON.stringify({ score, expiresAt: Date.now() + PENDING_SCORE_TTL_MS }));
+  } catch {
+    // Score saving still continues in the current tab when storage is unavailable.
+  }
+}
+
+function readPendingScore(): ScoreSubmission | null {
+  try {
+    const pending = JSON.parse(window.localStorage.getItem(PENDING_SCORE_KEY) ?? "null") as { score?: ScoreSubmission; expiresAt?: number } | null;
+    const score = pending?.score;
+    const valid = Boolean(
+      pending
+      && typeof pending.expiresAt === "number"
+      && pending.expiresAt > Date.now()
+      && score
+      && ["standard", "endless"].includes(score.sessionType)
+      && ["temel", "yakin", "tam"].includes(score.level)
+      && ["porte", "konum"].includes(score.questionMode)
+      && [score.correctCount, score.wrongCount, score.totalResponseTimeMs].every((value) => Number.isFinite(value) && value >= 0),
+    );
+    if (!valid) {
+      clearPendingScore();
+      return null;
+    }
+    return score ?? null;
+  } catch {
+    clearPendingScore();
+    return null;
+  }
+}
+
+function clearPendingScore() {
+  try {
+    window.localStorage.removeItem(PENDING_SCORE_KEY);
+  } catch {
+    // Storage may be unavailable in private browsing modes.
+  }
+}
 
 const TEXT = {
   tr: {
@@ -57,10 +103,13 @@ const TEXT = {
     staff: "Porteden oku",
     position: "Konumu oku",
     saveScore: "Skorumu sıralamaya ekle",
-    signInToSave: "Skoru kaydetmek için giriş yap",
+    guestScoreTitle: "Bu skoru kaybetme.",
+    guestScoreCopy: "E-postayla ücretsiz giriş yaparak skorunu hesabına kaydedebilir ve sıralamaya ekleyebilirsin. E-posta adresin sıralamada görünmez.",
+    scoreSignInWarning: "Bu skoru kaydetmek ve sıralamaya eklemek için önce e-posta adresini doğrulaman gerekiyor.",
     chooseUsername: "Skoru kaydetmek için kullanıcı adı seç",
     saved: "Yeni kişisel rekorun kaydedildi.",
     notBetter: "Bu sonuç mevcut kişisel rekorunu geçmedi.",
+    pendingIneligible: "Bekleyen skor sıralama koşullarını karşılamadı.",
     ineligibleStandard: "Normal sıralamaya yalnızca hiç yanlış yapılmadan tamamlanan oturumlar girer.",
     ineligibleEndless: "Sonsuz sıralamaya yalnızca hiç yanlış yapılmayan oturumlar girer.",
     confirmTitle: "Bu e-posta adresini doğruluyor musun?",
@@ -99,10 +148,13 @@ const TEXT = {
     staff: "Read the staff",
     position: "Read the position",
     saveScore: "Add my score to the leaderboard",
-    signInToSave: "Sign in to save this score",
+    guestScoreTitle: "Keep this score.",
+    guestScoreCopy: "Sign in free by email to save this result to your account and add it to the leaderboard. Your email is never shown publicly.",
+    scoreSignInWarning: "Confirm your email address first to save this score and add it to the leaderboard.",
     chooseUsername: "Choose a username to save this score",
     saved: "Your new personal best was saved.",
     notBetter: "This result did not beat your personal best.",
+    pendingIneligible: "The pending score did not meet the leaderboard requirements.",
     ineligibleStandard: "Only standard sessions completed without a mistake qualify for the leaderboard.",
     ineligibleEndless: "Only endless sessions with no mistakes qualify for the leaderboard.",
     confirmTitle: "Do you confirm this email address?",
@@ -117,7 +169,7 @@ type CommunityContextValue = {
   locale: Locale;
   user: User | null;
   profile: Profile | null;
-  openPanel: (panel: Exclude<Panel, "confirm">) => void;
+  openPanel: (panel: Exclude<Panel, "confirm">, notice?: string) => void;
 };
 
 const CommunityContext = createContext<CommunityContextValue | null>(null);
@@ -135,6 +187,9 @@ export function CommunityProvider({ locale, children }: { locale: Locale; childr
   const [confirmationToken, setConfirmationToken] = useState<string | null>(null);
   const [confirmationMessage, setConfirmationMessage] = useState("");
   const [confirming, setConfirming] = useState(false);
+  const [panelNotice, setPanelNotice] = useState("");
+  const [accountStatus, setAccountStatus] = useState<AccountStatus>(null);
+  const pendingScoreInFlight = useRef(false);
   const text = TEXT[locale];
 
   useEffect(() => {
@@ -161,7 +216,25 @@ export function CommunityProvider({ locale, children }: { locale: Locale; childr
       try {
         const nextProfile = await getMyProfile();
         setProfile(nextProfile);
-        if (!nextProfile) setPanel("account");
+        if (!nextProfile) {
+          setPanel("account");
+          return;
+        }
+
+        const pendingScore = readPendingScore();
+        if (pendingScore && !pendingScoreInFlight.current) {
+          pendingScoreInFlight.current = true;
+          try {
+            const result = await submitBestScore(pendingScore);
+            clearPendingScore();
+            setAccountStatus(result);
+          } catch {
+            setAccountStatus("backend_pending");
+          } finally {
+            pendingScoreInFlight.current = false;
+          }
+          setPanel("account");
+        }
       } catch {
         setProfile(null);
       }
@@ -175,8 +248,15 @@ export function CommunityProvider({ locale, children }: { locale: Locale; childr
     return () => data.subscription.unsubscribe();
   }, []);
 
-  function openPanel(nextPanel: Exclude<Panel, "confirm">) {
+  function openPanel(nextPanel: Exclude<Panel, "confirm">, notice = "") {
+    setPanelNotice(notice);
     setPanel(nextPanel);
+  }
+
+  function closePanel() {
+    setPanel(null);
+    setPanelNotice("");
+    setAccountStatus(null);
   }
 
   async function confirmEmail() {
@@ -200,15 +280,17 @@ export function CommunityProvider({ locale, children }: { locale: Locale; childr
     <CommunityContext.Provider value={{ locale, user, profile, openPanel }}>
       {children}
       {panel && (
-        <Modal title={panelTitle(panel, text)} closeLabel={text.close} onClose={() => setPanel(null)}>
-          {panel === "auth" && <AuthPanel locale={locale} />}
+        <Modal title={panelTitle(panel, text)} closeLabel={text.close} onClose={closePanel}>
+          {panel === "auth" && <AuthPanel locale={locale} notice={panelNotice} />}
           {panel === "account" && (
             <AccountPanel
               locale={locale}
               user={user}
               profile={profile}
               onProfile={(username) => setProfile({ username })}
-              onClose={() => setPanel(null)}
+              notice={accountStatus ? accountStatusCopy(accountStatus, text) : ""}
+              onScoreStatus={setAccountStatus}
+              onClose={closePanel}
             />
           )}
           {panel === "leaderboard" && <LeaderboardPanel locale={locale} />}
@@ -236,6 +318,13 @@ function panelTitle(panel: Panel, text: (typeof TEXT)[Locale]) {
   return text.confirmTitle;
 }
 
+function accountStatusCopy(status: Exclude<AccountStatus, null>, text: (typeof TEXT)[Locale]) {
+  if (status === "saved") return text.saved;
+  if (status === "not_better") return text.notBetter;
+  if (status === "ineligible") return text.pendingIneligible;
+  return text.backendPending;
+}
+
 function Modal({ title, closeLabel, onClose, children }: { title: string; closeLabel: string; onClose: () => void; children: ReactNode }) {
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
@@ -254,7 +343,7 @@ function Modal({ title, closeLabel, onClose, children }: { title: string; closeL
   );
 }
 
-function AuthPanel({ locale }: { locale: Locale }) {
+function AuthPanel({ locale, notice }: { locale: Locale; notice: string }) {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -283,6 +372,7 @@ function AuthPanel({ locale }: { locale: Locale }) {
 
   return (
     <form className="community-form" onSubmit={requestLink}>
+      {notice && <p className="community-auth-notice" role="status">{notice}</p>}
       <p>{text.emailCopy}</p>
       <label htmlFor="community-email">{text.email}</label>
       <input id="community-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" disabled={busy} />
@@ -295,7 +385,7 @@ function AuthPanel({ locale }: { locale: Locale }) {
   );
 }
 
-function AccountPanel({ locale, user, profile, onProfile, onClose }: { locale: Locale; user: User | null; profile: Profile | null; onProfile: (username: string) => void; onClose: () => void }) {
+function AccountPanel({ locale, user, profile, onProfile, notice, onScoreStatus, onClose }: { locale: Locale; user: User | null; profile: Profile | null; onProfile: (username: string) => void; notice: string; onScoreStatus: (status: AccountStatus) => void; onClose: () => void }) {
   const [username, setUsername] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -310,8 +400,18 @@ function AccountPanel({ locale, user, profile, onProfile, onClose }: { locale: L
     setBusy(true);
     try {
       const claimed = await claimUsername(username);
+      const pendingScore = readPendingScore();
+      if (pendingScore) {
+        try {
+          const result = await submitBestScore(pendingScore);
+          clearPendingScore();
+          onScoreStatus(result);
+        } catch {
+          onScoreStatus("backend_pending");
+        }
+      }
       onProfile(claimed);
-      onClose();
+      if (!pendingScore) onClose();
     } catch (error) {
       const detail = error instanceof Error ? error.message : "";
       setMessage(detail.includes("username_taken") ? text.usernameTaken : text.usernameInvalid);
@@ -341,6 +441,7 @@ function AccountPanel({ locale, user, profile, onProfile, onClose }: { locale: L
       {profile ? (
         <>
           <div className="username-display">@{profile.username}</div>
+          {notice && <p className="community-message" aria-live="polite">{notice}</p>}
           <button className="secondary-button" type="button" onClick={() => void signOut()} disabled={busy}>{text.signOut}</button>
         </>
       ) : (
@@ -439,8 +540,14 @@ export function CommunityResult({ score, eligible }: { score: ScoreSubmission; e
   const eligibilityCopy = score.sessionType === "standard" ? text.ineligibleStandard : text.ineligibleEndless;
 
   async function save() {
-    if (!user) return openPanel("auth");
-    if (!profile) return openPanel("account");
+    if (!user) {
+      rememberPendingScore(score);
+      return openPanel("auth", text.scoreSignInWarning);
+    }
+    if (!profile) {
+      rememberPendingScore(score);
+      return openPanel("account");
+    }
     setBusy(true);
     try {
       const result = await submitBestScore(score);
@@ -456,11 +563,12 @@ export function CommunityResult({ score, eligible }: { score: ScoreSubmission; e
     <div className="community-result-card">
       <div>
         <p className="kicker">{text.leaderboard}</p>
-        <strong>{eligible ? text.saveScore : eligibilityCopy}</strong>
+        <strong>{eligible && !user ? text.guestScoreTitle : eligible ? text.saveScore : eligibilityCopy}</strong>
+        {eligible && !user && <p className="community-result-note">{text.guestScoreCopy}</p>}
       </div>
       {eligible && (
         <button type="button" onClick={save} disabled={busy || !communityConfigured}>
-          {!communityConfigured ? text.backendPending : !user ? text.signInToSave : !profile ? text.chooseUsername : text.saveScore}
+          {!communityConfigured ? text.backendPending : !user ? text.saveScore : !profile ? text.chooseUsername : text.saveScore}
         </button>
       )}
       {status && <p className="community-message" aria-live="polite">{status}</p>}

@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import {
+  buildSessionInsight,
+  noteClassFromAnswer,
+  pickDominantConfusion,
+} from "../lib/session-insights.mjs";
 
 async function render() {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
@@ -30,6 +35,7 @@ test("Nota Nota çalışma ekranını sunar", async () => {
 
 test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğunda tutar", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const insights = await readFile(new URL("../lib/session-insights.mjs", import.meta.url), "utf8");
   const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
   const packageJson = await readFile(new URL("../package.json", import.meta.url), "utf8");
   const migration = await readFile(
@@ -47,9 +53,13 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /nextEndlessNote/);
   assert.match(page, /questionKey\.current\+\+/);
   assert.match(page, /<CommunityResult/);
-  assert.match(page, /toLocaleLowerCase\("tr-TR"\)/);
+  assert.match(insights, /toLocaleLowerCase\("tr-TR"\)/);
   assert.match(page, /firstTryCorrect/);
   assert.match(page, /wrongByNote/);
+  assert.match(page, /confusionByPair/);
+  assert.match(page, /pickDominantConfusion/);
+  assert.match(page, /\$\{current\.id\}:\$\{guessed\.letter\}/);
+  assert.match(page, /session-insight/);
   assert.match(page, /Treble clef · natural notes/);
   assert.match(page, /Staff \+ ledger lines/);
   assert.match(page, /letter: "C"/);
@@ -80,4 +90,93 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   );
   assert.match(migration, /profiles_username_format/i);
   assert.match(migration, /security definer/i);
+});
+
+test("geçerli nota cevaplarını karışıklık çiftlerine dönüştürür", () => {
+  assert.deepEqual(noteClassFromAnswer("Do"), { solfege: "Do", letter: "C" });
+  assert.deepEqual(noteClassFromAnswer("c"), { solfege: "Do", letter: "C" });
+  assert.deepEqual(noteClassFromAnswer("Sİ"), { solfege: "Si", letter: "B" });
+  assert.equal(noteClassFromAnswer("emin değilim"), null);
+
+  assert.equal(pickDominantConfusion({ "e4:F": 1 }, 1), null);
+  assert.equal(pickDominantConfusion({ "e4:F": 2, "g4:A": 4 }, 20), null);
+  assert.deepEqual(
+    pickDominantConfusion({ "e4:F": 3, "g4:A": 1 }, 5),
+    { key: "e4:F", count: 3, share: .6 },
+  );
+});
+
+test("sonuç mesajlarını başarı, tamamlanma ve tempoya göre seçer", () => {
+  const perfect = buildSessionInsight({
+    locale: "tr",
+    sessionType: "standard",
+    completed: true,
+    firstTryRate: 100,
+    totalWrong: 0,
+    attemptCount: 9,
+    correctCount: 9,
+    averageResponseMs: 2140,
+  });
+  assert.equal(perfect.title, "Temiz bir ilk okuma.");
+  assert.equal(perfect.tone, "perfect");
+  assert.match(perfect.pace, /2,14 sn/);
+
+  const shortRun = buildSessionInsight({
+    locale: "en",
+    sessionType: "endless",
+    completed: false,
+    firstTryRate: 100,
+    totalWrong: 0,
+    attemptCount: 3,
+    correctCount: 3,
+    averageResponseMs: 3200,
+  });
+  assert.equal(shortRun.title, "A clean start.");
+  assert.doesNotMatch(shortRun.body, /every note/i);
+
+  const rushed = buildSessionInsight({
+    locale: "tr",
+    sessionType: "standard",
+    completed: false,
+    firstTryRate: 44,
+    totalWrong: 5,
+    attemptCount: 9,
+    correctCount: 4,
+    averageResponseMs: 1800,
+  });
+  assert.equal(rushed.title, "Tekrar için net bir rota.");
+  assert.match(rushed.nextStep, /konumu bir an kontrol/);
+
+  const careful = buildSessionInsight({
+    locale: "en",
+    sessionType: "standard",
+    completed: true,
+    firstTryRate: 89,
+    totalWrong: 1,
+    attemptCount: 10,
+    correctCount: 9,
+    averageResponseMs: 9200,
+  });
+  assert.equal(careful.title, "A highly consistent run.");
+  assert.match(careful.nextStep, /Accuracy was strong/);
+
+  const bandCases = [
+    [85, "Oldukça tutarlı bir tur."],
+    [70, "Sağlam bir ilk okuma."],
+    [50, "Doğrular çoğunlukta."],
+    [49, "Tekrar için net bir rota."],
+  ];
+  for (const [firstTryRate, title] of bandCases) {
+    const insight = buildSessionInsight({
+      locale: "tr",
+      sessionType: "standard",
+      completed: true,
+      firstTryRate,
+      totalWrong: 1,
+      attemptCount: 10,
+      correctCount: 9,
+      averageResponseMs: 4200,
+    });
+    assert.equal(insight.title, title);
+  }
 });

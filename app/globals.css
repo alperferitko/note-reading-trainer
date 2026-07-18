@@ -518,9 +518,28 @@ textarea:focus-visible {
 .results-shell { width: min(940px, calc(100% - 32px)); margin: 0 auto; padding: 58px 0 80px; }
 .results-intro { text-align: center; }
 .result-flourish { width: 48px; height: 48px; margin: 0 auto 18px; padding: 11px; }
-.results-intro h1 { font-size: clamp(52px, 8vw, 82px); }
+.results-intro h1 { max-width: 900px; margin-inline: auto; font-size: clamp(44px, 6.5vw, 74px); line-height: .96; text-wrap: balance; }
 .results-intro > p:last-child { color: var(--ink-soft); }
-.results-card { margin-top: 36px; padding: 30px; display: grid; grid-template-columns: 190px 1fr; align-items: center; gap: 32px; border: 1px solid var(--line); border-radius: 22px; background: var(--card); box-shadow: 0 16px 38px rgba(18, 52, 45, .07); }
+.session-insight { margin-top: 34px; padding: 24px 26px; display: grid; gap: 22px; border: 1px solid var(--line); border-left: 5px solid var(--sage-deep); border-radius: 18px; background: rgba(255, 250, 243, .82); box-shadow: 0 14px 34px rgba(18, 52, 45, .06); }
+.session-insight--split { grid-template-columns: minmax(0, .9fr) minmax(280px, 1.1fr); align-items: stretch; }
+.session-insight--perfect { border-left-color: var(--green); background: linear-gradient(135deg, rgba(220, 238, 229, .82), rgba(255, 250, 243, .9)); }
+.session-insight--strong { border-left-color: #4f8b72; }
+.session-insight--steady { border-left-color: var(--sage-deep); }
+.session-insight--building { border-left-color: #d49a52; }
+.session-insight--review { border-left-color: var(--coral); }
+.session-insight-copy { min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+.session-insight-copy > p { margin: 0; font-family: var(--serif); font-size: clamp(20px, 3vw, 27px); line-height: 1.25; letter-spacing: -.025em; }
+.session-insight-copy > strong { width: fit-content; margin-top: 14px; padding: 7px 11px; border-radius: 999px; background: var(--sage); color: var(--ink); font-size: 10px; letter-spacing: .035em; }
+.session-insight-copy > span { max-width: 580px; margin-top: 12px; color: var(--ink-soft); font-size: 12px; line-height: 1.55; }
+.confusion-insight { min-width: 0; padding: 18px 20px; border-radius: 14px; background: var(--paper-light); border: 1px solid rgba(18, 52, 45, .1); }
+.confusion-insight .kicker { margin-bottom: 10px; }
+.confusion-insight > p:not(.kicker) { margin: 10px 0 0; color: var(--ink-soft); font-size: 12px; line-height: 1.5; }
+.confusion-insight > small { display: block; margin-top: 8px; color: var(--sage-deep); font-size: 10px; line-height: 1.45; }
+.confusion-pair { display: flex; align-items: center; gap: 8px; }
+.confusion-pair b { min-width: 42px; height: 34px; padding: 0 12px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; background: var(--ink); color: white; font-family: var(--serif); font-size: 17px; line-height: 1; }
+.confusion-pair b:last-child { background: var(--coral); }
+.confusion-pair span { color: var(--coral); font-size: 18px; line-height: 1; }
+.results-card { margin-top: 18px; padding: 30px; display: grid; grid-template-columns: 190px 1fr; align-items: center; gap: 32px; border: 1px solid var(--line); border-radius: 22px; background: var(--card); box-shadow: 0 16px 38px rgba(18, 52, 45, .07); }
 .score-ring { width: 156px; height: 156px; margin: auto; padding: 12px; border-radius: 50%; background: conic-gradient(var(--coral) var(--score), var(--sage) 0); user-select: none; -webkit-user-select: none; caret-color: transparent; }
 .score-ring > div { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%; background: var(--card); }
 .score-ring strong { font-family: var(--serif); font-size: 42px; line-height: 1; }
@@ -668,6 +687,10 @@ footer span:first-child { font-family: var(--serif); font-size: 14px; text-trans
   .text-button { margin-top: 5px; }
 
   .results-shell { padding-top: 42px; }
+  .results-intro h1 { font-size: clamp(38px, 12vw, 54px); }
+  .session-insight,
+  .session-insight--split { grid-template-columns: 1fr; padding: 20px 16px; }
+  .session-insight-copy > p { font-size: 21px; }
   .results-card { grid-template-columns: 1fr; padding: 24px 18px; }
   .stats-grid { border: 0; border-top: 1px solid var(--line); }
   .hardest-card { grid-template-columns: 1fr; }

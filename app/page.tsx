@@ -3,6 +3,13 @@
 import { FormEvent, MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import { CommunityHeader, CommunityLegalLink, CommunityProvider, CommunityResult } from "./community";
 import type { ScoreSubmission, SessionType } from "@/lib/leaderboard";
+import {
+  buildSessionInsight,
+  normalizeNoteAnswer,
+  noteClassFromAnswer,
+  noteClassFromLetter,
+  pickDominantConfusion,
+} from "@/lib/session-insights.mjs";
 
 type LevelId = "temel" | "yakin" | "tam";
 type ModeId = "porte" | "konum";
@@ -23,6 +30,9 @@ type QueuedQuestion = {
   misses: number;
   note: NoteQuestion;
 };
+
+type AnswerNoteClass = NonNullable<ReturnType<typeof noteClassFromAnswer>>;
+type AnswerFeedback = { correct: boolean; note: NoteQuestion; guessed: AnswerNoteClass | null };
 
 type Copy = {
   homeLabel: string;
@@ -52,11 +62,13 @@ type Copy = {
   incorrect: string;
   correctCopy: (name: string) => string;
   wrongPrefix: string;
+  wrongGuess: (name: string) => string;
   wrongSuffix: string;
   next: string;
   results: string;
   endSession: string;
   sessionComplete: string;
+  sessionSummary: string;
   greatWork: string;
   completedCopy: (level: string) => string;
   firstTry: string;
@@ -67,6 +79,10 @@ type Copy = {
   reviewList: string;
   hardest: string;
   wrongCount: (count: number) => string;
+  patternEyebrow: string;
+  confusionCopy: (expected: string, location: string, guessed: string) => string;
+  confusionNext: string;
+  reviewFocus: (name: string, location: string) => string;
   perfect: string;
   repeat: string;
   changeLevel: string;
@@ -106,11 +122,13 @@ const COPY: Record<Locale, Copy> = {
     incorrect: "Yanlış",
     correctCopy: (name) => `${name} notasını bildin.`,
     wrongPrefix: "Doğru cevap",
+    wrongGuess: (name) => `Sen ${name} yanıtını verdin.`,
     wrongSuffix: "Bu nota listenin sonuna eklendi.",
     next: "Sonraki",
     results: "Sonuçlar",
     endSession: "Oturumu bitir",
     sessionComplete: "Oturum tamamlandı",
+    sessionSummary: "Oturum özeti",
     greatWork: "Harika iş!",
     completedCopy: (level) => `${level} listesindeki bütün notaları en az bir kez doğru cevapladın.`,
     firstTry: "ilk deneme",
@@ -121,6 +139,10 @@ const COPY: Record<Locale, Copy> = {
     reviewList: "Tekrar listesi",
     hardest: "En çok zorlayan notalar",
     wrongCount: (count) => `${count} yanlış`,
+    patternEyebrow: "Bu turdaki örüntü",
+    confusionCopy: (expected, location, guessed) => `Bu turda ${location} görünen ${expected} için en sık ${guessed} yanıtını verdin.`,
+    confusionNext: "Sonraki turda bu iki konumu yan yana karşılaştırabilirsin.",
+    reviewFocus: (name, location) => `${location} görünen ${name}, bu turda en çok tekrar isteyen notaydı.`,
     perfect: "Hiç yanlış yok. Bu oturum pürüzsüz geçti!",
     repeat: "Aynı ayarlarla yeniden çalış",
     changeLevel: "Seviyeyi değiştir",
@@ -158,11 +180,13 @@ const COPY: Record<Locale, Copy> = {
     incorrect: "Incorrect",
     correctCopy: (name) => `You identified ${name} correctly.`,
     wrongPrefix: "The correct answer is",
+    wrongGuess: (name) => `You answered ${name}.`,
     wrongSuffix: "This note was moved to the end of the queue.",
     next: "Next",
     results: "Results",
     endSession: "End session",
     sessionComplete: "Session complete",
+    sessionSummary: "Session summary",
     greatWork: "Nicely done!",
     completedCopy: (level) => `You correctly identified every note in the ${level} range at least once.`,
     firstTry: "first try",
@@ -173,6 +197,10 @@ const COPY: Record<Locale, Copy> = {
     reviewList: "Review list",
     hardest: "Notes to revisit",
     wrongCount: (count) => `${count} incorrect`,
+    patternEyebrow: "Pattern from this run",
+    confusionCopy: (expected, location, guessed) => `For ${expected} ${location}, your most frequent answer was ${guessed}.`,
+    confusionNext: "Next time, try comparing those two staff positions side by side.",
+    reviewFocus: (name, location) => `${name} ${location} was the note that called for the most review in this run.`,
     perfect: "Perfect run — no incorrect answers.",
     repeat: "Practise again with the same settings",
     changeLevel: "Change range",
@@ -270,13 +298,7 @@ function nextEndlessNote(pool: NoteQuestion[], previous?: NoteQuestion) {
 }
 
 function normalizeAnswer(value: string) {
-  return value
-    .trim()
-    .toLocaleLowerCase("tr-TR")
-    .replaceAll("ı", "i")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z]/g, "");
+  return normalizeNoteAnswer(value);
 }
 
 function noteName(note: NoteQuestion, locale: Locale) {
@@ -380,8 +402,9 @@ export default function Home() {
   const [sessionType, setSessionType] = useState<SessionType>("standard");
   const [queue, setQueue] = useState<QueuedQuestion[]>([]);
   const [answer, setAnswer] = useState("");
-  const [feedback, setFeedback] = useState<{ correct: boolean; note: NoteQuestion } | null>(null);
+  const [feedback, setFeedback] = useState<AnswerFeedback | null>(null);
   const [wrongByNote, setWrongByNote] = useState<Record<string, number>>({});
+  const [confusionByPair, setConfusionByPair] = useState<Record<string, number>>({});
   const [firstTryCorrect, setFirstTryCorrect] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [totalWrong, setTotalWrong] = useState(0);
@@ -409,6 +432,19 @@ export default function Home() {
       .slice(0, 4)
       .map(([id, count]) => ({ note: ALL_NOTES.find((item) => item.id === id)!, count }));
   }, [wrongByNote]);
+
+  const dominantConfusion = useMemo(() => {
+    const dominant = pickDominantConfusion(confusionByPair, totalWrong);
+    if (!dominant) return null;
+
+    const separator = dominant.key.lastIndexOf(":");
+    const expectedId = dominant.key.slice(0, separator);
+    const guessedLetter = dominant.key.slice(separator + 1) as NoteQuestion["letter"];
+    const expected = ALL_NOTES.find((note) => note.id === expectedId);
+    if (!expected) return null;
+
+    return { ...dominant, expected, guessed: noteClassFromLetter(guessedLetter) };
+  }, [confusionByPair, totalWrong]);
 
   useEffect(() => {
     const requestedLocale = new URLSearchParams(window.location.search).get("lang");
@@ -444,6 +480,7 @@ export default function Home() {
     }));
     setQueue(initialQueue);
     setWrongByNote({});
+    setConfusionByPair({});
     setFirstTryCorrect(0);
     setCorrectCount(0);
     setTotalWrong(0);
@@ -472,11 +509,11 @@ export default function Home() {
     if (!current || !currentItem || feedback || !normalizeAnswer(nextAnswer)) return;
 
     const elapsed = Math.max(100, answeredAt - questionStartedAt);
-    const normalized = normalizeAnswer(nextAnswer);
-    const correct = normalized === normalizeAnswer(current.solfege) || normalized === normalizeAnswer(current.letter);
+    const guessed = noteClassFromAnswer(nextAnswer);
+    const correct = guessed?.letter === current.letter;
     setAnswer(nextAnswer);
     setAnswerTimes((times) => [...times, elapsed]);
-    setFeedback({ correct, note: current });
+    setFeedback({ correct, note: current, guessed });
 
     if (correct) {
       if (currentItem.misses === 0) setFirstTryCorrect((count) => count + 1);
@@ -490,6 +527,10 @@ export default function Home() {
       });
     } else {
       setWrongByNote((values) => ({ ...values, [current.id]: (values[current.id] ?? 0) + 1 }));
+      if (guessed) {
+        const confusionKey = `${current.id}:${guessed.letter}`;
+        setConfusionByPair((values) => ({ ...values, [confusionKey]: (values[confusionKey] ?? 0) + 1 }));
+      }
       setTotalWrong((count) => count + 1);
       setQueue((items) => [...items.slice(1), { ...items[0], misses: items[0].misses + 1 }]);
     }
@@ -524,11 +565,23 @@ export default function Home() {
   });
 
   const totalResponseTimeMs = answerTimes.reduce((sum, value) => sum + value, 0);
+  const averageResponseMs = answerTimes.length ? totalResponseTimeMs / answerTimes.length : 0;
   const averageTime = answerTimes.length
-    ? `${(totalResponseTimeMs / answerTimes.length / 1000).toFixed(2).replace(".", locale === "tr" ? "," : ".")} ${copy.seconds}`
+    ? `${(averageResponseMs / 1000).toFixed(2).replace(".", locale === "tr" ? "," : ".")} ${copy.seconds}`
     : `0${locale === "tr" ? "," : "."}00 ${copy.seconds}`;
   const rateDenominator = sessionType === "standard" ? uniqueCount : correctCount;
   const firstTryRate = rateDenominator ? Math.round((firstTryCorrect / rateDenominator) * 100) : 0;
+  const completedStandardSession = sessionType === "standard" && !endedEarly && correctCount === uniqueCount;
+  const sessionInsight = buildSessionInsight({
+    locale,
+    sessionType,
+    completed: completedStandardSession,
+    firstTryRate,
+    totalWrong,
+    attemptCount: answerTimes.length,
+    correctCount,
+    averageResponseMs,
+  });
   const leaderboardEligible = totalWrong === 0 && correctCount > 0 && (sessionType === "endless" || correctCount === uniqueCount);
   const scoreSubmission: ScoreSubmission = {
     sessionType,
@@ -707,7 +760,11 @@ export default function Home() {
                   {feedback.correct ? (
                     <p>{copy.correctCopy(noteName(feedback.note, locale))}</p>
                   ) : (
-                    <p>{copy.wrongPrefix} <b>{noteName(feedback.note, locale)}</b> — {feedback.note.location[locale]}. {copy.wrongSuffix}</p>
+                    <p>
+                      {copy.wrongPrefix} <b>{noteName(feedback.note, locale)}</b> — {feedback.note.location[locale]}.{" "}
+                      {feedback.guessed && copy.wrongGuess(locale === "tr" ? feedback.guessed.solfege : feedback.guessed.letter)}{" "}
+                      {copy.wrongSuffix}
+                    </p>
                   )}
                 </div>
                 <button type="button" onClick={nextQuestion}>{sessionType === "endless" || queue.length ? copy.next : copy.results} <span aria-hidden="true">→</span></button>
@@ -723,10 +780,38 @@ export default function Home() {
         <section className="results-shell">
           <div className="results-intro">
             <span className="result-flourish" aria-hidden="true"><UiIcon name="note" /></span>
-            <p className="kicker">{copy.sessionComplete}</p>
-            <h1>{copy.greatWork}</h1>
+            <p className="kicker">{completedStandardSession ? copy.sessionComplete : copy.sessionSummary}</p>
+            <h1>{sessionInsight.title}</h1>
             <p>{sessionType === "endless" ? extra.endedSession(correctCount) : endedEarly ? extra.stoppedSession(correctCount) : copy.completedCopy(selectedLevel.title)}</p>
           </div>
+
+          <aside className={`session-insight session-insight--${sessionInsight.tone} ${totalWrong > 0 && hardestNotes[0] ? "session-insight--split" : ""}`} aria-label={copy.sessionSummary}>
+            <div className="session-insight-copy">
+              <p>{sessionInsight.body}</p>
+              {sessionInsight.pace && <strong>{sessionInsight.pace}</strong>}
+              {sessionInsight.nextStep && <span>{sessionInsight.nextStep}</span>}
+            </div>
+            {totalWrong > 0 && hardestNotes[0] && (
+              <div className="confusion-insight">
+                <p className="kicker">{copy.patternEyebrow}</p>
+                {dominantConfusion ? (
+                  <>
+                    <div className="confusion-pair" aria-label={`${noteName(dominantConfusion.expected, locale)} → ${locale === "tr" ? dominantConfusion.guessed.solfege : dominantConfusion.guessed.letter}`}>
+                      <b>{noteName(dominantConfusion.expected, locale)}</b><span aria-hidden="true">→</span><b>{locale === "tr" ? dominantConfusion.guessed.solfege : dominantConfusion.guessed.letter}</b>
+                    </div>
+                    <p>{copy.confusionCopy(
+                      noteName(dominantConfusion.expected, locale),
+                      dominantConfusion.expected.location[locale],
+                      locale === "tr" ? dominantConfusion.guessed.solfege : dominantConfusion.guessed.letter,
+                    )}</p>
+                    <small>{copy.confusionNext}</small>
+                  </>
+                ) : (
+                  <p>{copy.reviewFocus(noteName(hardestNotes[0].note, locale), hardestNotes[0].note.location[locale])}</p>
+                )}
+              </div>
+            )}
+          </aside>
 
           <div className="results-card">
             <div className="score-ring" style={{ "--score": `${firstTryRate * 3.6}deg` } as React.CSSProperties}>

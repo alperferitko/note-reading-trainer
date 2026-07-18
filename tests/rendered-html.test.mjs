@@ -60,6 +60,9 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /pickDominantConfusion/);
   assert.match(page, /\$\{current\.id\}:\$\{guessed\.letter\}/);
   assert.match(page, /session-insight/);
+  assert.doesNotMatch(page, /level-indicator/);
+  assert.doesNotMatch(styles, /translateY\(-2px\)/);
+  assert.doesNotMatch(styles, /inset 0 4px var\(--coral\)/);
   assert.match(page, /Treble clef · natural notes/);
   assert.match(page, /Staff \+ ledger lines/);
   assert.match(page, /letter: "C"/);

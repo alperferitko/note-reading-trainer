@@ -642,7 +642,6 @@ export default function Home() {
                   <span className="level-top"><small>{item.eyebrow}</small><b>{item.count} {locale === "tr" ? "nota" : "notes"}</b></span>
                   <strong>{item.title}</strong>
                   <span>{item.description}</span>
-                  <i className="level-indicator" aria-hidden="true">{level === item.id && <UiIcon name="check" />}</i>
                 </button>
               ))}
             </div>

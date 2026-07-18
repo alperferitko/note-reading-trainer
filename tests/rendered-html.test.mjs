@@ -63,6 +63,9 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /answerTimes\.length === 0 \? copy\.noAnswers/);
   assert.match(page, /score-ring-progress/);
   assert.match(styles, /@keyframes score-ring-fill/);
+  assert.match(page, /className="brand-mark" aria-hidden="true">♪<\/span>/);
+  assert.match(styles, /font-family: "Bodoni MT", Didot/);
+  assert.match(styles, /\.brand-mark \{[\s\S]*background: transparent;[\s\S]*text-shadow: none;/);
   assert.doesNotMatch(page, /level-indicator/);
   assert.doesNotMatch(styles, /translateY\(-2px\)/);
   assert.doesNotMatch(styles, /inset 0 4px var\(--coral\)/);

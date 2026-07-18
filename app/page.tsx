@@ -603,7 +603,7 @@ export default function Home() {
     <main className="app-shell">
       <header className="site-header">
         <button className="brand" type="button" onClick={() => setStage("setup")} aria-label={copy.homeLabel}>
-          <span className="brand-mark" aria-hidden="true"><UiIcon name="note" /></span>
+          <span className="brand-mark" aria-hidden="true">♪</span>
           <span>Nota Nota</span>
         </button>
         <div className="header-actions">

@@ -523,8 +523,13 @@ textarea:focus-visible {
 .confusion-pair b:last-child { background: var(--coral); }
 .confusion-pair span { color: var(--coral); font-size: 18px; line-height: 1; }
 .results-card { margin-top: 18px; padding: 30px; display: grid; grid-template-columns: 190px 1fr; align-items: center; gap: 32px; border: 1px solid var(--line); border-radius: 22px; background: var(--card); box-shadow: 0 16px 38px rgba(18, 52, 45, .07); }
-.score-ring { width: 156px; height: 156px; margin: auto; padding: 12px; border-radius: 50%; background: conic-gradient(var(--coral) var(--score), var(--sage) 0); user-select: none; -webkit-user-select: none; caret-color: transparent; }
-.score-ring > div { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%; background: var(--card); }
+.score-ring { position: relative; width: 156px; height: 156px; margin: auto; display: grid; place-items: center; border-radius: 50%; user-select: none; -webkit-user-select: none; caret-color: transparent; }
+.score-ring > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; transform: rotate(-90deg); }
+.score-ring-track,
+.score-ring-progress { fill: none; stroke-width: 11; }
+.score-ring-track { stroke: var(--sage); }
+.score-ring-progress { stroke: var(--coral); animation: score-ring-fill .9s cubic-bezier(.22, 1, .36, 1) .12s both; }
+.score-ring-copy { position: relative; z-index: 1; width: 124px; height: 124px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%; background: var(--card); }
 .score-ring strong { font-family: var(--serif); font-size: 42px; line-height: 1; }
 .score-ring span { margin-top: 5px; color: var(--ink-soft); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; }
 .stats-grid { display: grid; grid-template-columns: 1fr 1fr; border-left: 1px solid var(--line); }
@@ -543,6 +548,7 @@ textarea:focus-visible {
 .hardest-list b { color: var(--coral); font-size: 10px; }
 .note-pill { width: 34px; height: 34px; display: inline-grid; place-items: center; border-radius: 50%; background: var(--ink); color: white; font-family: var(--serif); font-weight: 700; line-height: 1; }
 .perfect-copy { color: var(--green); font-family: var(--serif); font-size: 18px; }
+.perfect-copy--empty { color: var(--ink-soft); }
 .result-actions { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; }
 .result-actions .primary-button { margin-top: 18px; }
 .secondary-button { min-height: 56px; margin-top: 18px; border: 1px solid var(--ink); border-radius: 14px; background: rgba(255, 255, 255, .3); font-weight: 700; }
@@ -602,6 +608,7 @@ footer span:first-child { font-family: var(--serif); font-size: 14px; text-trans
 }
 
 @keyframes endless-progress { to { background-position: -200% 0; } }
+@keyframes score-ring-fill { from { stroke-dashoffset: 100; } }
 
 @media (max-width: 1080px) {
   .session-meta { display: none; }

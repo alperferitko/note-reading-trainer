@@ -60,6 +60,9 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /pickDominantConfusion/);
   assert.match(page, /\$\{current\.id\}:\$\{guessed\.letter\}/);
   assert.match(page, /session-insight/);
+  assert.match(page, /answerTimes\.length === 0 \? copy\.noAnswers/);
+  assert.match(page, /score-ring-progress/);
+  assert.match(styles, /@keyframes score-ring-fill/);
   assert.doesNotMatch(page, /level-indicator/);
   assert.doesNotMatch(styles, /translateY\(-2px\)/);
   assert.doesNotMatch(styles, /inset 0 4px var\(--coral\)/);

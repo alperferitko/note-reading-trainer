@@ -84,6 +84,8 @@ type Copy = {
   confusionNext: string;
   reviewFocus: (name: string, location: string) => string;
   perfect: string;
+  noAnswers: string;
+  cleanSoFar: string;
   repeat: string;
   changeLevel: string;
   footer: string;
@@ -144,6 +146,8 @@ const COPY: Record<Locale, Copy> = {
     confusionNext: "Sonraki turda bu iki konumu yan yana karşılaştırabilirsin.",
     reviewFocus: (name, location) => `${location} görünen ${name}, bu turda en çok tekrar isteyen notaydı.`,
     perfect: "Hiç yanlış yok. Bu oturum pürüzsüz geçti!",
+    noAnswers: "Henüz cevap verilmedi. Bu oturum için tekrar verisi oluşmadı.",
+    cleanSoFar: "Yanıtladığın notalarda yanlış yok.",
     repeat: "Aynı ayarlarla yeniden çalış",
     changeLevel: "Seviyeyi değiştir",
     footer: "Ezber değil, akıcılık.",
@@ -202,6 +206,8 @@ const COPY: Record<Locale, Copy> = {
     confusionNext: "Next time, try comparing those two staff positions side by side.",
     reviewFocus: (name, location) => `${name} ${location} was the note that called for the most review in this run.`,
     perfect: "Perfect run — no incorrect answers.",
+    noAnswers: "No answers yet. This session did not produce any review data.",
+    cleanSoFar: "No incorrect answers among the notes you attempted.",
     repeat: "Practise again with the same settings",
     changeLevel: "Change range",
     footer: "Build fluency, not guesswork.",
@@ -813,8 +819,12 @@ export default function Home() {
           </aside>
 
           <div className="results-card">
-            <div className="score-ring" style={{ "--score": `${firstTryRate * 3.6}deg` } as React.CSSProperties}>
-              <div><strong>%{firstTryRate}</strong><span>{copy.firstTry}</span></div>
+            <div className="score-ring">
+              <svg viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+                <circle className="score-ring-track" cx="60" cy="60" r="52" pathLength="100" />
+                <circle className="score-ring-progress" cx="60" cy="60" r="52" pathLength="100" strokeDasharray="100" strokeDashoffset={100 - firstTryRate} />
+              </svg>
+              <div className="score-ring-copy"><strong>%{firstTryRate}</strong><span>{copy.firstTry}</span></div>
             </div>
             <div className="stats-grid">
               <Stat label={sessionType === "standard" ? copy.uniqueQuestions : extra.correctAnswers} value={sessionType === "standard" ? uniqueCount : correctCount} />
@@ -835,7 +845,9 @@ export default function Home() {
                 ))}
               </div>
             ) : (
-              <p className="perfect-copy">{copy.perfect}</p>
+              <p className={`perfect-copy ${answerTimes.length === 0 ? "perfect-copy--empty" : ""}`}>
+                {answerTimes.length === 0 ? copy.noAnswers : completedStandardSession ? copy.perfect : copy.cleanSoFar}
+              </p>
             )}
           </div>
 

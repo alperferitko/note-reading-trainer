@@ -9,6 +9,7 @@ export const supabase = communityConfigured
   ? createClient(url!, publishableKey!, {
       auth: {
         detectSessionInUrl: true,
+        flowType: "implicit",
         persistSession: true,
         autoRefreshToken: true,
       },

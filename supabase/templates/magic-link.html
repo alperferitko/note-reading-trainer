@@ -1,15 +1,52 @@
-<!doctype html>
-<html lang="tr">
-  <body style="margin:0;background:#f4f0e6;color:#1d2925;font-family:Arial,sans-serif">
-    <div style="max-width:560px;margin:0 auto;padding:40px 24px">
-      <div style="font-family:Georgia,serif;font-size:28px;font-weight:700">♪ Nota Nota</div>
-      <div style="margin-top:24px;padding:32px;background:#fffdf8;border:1px solid #d8d4c9">
-        <h1 style="margin:0;font-family:Georgia,serif;font-size:30px">Bu e-posta adresini doğruluyor musun?</h1>
-        <p style="line-height:1.6;color:#58625e">Nota Nota hesabına giriş yapmak için aşağıdaki düğmeyi kullan. Bağlantı tek kullanımlıktır.</p>
-        <p style="line-height:1.6;color:#58625e">Use the button below to confirm this email and sign in to Nota Nota. The link can only be used once.</p>
-        <a href="{{ .RedirectTo }}/?token_hash={{ .TokenHash }}&amp;type=email" style="display:inline-block;margin-top:12px;padding:15px 22px;background:#1d2925;color:#fffdf8;text-decoration:none;font-weight:700">E-postamı doğrula · Confirm my email</a>
-        <p style="margin:24px 0 0;color:#58625e;font-size:12px;line-height:1.5">Bu isteği sen yapmadıysan e-postayı yok sayabilirsin.</p>
-      </div>
-    </div>
-  </body>
-</html>
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">Nota Nota hesabına güvenli giriş bağlantın hazır.</div>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#f4f0e6;color:#1d2925;font-family:Arial,'Helvetica Neue',sans-serif">
+      <tr>
+        <td align="center" style="padding:38px 16px">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:600px">
+            <tr>
+              <td style="padding:0 4px 18px">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td width="42" height="42" align="center" valign="middle" style="width:42px;height:42px;border-radius:50%;background:#e35f45;color:#fffdf8;font-family:Georgia,serif;font-size:24px;font-weight:bold">♪</td>
+                    <td style="padding-left:12px;font-family:Georgia,'Times New Roman',serif;font-size:25px;font-weight:bold;letter-spacing:-0.5px;color:#1d2925">Nota Nota</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="border:1px solid #d8d4c9;border-radius:6px;background:#fffdf8;box-shadow:10px 12px 0 rgba(29,41,37,0.05)">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td style="padding:42px 42px 18px">
+                      <div style="margin-bottom:14px;color:#e35f45;font-size:11px;font-weight:bold;letter-spacing:2px;text-transform:uppercase">Güvenli giriş · Secure sign-in</div>
+                      <h1 style="margin:0;color:#1d2925;font-family:Georgia,'Times New Roman',serif;font-size:36px;line-height:1.08;letter-spacing:-1.2px;font-weight:600">Bu e-posta adresini<br>doğruluyor musun?</h1>
+                      <p style="margin:22px 0 0;color:#58625e;font-size:16px;line-height:1.65">Nota Nota hesabına şifresiz giriş yapmak için aşağıdaki düğmeye dokun. Bağlantı kısa süreli ve tek kullanımlıdır.</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 42px 32px">
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                        <tr>
+                          <td style="border-radius:3px;background:#1d2925">
+                            <a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&amp;type=email" style="display:inline-block;padding:16px 24px;color:#fffdf8;font-size:14px;font-weight:bold;text-decoration:none">E-postamı doğrula&nbsp;&nbsp;<span style="color:#f1a493">→</span></a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="border-top:1px solid #e5e0d5;padding:26px 42px 34px">
+                      <p style="margin:0;color:#58625e;font-size:13px;line-height:1.6"><strong style="color:#1d2925">English</strong><br>Use the button above to confirm this email and securely sign in. This link is short-lived and can only be used once.</p>
+                      <p style="margin:22px 0 0;color:#7a817e;font-size:12px;line-height:1.55">Bu isteği sen yapmadıysan bu e-postayı güvenle yok sayabilirsin. E-posta adresin reklam veya pazarlama amacıyla kullanılmaz.</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:26px 20px 0;color:#7a817e;font-size:11px;line-height:1.5">© Nota Nota · Doğal notaları daha akıcı oku.</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+</table>

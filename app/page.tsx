@@ -479,8 +479,8 @@ export default function Home() {
 
   const totalResponseTimeMs = answerTimes.reduce((sum, value) => sum + value, 0);
   const averageTime = answerTimes.length
-    ? `${(totalResponseTimeMs / answerTimes.length / 1000).toFixed(1).replace(".", locale === "tr" ? "," : ".")} ${copy.seconds}`
-    : `0${locale === "tr" ? "," : "."}0 ${copy.seconds}`;
+    ? `${(totalResponseTimeMs / answerTimes.length / 1000).toFixed(2).replace(".", locale === "tr" ? "," : ".")} ${copy.seconds}`
+    : `0${locale === "tr" ? "," : "."}00 ${copy.seconds}`;
   const rateDenominator = sessionType === "standard" ? uniqueCount : correctCount;
   const firstTryRate = rateDenominator ? Math.round((firstTryCorrect / rateDenominator) * 100) : 0;
   const leaderboardEligible = totalWrong === 0 && correctCount > 0 && (sessionType === "endless" || correctCount === uniqueCount);

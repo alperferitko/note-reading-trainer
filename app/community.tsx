@@ -36,7 +36,8 @@ const TEXT = {
     emailCopy: "Sana tek kullanımlık bir doğrulama bağlantısı göndereceğiz. Şifre gerekmiyor.",
     email: "E-posta adresi",
     sendLink: "Doğrulama bağlantısı gönder",
-    age: "Devam ederek 13 yaşında veya daha büyük olduğunu ve KVKK Aydınlatma Metni'ni okuduğunu onaylarsın.",
+    sendingLink: "Gönderiliyor…",
+    privacyAssurance: "E-posta adresini satmayız ve reklam ya da pazarlama amacıyla paylaşmayız. Yalnızca güvenli giriş için hizmet sağlayıcılarımız tarafından işlenir.",
     linkSent: "Bağlantı gönderildi. Gelen kutunu kontrol et.",
     backendPending: "Topluluk özellikleri özel kurulum tamamlanınca açılacak.",
     usernameTitle: "Kullanıcı adını seç",
@@ -77,7 +78,8 @@ const TEXT = {
     emailCopy: "We will send you a one-time verification link. No password is required.",
     email: "Email address",
     sendLink: "Send verification link",
-    age: "By continuing, you confirm that you are 13 or older and have read the KVKK Privacy Notice.",
+    sendingLink: "Sending…",
+    privacyAssurance: "We never sell your email or share it for advertising or marketing. It is processed by our service providers only to provide secure sign-in.",
     linkSent: "Link sent. Check your inbox.",
     backendPending: "Community features will open after the private setup is complete.",
     usernameTitle: "Choose your username",
@@ -165,7 +167,7 @@ export function CommunityProvider({ locale, children }: { locale: Locale; childr
       }
     }
 
-    void supabase.auth.getUser().then(({ data }) => synchronize(data.user));
+    void supabase.auth.getSession().then(({ data }) => synchronize(data.session?.user ?? null));
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       window.setTimeout(() => void synchronize(session?.user ?? null), 0);
     });
@@ -250,7 +252,6 @@ function Modal({ title, closeLabel, onClose, children }: { title: string; closeL
 
 function AuthPanel({ locale }: { locale: Locale }) {
   const [email, setEmail] = useState("");
-  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const { openPanel } = useCommunity();
@@ -280,16 +281,12 @@ function AuthPanel({ locale }: { locale: Locale }) {
     <form className="community-form" onSubmit={requestLink}>
       <p>{text.emailCopy}</p>
       <label htmlFor="community-email">{text.email}</label>
-      <input id="community-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" />
-      <div className="age-check">
-        <input id="community-age" type="checkbox" checked={ageConfirmed} onChange={(event) => setAgeConfirmed(event.target.checked)} required />
-        <label htmlFor="community-age">{text.age}</label>
-        <button type="button" onClick={() => openPanel("legal")}>{text.legal}</button>
-      </div>
-      <button className="primary-button" type="submit" disabled={busy || !email.trim() || !ageConfirmed}>
-        {text.sendLink} <span aria-hidden="true">→</span>
+      <input id="community-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" disabled={busy} />
+      <button className="primary-button" type="submit" disabled={busy || !email.trim()} aria-busy={busy}>
+        {busy ? text.sendingLink : text.sendLink} <span aria-hidden="true">{busy ? "…" : "→"}</span>
       </button>
       <p className="community-message" aria-live="polite">{message}</p>
+      <p className="community-fineprint">{text.privacyAssurance} <button type="button" onClick={() => openPanel("legal")}>{text.legal}</button></p>
     </form>
   );
 }
@@ -319,6 +316,18 @@ function AccountPanel({ locale, user, profile, onProfile, onClose }: { locale: L
     }
   }
 
+  async function signOut() {
+    if (!supabase) return;
+    setBusy(true);
+    const { error } = await supabase.auth.signOut();
+    setBusy(false);
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+    onClose();
+  }
+
   if (!communityConfigured) return <p>{text.backendPending}</p>;
   if (!user) return <p>{text.emailCopy}</p>;
 
@@ -328,7 +337,7 @@ function AccountPanel({ locale, user, profile, onProfile, onClose }: { locale: L
       {profile ? (
         <>
           <div className="username-display">@{profile.username}</div>
-          <button className="secondary-button" type="button" onClick={() => void supabase?.auth.signOut()}>{text.signOut}</button>
+          <button className="secondary-button" type="button" onClick={() => void signOut()} disabled={busy}>{text.signOut}</button>
         </>
       ) : (
         <form className="community-form" onSubmit={save}>
@@ -472,8 +481,8 @@ function LegalNotice({ locale }: { locale: Locale }) {
       <p>{isTurkish ? "E-posta adresi yalnızca şifresiz hesap doğrulaması ve hesap güvenliği için; 3–7 karakterli kullanıcı adı ile en iyi oturum skorları leaderboard için işlenir. E-posta leaderboard’da yayımlanmaz. Hizmet reklam veya pazarlama profili oluşturmaz." : "Email is processed only for passwordless account verification and account security. A 3–7 character username and personal-best session scores are processed for the leaderboard. Email is never published on the leaderboard. The service does not build advertising or marketing profiles."}</p>
       <h3>{isTurkish ? "Toplama yöntemi, hukuki sebep ve aktarım" : "Collection, legal basis, and transfers"}</h3>
       <p>{isTurkish ? "Veriler hesap oluşturma ve çalışma oturumları sırasında elektronik olarak toplanır. Hesap ve leaderboard hizmetinin kurulması/ifası ile hizmet güvenliğine ilişkin meşru menfaat dayanakları taslak olarak esas alınmıştır. Kimlik doğrulama ve veritabanı hizmetleri Supabase; e-posta teslimi Resend veya yapılandırılacak SMTP sağlayıcısı üzerinden yürütülecektir. Bu sağlayıcılar yurt dışında veri işleyebilir; KVKK madde 9 kapsamındaki uygun güvence süreci tamamlanmadan hizmet kamuya açılmayacaktır." : "Data is collected electronically during account creation and practice sessions. This draft relies on service performance and legitimate interests in service security. Authentication and database services will use Supabase; email delivery will use Resend or the configured SMTP provider. These processors may handle data abroad; the public service will not open until the applicable KVKK Article 9 safeguard process is complete."}</p>
-      <h3>{isTurkish ? "Saklama, yaş sınırı ve güvenlik" : "Retention, age, and security"}</h3>
-      <p>{isTurkish ? "Hesap, kullanıcı adı ve kişisel rekorlar hesap silinene kadar saklanır. Tek kullanımlık giriş bağlantıları kısa süreli ve tek kullanımlıdır. Hizmet yalnızca 13 yaş ve üzeri kullanıcılar içindir; 13 yaş altı kişiler hesap oluşturmamalıdır. Zorunlu oturum verileri dışında takip/analiz çerezi kullanılmaz." : "The account, username, and personal-best scores are retained until the account is deleted. Sign-in links are short-lived and single-use. The service is for users aged 13 and over; children under 13 must not create an account. No tracking or analytics cookies are used beyond essential authentication storage."}</p>
+      <h3>{isTurkish ? "Saklama ve güvenlik" : "Retention and security"}</h3>
+      <p>{isTurkish ? "Hesap, kullanıcı adı ve kişisel rekorlar hesap silinene kadar saklanır. Tek kullanımlık giriş bağlantıları kısa süreli ve tek kullanımlıdır. E-posta adresleri satılmaz; reklam veya pazarlama amacıyla paylaşılmaz. Güvenli girişin sağlanması için yalnızca Supabase ve yapılandırılan e-posta teslim sağlayıcısı tarafından işlenir. Zorunlu oturum verileri dışında takip/analiz çerezi kullanılmaz." : "The account, username, and personal-best scores are retained until the account is deleted. Sign-in links are short-lived and single-use. Email addresses are never sold or shared for advertising or marketing. They are processed only by Supabase and the configured email delivery provider to provide secure sign-in. No tracking or analytics cookies are used beyond essential authentication storage."}</p>
       <h3>{isTurkish ? "Haklar ve başvuru" : "Rights and requests"}</h3>
       <p>{isTurkish ? "KVKK madde 11 kapsamındaki erişim, düzeltme, silme, işleme ve aktarıma ilişkin bilgi alma ile itiraz hakların için kvkk@notanota.online adresine başvurabilirsin. Başvurular en geç 30 gün içinde sonuçlandırılır. Kamuya açılmadan önce posta/KEP başvuru adresi buraya eklenecektir." : "You may contact kvkk@notanota.online regarding access, correction, deletion, processing and transfer information, and objection rights under KVKK Article 11. Requests are answered within 30 days. A postal/KEP application address will be added before public launch."}</p>
     </article>

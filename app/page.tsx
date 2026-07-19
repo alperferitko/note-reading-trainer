@@ -220,11 +220,13 @@ const EXTRA_COPY = {
     sessionEyebrow: "Oturum türü",
     chooseSession: "Nasıl bir oturum istiyorsun?",
     standard: { title: "Normal mod", description: "Bütün notaları hatasız ve olabildiğince hızlı tamamla" },
-    endless: { title: "Sonsuz mod", description: "Sen bitirene kadar rastgele notalarla devam et" },
-    endlessSetupNote: "Bol şans — ritmini bul ve istediğin kadar devam et!",
+    endless: { title: "Sonsuz mod", description: "İlk yanlışına kadar rastgele notalarla devam et" },
+    endlessSetupNote: "Bol şans — ilk yanlış seriyi bitirir!",
     correctAnswers: "Doğru cevap",
     noMistakes: "Hatasız seri",
-    endedSession: (count: number) => `Sonsuz oturumu ${count} doğru cevapla tamamladın.`,
+    endlessResultTitle: "Seri sona erdi.",
+    totalTime: "Toplam süre",
+    endedSession: (count: number, time: string) => `${count} doğru cevap · ${time}`,
     stoppedSession: (count: number) => `Oturumu ${count} doğru cevapla bitirdin.`,
     endlessProgress: "Sonsuz çalışma",
   },
@@ -232,11 +234,13 @@ const EXTRA_COPY = {
     sessionEyebrow: "Session type",
     chooseSession: "How long do you want to practise?",
     standard: { title: "Standard mode", description: "Complete every note perfectly and as quickly as possible" },
-    endless: { title: "Endless mode", description: "Keep receiving random notes until you choose to stop" },
-    endlessSetupNote: "Good luck — find your rhythm and keep going as long as you like!",
+    endless: { title: "Endless mode", description: "Keep receiving random notes until your first mistake" },
+    endlessSetupNote: "Good luck — the first mistake ends the streak!",
     correctAnswers: "Correct answers",
     noMistakes: "Perfect streak",
-    endedSession: (count: number) => `You ended the endless session with ${count} correct answers.`,
+    endlessResultTitle: "Streak complete.",
+    totalTime: "Total time",
+    endedSession: (count: number, time: string) => `${count} correct ${count === 1 ? "answer" : "answers"} · ${time}`,
     stoppedSession: (count: number) => `You ended the session with ${count} correct answers.`,
     endlessProgress: "Endless practice",
   },
@@ -519,9 +523,9 @@ export default function Home() {
     const correct = guessed?.letter === current.letter;
     setAnswer(nextAnswer);
     setAnswerTimes((times) => [...times, elapsed]);
-    setFeedback({ correct, note: current, guessed });
 
     if (correct) {
+      setFeedback({ correct: true, note: current, guessed });
       if (currentItem.misses === 0) setFirstTryCorrect((count) => count + 1);
       setCorrectCount((count) => count + 1);
       setQueue((items) => {
@@ -538,6 +542,12 @@ export default function Home() {
         setConfusionByPair((values) => ({ ...values, [confusionKey]: (values[confusionKey] ?? 0) + 1 }));
       }
       setTotalWrong((count) => count + 1);
+      if (sessionType === "endless") {
+        setFeedback(null);
+        setStage("done");
+        return;
+      }
+      setFeedback({ correct: false, note: current, guessed });
       setQueue((items) => [...items.slice(1), { ...items[0], misses: items[0].misses + 1 }]);
     }
   }
@@ -575,6 +585,7 @@ export default function Home() {
   const averageTime = answerTimes.length
     ? `${(averageResponseMs / 1000).toFixed(2).replace(".", locale === "tr" ? "," : ".")} ${copy.seconds}`
     : `0${locale === "tr" ? "," : "."}00 ${copy.seconds}`;
+  const totalTime = `${(totalResponseTimeMs / 1000).toFixed(2).replace(".", locale === "tr" ? "," : ".")} ${copy.seconds}`;
   const rateDenominator = sessionType === "standard" ? uniqueCount : correctCount;
   const firstTryRate = rateDenominator ? Math.round((firstTryCorrect / rateDenominator) * 100) : 0;
   const completedStandardSession = sessionType === "standard" && !endedEarly && correctCount === uniqueCount;
@@ -786,11 +797,11 @@ export default function Home() {
           <div className="results-intro">
             <span className="result-flourish" aria-hidden="true"><UiIcon name="note" /></span>
             <p className="kicker">{completedStandardSession ? copy.sessionComplete : copy.sessionSummary}</p>
-            <h1>{sessionInsight.title}</h1>
-            <p>{sessionType === "endless" ? extra.endedSession(correctCount) : endedEarly ? extra.stoppedSession(correctCount) : copy.completedCopy(selectedLevel.title)}</p>
+            <h1>{sessionType === "endless" ? extra.endlessResultTitle : sessionInsight.title}</h1>
+            <p>{sessionType === "endless" ? extra.endedSession(correctCount, totalTime) : endedEarly ? extra.stoppedSession(correctCount) : copy.completedCopy(selectedLevel.title)}</p>
           </div>
 
-          <aside className={`session-insight session-insight--${sessionInsight.tone} ${totalWrong > 0 && hardestNotes[0] ? "session-insight--split" : ""}`} aria-label={copy.sessionSummary}>
+          {sessionType === "standard" && <aside className={`session-insight session-insight--${sessionInsight.tone} ${totalWrong > 0 && hardestNotes[0] ? "session-insight--split" : ""}`} aria-label={copy.sessionSummary}>
             <div className="session-insight-copy">
               <p>{sessionInsight.body}</p>
               {sessionInsight.pace && <strong>{sessionInsight.pace}</strong>}
@@ -816,9 +827,14 @@ export default function Home() {
                 )}
               </div>
             )}
-          </aside>
+          </aside>}
 
-          <div className="results-card">
+          {sessionType === "endless" ? (
+            <div className="endless-results-card">
+              <Stat label={extra.correctAnswers} value={correctCount} accent />
+              <Stat label={extra.totalTime} value={totalTime} />
+            </div>
+          ) : <div className="results-card">
             <div className="score-ring">
               <svg viewBox="0 0 120 120" aria-hidden="true" focusable="false">
                 <circle className="score-ring-track" cx="60" cy="60" r="52" pathLength="100" />
@@ -832,11 +848,11 @@ export default function Home() {
               <Stat label={copy.totalWrong} value={totalWrong} />
               <Stat label={copy.averageResponse} value={averageTime} />
             </div>
-          </div>
+          </div>}
 
           <CommunityResult score={scoreSubmission} eligible={leaderboardEligible} />
 
-          <div className="hardest-card">
+          {sessionType === "standard" && <div className="hardest-card">
             <div><p className="kicker">{copy.reviewList}</p><h2>{copy.hardest}</h2></div>
             {hardestNotes.length ? (
               <div className="hardest-list">
@@ -849,7 +865,7 @@ export default function Home() {
                 {answerTimes.length === 0 ? copy.noAnswers : completedStandardSession ? copy.perfect : copy.cleanSoFar}
               </p>
             )}
-          </div>
+          </div>}
 
           <div className="result-actions">
             <button className="primary-button" type="button" onClick={startSession}>{copy.repeat} <span>↻</span></button>

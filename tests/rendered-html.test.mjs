@@ -52,6 +52,10 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   );
   assert.match(page, /sessionType === "endless"/);
   assert.match(page, /nextEndlessNote/);
+  assert.match(page, /if \(sessionType === "endless"\) \{[\s\S]*setFeedback\(null\);[\s\S]*setStage\("done"\);[\s\S]*return;/);
+  assert.match(page, /sessionType === "endless" \? \([\s\S]*className="endless-results-card"/);
+  assert.match(page, /extra\.endedSession\(correctCount, totalTime\)/);
+  assert.match(styles, /\.endless-results-card/);
   assert.match(page, /questionKey\.current\+\+/);
   assert.match(page, /<CommunityResult/);
   assert.match(community, /nota-nota-pending-score/);

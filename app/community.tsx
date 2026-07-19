@@ -466,6 +466,35 @@ function LeaderboardPanel({ locale }: { locale: Locale }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const text = TEXT[locale];
+  const labels = locale === "tr" ? {
+    session: "Oturum",
+    range: "Çalışma alanı",
+    question: "Soru biçimi",
+    current: "Gösterilen kategori",
+    player: "Oyuncu",
+    result: "Sonuç",
+    levels: {
+      temel: "Temel porte",
+      yakin: "Yakın çevre",
+      tam: "Tam doğal sesler",
+    },
+    standardRule: "Bütün notaları hatasız tamamlayanlar · en hızlı süre kazanır",
+    endlessRule: "Hatasız en uzun seri · eşitlikte daha hızlı tempo öne geçer",
+  } : {
+    session: "Session",
+    range: "Practice range",
+    question: "Question style",
+    current: "Current category",
+    player: "Player",
+    result: "Result",
+    levels: {
+      temel: "Notes on the staff",
+      yakin: "Staff + ledger lines",
+      tam: "Full natural range",
+    },
+    standardRule: "Perfect completed runs · the fastest time wins",
+    endlessRule: "Longest perfect streak · speed breaks a tie",
+  };
 
   useEffect(() => {
     if (!communityConfigured) return;
@@ -482,35 +511,52 @@ function LeaderboardPanel({ locale }: { locale: Locale }) {
 
   return (
     <div className="leaderboard-panel">
-      <div className="leaderboard-filters">
-        <select aria-label={locale === "tr" ? "Oturum türü" : "Session type"} value={sessionType} onChange={(event) => setSessionType(event.target.value as SessionType)}>
-          <option value="standard">{text.standard}</option>
-          <option value="endless">{text.endless}</option>
-        </select>
-        <select aria-label={locale === "tr" ? "Çalışma alanı" : "Practice range"} value={level} onChange={(event) => setLevel(event.target.value as PracticeLevel)}>
-          <option value="temel">{locale === "tr" ? "Temel porte" : "Notes on the staff"}</option>
-          <option value="yakin">{locale === "tr" ? "Yakın çevre" : "Staff + ledger lines"}</option>
-          <option value="tam">{locale === "tr" ? "Tam doğal sesler" : "Full natural range"}</option>
-        </select>
-        <select aria-label={locale === "tr" ? "Soru biçimi" : "Question style"} value={questionMode} onChange={(event) => setQuestionMode(event.target.value as QuestionMode)}>
-          <option value="porte">{text.staff}</option>
-          <option value="konum">{text.position}</option>
-        </select>
+      <div className="leaderboard-controls">
+        <fieldset className="leaderboard-filter-group">
+          <legend>{labels.session}</legend>
+          <div className="leaderboard-segments leaderboard-segments--two">
+            <button type="button" aria-pressed={sessionType === "standard"} onClick={() => setSessionType("standard")}>{text.standard}</button>
+            <button type="button" aria-pressed={sessionType === "endless"} onClick={() => setSessionType("endless")}>{text.endless}</button>
+          </div>
+        </fieldset>
+        <fieldset className="leaderboard-filter-group">
+          <legend>{labels.range}</legend>
+          <div className="leaderboard-segments leaderboard-segments--three">
+            {(Object.keys(labels.levels) as PracticeLevel[]).map((item) => (
+              <button key={item} type="button" aria-pressed={level === item} onClick={() => setLevel(item)}>{labels.levels[item]}</button>
+            ))}
+          </div>
+        </fieldset>
+        <fieldset className="leaderboard-filter-group">
+          <legend>{labels.question}</legend>
+          <div className="leaderboard-segments leaderboard-segments--two">
+            <button type="button" aria-pressed={questionMode === "porte"} onClick={() => setQuestionMode("porte")}>{text.staff}</button>
+            <button type="button" aria-pressed={questionMode === "konum"} onClick={() => setQuestionMode("konum")}>{text.position}</button>
+          </div>
+        </fieldset>
+      </div>
+      <div className="leaderboard-current-view">
+        <p>{labels.current}</p>
+        <strong>{text[sessionType]} · {labels.levels[level]} · {questionMode === "porte" ? text.staff : text.position}</strong>
+        <span>{sessionType === "standard" ? labels.standardRule : labels.endlessRule}</span>
       </div>
       {!communityConfigured ? <p>{text.backendPending}</p> : loading ? <p>{text.loading}</p> : message ? <p>{message}</p> : rows.length ? (
-        <ol className="leaderboard-list">
-          {rows.map((row) => (
-            <li key={`${row.rank}-${row.username}`}>
-              <b>{row.rank}</b>
-              <strong>@{row.username}</strong>
-              {sessionType === "standard" ? (
-                <span>{formatSeconds(row.total_response_time_ms, locale)}</span>
-              ) : (
-                <span>{row.correct_count} {locale === "tr" ? "doğru" : "correct"} · {formatSeconds(row.average_response_time_ms, locale)} / {locale === "tr" ? "nota" : "note"}</span>
-              )}
-            </li>
-          ))}
-        </ol>
+        <div className="leaderboard-table">
+          <div className="leaderboard-table-head" aria-hidden="true"><span>#</span><span>{labels.player}</span><span>{labels.result}</span></div>
+          <ol className="leaderboard-list">
+            {rows.map((row) => (
+              <li key={`${row.rank}-${row.username}`}>
+                <b>#{row.rank}</b>
+                <strong>@{row.username}</strong>
+                {sessionType === "standard" ? (
+                  <span>{formatSeconds(row.total_response_time_ms, locale)}</span>
+                ) : (
+                  <span>{row.correct_count} {locale === "tr" ? "doğru" : "correct"} · {formatSeconds(row.average_response_time_ms, locale)} / {locale === "tr" ? "nota" : "note"}</span>
+                )}
+              </li>
+            ))}
+          </ol>
+        </div>
       ) : <p>{text.boardEmpty}</p>}
     </div>
   );

@@ -59,6 +59,10 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(community, /openPanel\("auth", text\.scoreSignInWarning\)/);
   assert.match(community, /community-result-note/);
   assert.match(community, /community-auth-notice/);
+  assert.doesNotMatch(community, /<select/);
+  assert.match(community, /leaderboard-segments/);
+  assert.match(community, /aria-pressed=\{sessionType === "standard"\}/);
+  assert.match(community, /leaderboard-current-view/);
   assert.match(insights, /toLocaleLowerCase\("tr-TR"\)/);
   assert.match(page, /firstTryCorrect/);
   assert.match(page, /wrongByNote/);
@@ -69,6 +73,10 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /answerTimes\.length === 0 \? copy\.noAnswers/);
   assert.match(page, /score-ring-progress/);
   assert.match(styles, /@keyframes score-ring-fill/);
+  assert.match(styles, /\.selection-indicator::after[\s\S]*opacity: 0;[\s\S]*transform: scale\(\.35\)/);
+  assert.match(styles, /\.mode-card\.is-selected \.selection-indicator::after[\s\S]*opacity: 1;[\s\S]*transform: scale\(1\)/);
+  assert.match(styles, /\.level-card\.is-selected \.range-preview-note[\s\S]*transition-delay: \.1s/);
+  assert.match(page, /Bol şans — her doğru cevap biraz daha akıcılık!/);
   assert.match(page, /className="brand-mark" aria-hidden="true">♪<\/span>/);
   assert.match(styles, /font-family: "Bodoni MT", Didot/);
   assert.match(styles, /\.brand-mark \{[\s\S]*background: transparent;[\s\S]*text-shadow: none;/);

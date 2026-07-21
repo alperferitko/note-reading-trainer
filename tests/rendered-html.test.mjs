@@ -88,6 +88,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /answerTimes\.length === 0 \? copy\.noAnswers/);
   assert.match(page, /score-ring-progress/);
   assert.match(styles, /@keyframes score-ring-fill/);
+  assert.match(styles, /\.score-ring-progress \{[\s\S]*stroke-linecap: round;/);
   assert.match(styles, /\.selection-indicator::after[\s\S]*opacity: 0;[\s\S]*transform: scale\(\.35\)/);
   assert.match(styles, /\.mode-card\.is-selected \.selection-indicator::after[\s\S]*opacity: 1;[\s\S]*transform: scale\(1\)/);
   assert.match(styles, /\.level-card\.is-selected \.range-preview-note[\s\S]*transition-delay: \.1s/);

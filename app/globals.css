@@ -537,7 +537,7 @@ textarea:focus-visible {
 .score-ring-track,
 .score-ring-progress { fill: none; stroke-width: 11; }
 .score-ring-track { stroke: var(--sage); }
-.score-ring-progress { stroke: var(--coral); animation: score-ring-fill .9s cubic-bezier(.22, 1, .36, 1) .12s both; }
+.score-ring-progress { stroke: var(--coral); stroke-linecap: round; animation: score-ring-fill .9s cubic-bezier(.22, 1, .36, 1) .12s both; }
 .score-ring-copy { position: relative; z-index: 1; width: 124px; height: 124px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%; background: var(--card); }
 .score-ring strong { font-family: var(--serif); font-size: 42px; line-height: 1; }
 .score-ring span { margin-top: 5px; color: var(--ink-soft); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; }

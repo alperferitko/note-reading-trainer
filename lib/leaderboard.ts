@@ -1,7 +1,7 @@
 import { supabase } from "./supabase";
 
 export type SessionType = "standard" | "endless";
-export type PracticeLevel = "temel" | "yakin" | "tam";
+export type PracticeLevel = "temel" | "yakin" | "tam" | "genis";
 export type QuestionMode = "porte" | "konum";
 
 export type Profile = {

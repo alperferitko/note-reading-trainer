@@ -17,7 +17,7 @@ create table if not exists public.best_scores (
   id bigint generated always as identity primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
   session_type text not null check (session_type in ('standard', 'endless')),
-  level text not null check (level in ('temel', 'yakin', 'tam')),
+  level text not null check (level in ('temel', 'yakin', 'tam', 'genis')),
   question_mode text not null check (question_mode in ('porte', 'konum')),
   correct_count integer not null check (correct_count > 0),
   total_response_time_ms integer not null check (total_response_time_ms > 0),
@@ -107,7 +107,7 @@ begin
   end if;
 
   if p_session_type not in ('standard', 'endless')
-     or p_level not in ('temel', 'yakin', 'tam')
+     or p_level not in ('temel', 'yakin', 'tam', 'genis')
      or p_question_mode not in ('porte', 'konum') then
     raise exception 'invalid_category';
   end if;
@@ -115,7 +115,8 @@ begin
   v_expected_count := case p_level
     when 'temel' then 9
     when 'yakin' then 13
-    else 15
+    when 'tam' then 15
+    else 25
   end;
 
   if p_wrong_count <> 0

@@ -477,6 +477,7 @@ function LeaderboardPanel({ locale }: { locale: Locale }) {
       temel: "Temel porte",
       yakin: "Yakın çevre",
       tam: "Tam doğal sesler",
+      genis: "Geniş porte",
     },
     standardRule: "Bütün notaları hatasız tamamlayanlar · en hızlı süre kazanır",
     endlessRule: "Hatasız en uzun seri · eşitlikte daha hızlı tempo öne geçer",
@@ -491,6 +492,7 @@ function LeaderboardPanel({ locale }: { locale: Locale }) {
       temel: "Notes on the staff",
       yakin: "Staff + ledger lines",
       tam: "Full natural range",
+      genis: "Extended ledger range",
     },
     standardRule: "Perfect completed runs · the fastest time wins",
     endlessRule: "Longest perfect streak · speed breaks a tie",
@@ -521,7 +523,7 @@ function LeaderboardPanel({ locale }: { locale: Locale }) {
         </fieldset>
         <fieldset className="leaderboard-filter-group">
           <legend>{labels.range}</legend>
-          <div className="leaderboard-segments leaderboard-segments--three">
+          <div className="leaderboard-segments leaderboard-segments--levels">
             {(Object.keys(labels.levels) as PracticeLevel[]).map((item) => (
               <button key={item} type="button" aria-pressed={level === item} onClick={() => setLevel(item)}>{labels.levels[item]}</button>
             ))}

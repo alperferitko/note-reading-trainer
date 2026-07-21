@@ -30,6 +30,7 @@ test("Nota Nota çalışma ekranını sunar", async () => {
   assert.match(html, /Notayı gör/);
   assert.match(html, /Temel porte/);
   assert.match(html, /Tam doğal sesler/);
+  assert.match(html, /Geniş porte/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
 });
 
@@ -43,6 +44,10 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
     new URL("../supabase/migrations/202607170001_notanota_community.sql", import.meta.url),
     "utf8",
   );
+  const extendedLevelMigration = await readFile(
+    new URL("../supabase/migrations/202607210001_add_extended_ledger_level.sql", import.meta.url),
+    "utf8",
+  );
 
   assert.match(page, /shuffledWithoutRuns/);
   assert.match(page, /Math\.abs\(item\.position - previous\.position\) !== 1/);
@@ -52,6 +57,12 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   );
   assert.match(page, /sessionType === "endless"/);
   assert.match(page, /nextEndlessNote/);
+  assert.match(page, /type LevelId = "temel" \| "yakin" \| "tam" \| "genis"/);
+  assert.match(page, /id: "d3"[\s\S]*position: -8/);
+  assert.match(page, /id: "g6"[\s\S]*position: 16/);
+  assert.match(page, /id: "genis"[\s\S]*count: 25/);
+  assert.match(page, /ledgerPositionsFor/);
+  assert.match(page, /\[-8, -6, -4, -2, 10, 12, 14, 16\]/);
   assert.match(page, /if \(sessionType === "endless"\) \{[\s\S]*setFeedback\(null\);[\s\S]*setStage\("done"\);[\s\S]*return;/);
   assert.match(page, /sessionType === "endless" \? \([\s\S]*className="endless-results-card"/);
   assert.match(page, /extra\.endedSession\(correctCount, totalTime\)/);
@@ -82,8 +93,10 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.level-card\.is-selected \.range-preview-note[\s\S]*transition-delay: \.1s/);
   assert.match(page, /Bol şans — her doğru cevap biraz daha akıcılık!/);
   assert.match(page, /className="brand-mark" aria-hidden="true">♪<\/span>/);
+  assert.match(page, /className="brand-mark result-flourish" aria-hidden="true">♪<\/span>/);
+  assert.doesNotMatch(page, /name="note"/);
   assert.match(styles, /font-family: "Bodoni MT", Didot/);
-  assert.match(styles, /\.brand-mark \{[\s\S]*background: transparent;[\s\S]*text-shadow: none;/);
+  assert.match(styles, /\.brand-mark \{[\s\S]*background: var\(--coral\);[\s\S]*text-shadow: none;/);
   assert.doesNotMatch(page, /level-indicator/);
   assert.doesNotMatch(styles, /translateY\(-2px\)/);
   assert.doesNotMatch(styles, /inset 0 4px var\(--coral\)/);
@@ -103,6 +116,9 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.doesNotMatch(page, /window\.visualViewport|window\.scrollBy|quiz-keyboard-open/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
   assert.match(migration, /p_wrong_count <> 0/i);
+  assert.match(migration, /'temel', 'yakin', 'tam', 'genis'/i);
+  assert.match(extendedLevelMigration, /best_scores_level_check/i);
+  assert.match(extendedLevelMigration, /when 'tam' then 15[\s\S]*else 25/i);
   assert.match(
     migration,
     /p_session_type = 'standard' and p_correct_count <> v_expected_count/i,

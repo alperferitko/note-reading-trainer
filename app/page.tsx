@@ -11,7 +11,7 @@ import {
   pickDominantConfusion,
 } from "@/lib/session-insights.mjs";
 
-type LevelId = "temel" | "yakin" | "tam";
+type LevelId = "temel" | "yakin" | "tam" | "genis";
 type ModeId = "porte" | "konum";
 type Stage = "setup" | "quiz" | "done";
 type Locale = "tr" | "en";
@@ -247,6 +247,12 @@ const EXTRA_COPY = {
 } as const;
 
 const ALL_NOTES: NoteQuestion[] = [
+  { id: "d3", solfege: "Re", letter: "D", position: -8, location: { tr: "portenin altındaki 4. ek çizgi üzerinde", en: "on the fourth ledger line below the staff" }, shortLocation: { tr: "Alt 4. ek çizgi", en: "4th ledger line below" } },
+  { id: "e3", solfege: "Mi", letter: "E", position: -7, location: { tr: "alttaki 4. ve 3. ek çizgilerin arasındaki aralıkta", en: "in the space between the fourth and third ledger lines below the staff" }, shortLocation: { tr: "Alt 4.–3. ek çizgi arası", en: "Between 4th–3rd ledger lines below" } },
+  { id: "f3", solfege: "Fa", letter: "F", position: -6, location: { tr: "portenin altındaki 3. ek çizgi üzerinde", en: "on the third ledger line below the staff" }, shortLocation: { tr: "Alt 3. ek çizgi", en: "3rd ledger line below" } },
+  { id: "g3", solfege: "Sol", letter: "G", position: -5, location: { tr: "alttaki 3. ve 2. ek çizgilerin arasındaki aralıkta", en: "in the space between the third and second ledger lines below the staff" }, shortLocation: { tr: "Alt 3.–2. ek çizgi arası", en: "Between 3rd–2nd ledger lines below" } },
+  { id: "a3", solfege: "La", letter: "A", position: -4, location: { tr: "portenin altındaki 2. ek çizgi üzerinde", en: "on the second ledger line below the staff" }, shortLocation: { tr: "Alt 2. ek çizgi", en: "2nd ledger line below" } },
+  { id: "b3", solfege: "Si", letter: "B", position: -3, location: { tr: "alttaki 2. ve 1. ek çizgilerin arasındaki aralıkta", en: "in the space between the second and first ledger lines below the staff" }, shortLocation: { tr: "Alt 2.–1. ek çizgi arası", en: "Between 2nd–1st ledger lines below" } },
   { id: "c4", solfege: "Do", letter: "C", position: -2, location: { tr: "portenin altındaki 1. ek çizgi üzerinde", en: "on the first ledger line below the staff" }, shortLocation: { tr: "Alt 1. ek çizgi", en: "1st ledger line below" } },
   { id: "d4", solfege: "Re", letter: "D", position: -1, location: { tr: "1. çizginin altındaki aralıkta", en: "in the space below the staff" }, shortLocation: { tr: "1. çizginin altı", en: "Space below the staff" } },
   { id: "e4", solfege: "Mi", letter: "E", position: 0, location: { tr: "1. çizgi üzerinde", en: "on the first line" }, shortLocation: { tr: "1. çizgi", en: "1st line" } },
@@ -262,6 +268,10 @@ const ALL_NOTES: NoteQuestion[] = [
   { id: "a5", solfege: "La", letter: "A", position: 10, location: { tr: "portenin üstündeki 1. ek çizgi üzerinde", en: "on the first ledger line above the staff" }, shortLocation: { tr: "Üst 1. ek çizgi", en: "1st ledger line above" } },
   { id: "b5", solfege: "Si", letter: "B", position: 11, location: { tr: "1. ek çizginin üstündeki aralıkta", en: "in the space above the first ledger line" }, shortLocation: { tr: "Üst ek çizginin üstü", en: "Above the 1st ledger line" } },
   { id: "c6", solfege: "Do", letter: "C", position: 12, location: { tr: "portenin üstündeki 2. ek çizgi üzerinde", en: "on the second ledger line above the staff" }, shortLocation: { tr: "Üst 2. ek çizgi", en: "2nd ledger line above" } },
+  { id: "d6", solfege: "Re", letter: "D", position: 13, location: { tr: "üstteki 2. ve 3. ek çizgilerin arasındaki aralıkta", en: "in the space between the second and third ledger lines above the staff" }, shortLocation: { tr: "Üst 2.–3. ek çizgi arası", en: "Between 2nd–3rd ledger lines above" } },
+  { id: "e6", solfege: "Mi", letter: "E", position: 14, location: { tr: "portenin üstündeki 3. ek çizgi üzerinde", en: "on the third ledger line above the staff" }, shortLocation: { tr: "Üst 3. ek çizgi", en: "3rd ledger line above" } },
+  { id: "f6", solfege: "Fa", letter: "F", position: 15, location: { tr: "üstteki 3. ve 4. ek çizgilerin arasındaki aralıkta", en: "in the space between the third and fourth ledger lines above the staff" }, shortLocation: { tr: "Üst 3.–4. ek çizgi arası", en: "Between 3rd–4th ledger lines above" } },
+  { id: "g6", solfege: "Sol", letter: "G", position: 16, location: { tr: "portenin üstündeki 4. ek çizgi üzerinde", en: "on the fourth ledger line above the staff" }, shortLocation: { tr: "Üst 4. ek çizgi", en: "4th ledger line above" } },
 ];
 
 const LEVELS: Record<Locale, { id: LevelId; eyebrow: string; title: string; description: string; count: number }[]> = {
@@ -269,17 +279,20 @@ const LEVELS: Record<Locale, { id: LevelId; eyebrow: string; title: string; desc
     { id: "temel", eyebrow: "Seviye 1", title: "Temel porte", description: "Beş çizgi ve dört aralıktaki notalar", count: 9 },
     { id: "yakin", eyebrow: "Seviye 2", title: "Yakın çevre", description: "Temel porte, komşu aralıklar ve yakın ek çizgiler", count: 13 },
     { id: "tam", eyebrow: "Seviye 3", title: "Tam doğal sesler", description: "Alt Do’dan üst Do’ya bütün doğal notalar", count: 15 },
+    { id: "genis", eyebrow: "Seviye 4", title: "Geniş porte", description: "Alt ve üstte dörder ek çizgiye kadar bütün doğal notalar", count: 25 },
   ],
   en: [
     { id: "temel", eyebrow: "Level 1", title: "Notes on the staff", description: "The nine notes on the five lines and four spaces", count: 9 },
     { id: "yakin", eyebrow: "Level 2", title: "Staff + ledger lines", description: "The staff, adjacent spaces, and the nearest ledger lines", count: 13 },
     { id: "tam", eyebrow: "Level 3", title: "Full natural range", description: "Every natural note from middle C to high C", count: 15 },
+    { id: "genis", eyebrow: "Level 4", title: "Extended ledger range", description: "Every natural note through four ledger lines above and below", count: 25 },
   ],
 };
 
 function questionsFor(level: LevelId) {
   if (level === "temel") return ALL_NOTES.filter((note) => note.position >= 0 && note.position <= 8);
   if (level === "yakin") return ALL_NOTES.filter((note) => note.position >= -2 && note.position <= 10);
+  if (level === "tam") return ALL_NOTES.filter((note) => note.position >= -2 && note.position <= 12);
   return ALL_NOTES;
 }
 
@@ -315,15 +328,7 @@ function noteName(note: NoteQuestion, locale: Locale) {
   return locale === "tr" ? note.solfege : note.letter;
 }
 
-function UiIcon({ name }: { name: "note" | "check" | "close" }) {
-  if (name === "note") {
-    return (
-      <svg className="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path d="M16.8 3.2v10.4a3.9 3.9 0 1 1-1.8-3.28V6.05L9.4 7.48v8.07a3.9 3.9 0 1 1-1.8-3.28V6.08L16.8 3.2Z" fill="currentColor" />
-      </svg>
-    );
-  }
-
+function UiIcon({ name }: { name: "check" | "close" }) {
   if (name === "check") {
     return (
       <svg className="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -343,36 +348,48 @@ const RANGE_PREVIEW_POSITIONS: Record<LevelId, number[]> = {
   temel: [0, 2, 4, 6, 8],
   yakin: [-2, 1, 4, 7, 10],
   tam: [-2, 1, 5, 8, 12],
+  genis: [-8, -4, 4, 10, 16],
 };
+
+function ledgerPositionsFor(position: number) {
+  return [-8, -6, -4, -2, 10, 12, 14, 16].filter((ledger) => (
+    ledger < 0 ? position <= ledger : position >= ledger
+  ));
+}
+
+function rangePreviewTop(level: LevelId, position: number) {
+  return level === "genis" ? 34 - position * 1.8 : 50 - position * 4;
+}
 
 function RangePreview({ level }: { level: LevelId }) {
   return (
     <span className="range-preview" aria-hidden="true">
       <span className="range-preview-clef">𝄞</span>
       <span className="range-preview-lines" />
-      {RANGE_PREVIEW_POSITIONS[level].map((position, index) => (
-        <span
-          className={`range-preview-note ${position <= -2 || position >= 10 ? "has-ledger" : ""}`}
-          key={position}
-          style={{ left: `${35 + index * 13}%`, top: `${50 - position * 4}px` }}
-        />
-      ))}
+      {RANGE_PREVIEW_POSITIONS[level].map((position, index) => {
+        const left = `${35 + index * 13}%`;
+        return (
+          <span className="range-preview-mark" key={position}>
+            {ledgerPositionsFor(position).map((ledger) => (
+              <i className="range-preview-ledger" key={ledger} style={{ left, top: `${rangePreviewTop(level, ledger)}px` }} />
+            ))}
+            <i className="range-preview-note" style={{ left, top: `${rangePreviewTop(level, position)}px` }} />
+          </span>
+        );
+      })}
     </span>
   );
 }
 
 function Staff({ note, locale, compact = false }: { note: NoteQuestion; locale: Locale; compact?: boolean }) {
-  const step = compact ? 10 : 14;
-  const firstLineY = compact ? 72 : 98;
+  const step = compact ? 8 : 12;
+  const firstLineY = compact ? 67 : 126;
   const noteY = firstLineY - note.position * (step / 2);
   const lineWidth = compact ? 240 : 390;
   const startX = compact ? 34 : 42;
   const noteX = compact ? 148 : 230;
-  const ledgerPositions = [-2, 10, 12].filter((position) => {
-    if (position === -2) return note.position <= -2;
-    if (position === 10) return note.position >= 10;
-    return note.position >= 12;
-  });
+  const ledgerPositions = ledgerPositionsFor(note.position);
+  const stemDown = note.position >= 4;
 
   return (
     <div className={`staff ${compact ? "staff--compact" : ""}`} aria-label={`${noteName(note, locale)}, ${note.location[locale]}`} role="img">
@@ -389,7 +406,13 @@ function Staff({ note, locale, compact = false }: { note: NoteQuestion; locale: 
           />
         ))}
         <span className="note-head" style={{ left: noteX, top: noteY }} />
-        <span className="note-stem" style={{ left: noteX + (compact ? 8 : 11), top: noteY - (compact ? 34 : 45) }} />
+        <span
+          className="note-stem"
+          style={{
+            left: noteX + (stemDown ? (compact ? -8 : -11) : (compact ? 8 : 11)),
+            top: stemDown ? noteY : noteY - (compact ? 34 : 45),
+          }}
+        />
       </div>
     </div>
   );
@@ -642,7 +665,7 @@ export default function Home() {
             <h1>{copy.heroLine1}<br /><em>{copy.heroLine2}</em></h1>
             <p className="hero-lead">{copy.heroLead}</p>
             <div className="hero-staff" aria-hidden="true">
-              <Staff note={ALL_NOTES[6]} locale={locale} compact />
+              <Staff note={ALL_NOTES.find((note) => note.id === "b4")!} locale={locale} compact />
               <span className="scribble">{copy.scribble}</span>
             </div>
           </div>
@@ -795,7 +818,7 @@ export default function Home() {
       {stage === "done" && (
         <section className="results-shell">
           <div className="results-intro">
-            <span className="result-flourish" aria-hidden="true"><UiIcon name="note" /></span>
+            <span className="brand-mark result-flourish" aria-hidden="true">♪</span>
             <p className="kicker">{completedStandardSession ? copy.sessionComplete : copy.sessionSummary}</p>
             <h1>{sessionType === "endless" ? extra.endlessResultTitle : sessionInsight.title}</h1>
             <p>{sessionType === "endless" ? extra.endedSession(correctCount, totalTime) : endedEarly ? extra.stoppedSession(correctCount) : copy.completedCopy(selectedLevel.title)}</p>
@@ -874,7 +897,7 @@ export default function Home() {
         </section>
       )}
 
-      <footer><span>Nota Nota</span><p>{copy.footer}</p><CommunityLegalLink /><span>𝄞</span></footer>
+      <footer><span>Nota Nota</span><p>{copy.footer}</p><CommunityLegalLink /><span className="brand-mark brand-mark--footer" aria-hidden="true">♪</span></footer>
     </main>
     </CommunityProvider>
   );

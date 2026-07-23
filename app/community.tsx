@@ -49,7 +49,7 @@ function readPendingScore(): ScoreSubmission | null {
       && pending.expiresAt > Date.now()
       && score
       && ["standard", "endless"].includes(score.sessionType)
-      && ["temel", "yakin", "tam"].includes(score.level)
+      && ["temel", "yakin", "tam", "genis"].includes(score.level)
       && ["porte", "konum"].includes(score.questionMode)
       && [score.correctCount, score.wrongCount, score.totalResponseTimeMs].every((value) => Number.isFinite(value) && value >= 0),
     );
@@ -280,7 +280,7 @@ export function CommunityProvider({ locale, children }: { locale: Locale; childr
     <CommunityContext.Provider value={{ locale, user, profile, openPanel }}>
       {children}
       {panel && (
-        <Modal title={panelTitle(panel, text)} closeLabel={text.close} onClose={closePanel}>
+        <Modal title={panelTitle(panel, text)} closeLabel={text.close} onClose={closePanel} wide={panel === "leaderboard"}>
           {panel === "auth" && <AuthPanel locale={locale} notice={panelNotice} />}
           {panel === "account" && (
             <AccountPanel
@@ -325,10 +325,10 @@ function accountStatusCopy(status: Exclude<AccountStatus, null>, text: (typeof T
   return text.backendPending;
 }
 
-function Modal({ title, closeLabel, onClose, children }: { title: string; closeLabel: string; onClose: () => void; children: ReactNode }) {
+function Modal({ title, closeLabel, onClose, children, wide = false }: { title: string; closeLabel: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <section className="modal-card" role="dialog" aria-modal="true" aria-labelledby="community-modal-title">
+      <section className={`modal-card ${wide ? "modal-card--leaderboard" : ""}`} role="dialog" aria-modal="true" aria-labelledby="community-modal-title">
         <header>
           <h2 id="community-modal-title">{title}</h2>
           <button type="button" onClick={onClose} aria-label={closeLabel}>
@@ -513,7 +513,32 @@ function LeaderboardPanel({ locale }: { locale: Locale }) {
 
   return (
     <div className="leaderboard-panel">
-      <div className="leaderboard-controls">
+      <section className="leaderboard-main">
+        <div className="leaderboard-current-view">
+          <p>{labels.current}</p>
+          <strong>{text[sessionType]} · {labels.levels[level]} · {questionMode === "porte" ? text.staff : text.position}</strong>
+          <span>{sessionType === "standard" ? labels.standardRule : labels.endlessRule}</span>
+        </div>
+        {!communityConfigured ? <p>{text.backendPending}</p> : loading ? <p>{text.loading}</p> : message ? <p>{message}</p> : rows.length ? (
+          <div className="leaderboard-table">
+            <div className="leaderboard-table-head" aria-hidden="true"><span>#</span><span>{labels.player}</span><span>{labels.result}</span></div>
+            <ol className="leaderboard-list">
+              {rows.map((row) => (
+                <li key={`${row.rank}-${row.username}`}>
+                  <b>#{row.rank}</b>
+                  <strong>@{row.username}</strong>
+                  {sessionType === "standard" ? (
+                    <span>{formatSeconds(row.total_response_time_ms, locale)}</span>
+                  ) : (
+                    <span>{row.correct_count} {locale === "tr" ? "doğru" : "correct"} · {formatSeconds(row.average_response_time_ms, locale)} / {locale === "tr" ? "nota" : "note"}</span>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </div>
+        ) : <p>{text.boardEmpty}</p>}
+      </section>
+      <aside className="leaderboard-controls">
         <fieldset className="leaderboard-filter-group">
           <legend>{labels.session}</legend>
           <div className="leaderboard-segments leaderboard-segments--two">
@@ -536,30 +561,7 @@ function LeaderboardPanel({ locale }: { locale: Locale }) {
             <button type="button" aria-pressed={questionMode === "konum"} onClick={() => setQuestionMode("konum")}>{text.position}</button>
           </div>
         </fieldset>
-      </div>
-      <div className="leaderboard-current-view">
-        <p>{labels.current}</p>
-        <strong>{text[sessionType]} · {labels.levels[level]} · {questionMode === "porte" ? text.staff : text.position}</strong>
-        <span>{sessionType === "standard" ? labels.standardRule : labels.endlessRule}</span>
-      </div>
-      {!communityConfigured ? <p>{text.backendPending}</p> : loading ? <p>{text.loading}</p> : message ? <p>{message}</p> : rows.length ? (
-        <div className="leaderboard-table">
-          <div className="leaderboard-table-head" aria-hidden="true"><span>#</span><span>{labels.player}</span><span>{labels.result}</span></div>
-          <ol className="leaderboard-list">
-            {rows.map((row) => (
-              <li key={`${row.rank}-${row.username}`}>
-                <b>#{row.rank}</b>
-                <strong>@{row.username}</strong>
-                {sessionType === "standard" ? (
-                  <span>{formatSeconds(row.total_response_time_ms, locale)}</span>
-                ) : (
-                  <span>{row.correct_count} {locale === "tr" ? "doğru" : "correct"} · {formatSeconds(row.average_response_time_ms, locale)} / {locale === "tr" ? "nota" : "note"}</span>
-                )}
-              </li>
-            ))}
-          </ol>
-        </div>
-      ) : <p>{text.boardEmpty}</p>}
+      </aside>
     </div>
   );
 }

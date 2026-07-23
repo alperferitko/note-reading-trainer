@@ -2,6 +2,7 @@
 
 import { FormEvent, MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import { CommunityHeader, CommunityLegalLink, CommunityProvider, CommunityResult } from "./community";
+import { GuitarTrainer } from "./guitar-trainer";
 import type { ScoreSubmission, SessionType } from "@/lib/leaderboard";
 import {
   buildSessionInsight,
@@ -13,7 +14,7 @@ import {
 
 type LevelId = "temel" | "yakin" | "tam" | "genis";
 type ModeId = "porte" | "konum";
-type Stage = "setup" | "quiz" | "done";
+type Stage = "landing" | "setup" | "quiz" | "done" | "guitar";
 type Locale = "tr" | "en";
 
 type NoteQuestion = {
@@ -246,6 +247,51 @@ const EXTRA_COPY = {
   },
 } as const;
 
+const LANDING_COPY = {
+  tr: {
+    eyebrow: "Nota Nota · müzik okuryazarlığı",
+    title: "Notaları gör.",
+    titleAccent: "Enstrümanında bul.",
+    lead: "Porte okumayı ve notaların enstrümanındaki yerlerini aynı sakin, odaklı çalışma düzeninde geliştir.",
+    primary: "Nota okumaya başla",
+    secondary: "Gitar klavyesini keşfet",
+    proofOne: "Türkçe + English",
+    proofTwo: "Kısa, odaklı oturumlar",
+    proofThree: "Hız ve doğruluk takibi",
+    modulesEyebrow: "Çalışma stüdyosu",
+    modulesTitle: "Bugün neyi akıcılaştırmak istiyorsun?",
+    readingTitle: "Porte okuma",
+    readingCopy: "Sol anahtarındaki doğal notaları çizgi, aralık ve ek çizgiler üzerinde tanı.",
+    readingMeta: "4 seviye · 2 soru biçimi",
+    guitarTitle: "Gitar klavyesi",
+    guitarCopy: "Standart akortta doğal notaların tel ve perde üzerindeki yerlerini öğren.",
+    guitarMeta: "0–3 · 0–5 · 0–12 perde",
+    open: "Modülü aç",
+    coming: "Piyano ve başka enstrümanlar sonraki bölümlerde stüdyoya katılacak.",
+  },
+  en: {
+    eyebrow: "Nota Nota · music literacy",
+    title: "Read the note.",
+    titleAccent: "Find it on your instrument.",
+    lead: "Build confident sight-reading and fretboard knowledge through calm, focused practice that adapts to your range.",
+    primary: "Start sight-reading",
+    secondary: "Explore the guitar fretboard",
+    proofOne: "Türkçe + English",
+    proofTwo: "Short, focused sessions",
+    proofThree: "Speed and accuracy tracking",
+    modulesEyebrow: "Practice studio",
+    modulesTitle: "What would you like to make fluent today?",
+    readingTitle: "Sight-reading",
+    readingCopy: "Recognise natural notes on the treble staff, from the core range to extended ledger lines.",
+    readingMeta: "4 ranges · 2 question styles",
+    guitarTitle: "Guitar fretboard",
+    guitarCopy: "Learn where natural notes live across strings and frets in standard tuning.",
+    guitarMeta: "Frets 0–3 · 0–5 · 0–12",
+    open: "Open module",
+    coming: "Piano and more instruments will join the studio in future releases.",
+  },
+} as const;
+
 const ALL_NOTES: NoteQuestion[] = [
   { id: "d3", solfege: "Re", letter: "D", position: -8, location: { tr: "portenin altındaki 4. ek çizgi üzerinde", en: "on the fourth ledger line below the staff" }, shortLocation: { tr: "Alt 4. ek çizgi", en: "4th ledger line below" } },
   { id: "e3", solfege: "Mi", letter: "E", position: -7, location: { tr: "alttaki 4. ve 3. ek çizgilerin arasındaki aralıkta", en: "in the space between the fourth and third ledger lines below the staff" }, shortLocation: { tr: "Alt 4.–3. ek çizgi arası", en: "Between 4th–3rd ledger lines below" } },
@@ -429,7 +475,7 @@ function Stat({ label, value, accent }: { label: string; value: string | number;
 
 export default function Home() {
   const [locale, setLocale] = useState<Locale>("tr");
-  const [stage, setStage] = useState<Stage>("setup");
+  const [stage, setStage] = useState<Stage>("landing");
   const [level, setLevel] = useState<LevelId>("temel");
   const [mode, setMode] = useState<ModeId>("porte");
   const [sessionType, setSessionType] = useState<SessionType>("standard");
@@ -448,6 +494,7 @@ export default function Home() {
   const questionKey = useRef(0);
   const copy = COPY[locale];
   const extra = EXTRA_COPY[locale];
+  const landing = LANDING_COPY[locale];
   const levels = LEVELS[locale];
 
   const uniqueCount = questionsFor(level).length;
@@ -636,7 +683,7 @@ export default function Home() {
     <CommunityProvider locale={locale}>
     <main className="app-shell">
       <header className="site-header">
-        <button className="brand" type="button" onClick={() => setStage("setup")} aria-label={copy.homeLabel}>
+        <button className="brand" type="button" onClick={() => setStage("landing")} aria-label={copy.homeLabel}>
           <span className="brand-mark" aria-hidden="true">♪</span>
           <span>Nota Nota</span>
         </button>
@@ -657,6 +704,57 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      {stage === "landing" && (
+        <section className="landing-shell">
+          <div className="landing-hero">
+            <div className="landing-copy">
+              <p className="kicker">{landing.eyebrow}</p>
+              <h1>{landing.title}<br /><em>{landing.titleAccent}</em></h1>
+              <p>{landing.lead}</p>
+              <div className="landing-actions">
+                <button className="primary-button" type="button" onClick={() => setStage("setup")}>{landing.primary} <span aria-hidden="true">→</span></button>
+                <button className="secondary-button" type="button" onClick={() => setStage("guitar")}>{landing.secondary}</button>
+              </div>
+              <div className="landing-proof" aria-label={locale === "tr" ? "Özellikler" : "Features"}>
+                <span>{landing.proofOne}</span><span>{landing.proofTwo}</span><span>{landing.proofThree}</span>
+              </div>
+            </div>
+            <div className="landing-art" aria-hidden="true">
+              <div className="landing-staff-card"><Staff note={ALL_NOTES.find((note) => note.id === "d5")!} locale={locale} compact /><span>{locale === "tr" ? "4. çizgi · Re" : "4th line · D"}</span></div>
+              <div className="landing-fret-card"><b>G</b><i /><i /><i /><i /><i /><i /><span>3</span><em>{locale === "tr" ? "6. tel · Sol" : "String 6 · G"}</em></div>
+              <span className="landing-orbit landing-orbit--one" />
+              <span className="landing-orbit landing-orbit--two" />
+            </div>
+          </div>
+          <div className="module-section">
+            <div className="module-heading"><p className="kicker">{landing.modulesEyebrow}</p><h2>{landing.modulesTitle}</h2></div>
+            <div className="module-grid">
+              <button className="module-card module-card--staff" type="button" onClick={() => setStage("setup")}>
+                <span className="module-number">01</span>
+                <span className="module-visual"><RangePreview level="tam" /></span>
+                <strong>{landing.readingTitle}</strong>
+                <span>{landing.readingCopy}</span>
+                <small>{landing.readingMeta}</small>
+                <b>{landing.open} →</b>
+              </button>
+              <button className="module-card module-card--guitar" type="button" onClick={() => setStage("guitar")}>
+                <span className="module-number">02</span>
+                <span className="module-guitar-visual" aria-hidden="true"><i /><i /><i /><i /><i /><i /><b>3</b><b>5</b><b>7</b></span>
+                <strong>{landing.guitarTitle}</strong>
+                <span>{landing.guitarCopy}</span>
+                <small>{landing.guitarMeta}</small>
+                <b>{landing.open} →</b>
+              </button>
+            </div>
+            <p className="module-coming">{landing.coming}</p>
+          </div>
+        </section>
+      )}
+
+      {stage === "guitar" && (
+        <GuitarTrainer locale={locale} onHome={() => setStage("landing")} onSightReading={() => setStage("setup")} />
+      )}
 
       {stage === "setup" && (
         <section className="setup-shell">

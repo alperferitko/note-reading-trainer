@@ -10,15 +10,15 @@ export async function generateMetadata(): Promise<Metadata> {
   const icon = `${protocol}://${host}/nota-nota-icon.png`;
 
   return {
-    title: "Nota Nota — Note Reading / Porte Çalışması",
-    description: "Treble-clef note reading practice in Turkish and English. Sol anahtarındaki doğal notaları Türkçe veya İngilizce çalış.",
+    title: "Nota Nota — Sight-Reading & Instrument Practice",
+    description: "Bilingual sight-reading and instrument note practice. Porte okumayı ve notaların enstrümanındaki yerlerini Türkçe veya İngilizce çalış.",
     icons: {
       icon,
       shortcut: icon,
     },
     openGraph: {
       title: "Nota Nota",
-      description: "See the note. Name it. · Notayı gör. İsmini söyle.",
+      description: "Read the note. Find it on your instrument. · Notayı gör. Enstrümanında bul.",
       type: "website",
       siteName: "Nota Nota",
       locale: "tr_TR",
@@ -28,13 +28,13 @@ export async function generateMetadata(): Promise<Metadata> {
         width: 1729,
         height: 910,
         type: "image/png",
-        alt: "Nota Nota treble-clef note reading trainer",
+        alt: "Nota Nota sight-reading and instrument practice",
       }],
     },
     twitter: {
       card: "summary_large_image",
       title: "Nota Nota",
-      description: "See the note. Name it. · Notayı gör. İsmini söyle.",
+      description: "Read the note. Find it on your instrument. · Notayı gör. Enstrümanında bul.",
       images: [image],
     },
   };

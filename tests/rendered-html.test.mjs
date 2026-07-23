@@ -26,16 +26,17 @@ test("Nota Nota çalışma ekranını sunar", async () => {
 
   const html = await response.text();
   assert.match(html, /<html lang="tr">/i);
-  assert.match(html, /<title>Nota Nota — Note Reading \/ Porte Çalışması<\/title>/i);
-  assert.match(html, /Notayı gör/);
-  assert.match(html, /Temel porte/);
-  assert.match(html, /Tam doğal sesler/);
-  assert.match(html, /Geniş porte/);
+  assert.match(html, /<title>Nota Nota — Sight-Reading &amp; Instrument Practice<\/title>/i);
+  assert.match(html, /Notaları gör/);
+  assert.match(html, /Enstrümanında bul/);
+  assert.match(html, /Porte okuma/);
+  assert.match(html, /Gitar klavyesi/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
 });
 
 test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğunda tutar", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const guitar = await readFile(new URL("../app/guitar-trainer.tsx", import.meta.url), "utf8");
   const community = await readFile(new URL("../app/community.tsx", import.meta.url), "utf8");
   const insights = await readFile(new URL("../lib/session-insights.mjs", import.meta.url), "utf8");
   const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
@@ -68,6 +69,14 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /extra\.endedSession\(correctCount, totalTime\)/);
   assert.match(styles, /\.endless-results-card/);
   assert.match(page, /questionKey\.current\+\+/);
+  assert.match(page, /useState<Stage>\("landing"\)/);
+  assert.match(page, /<GuitarTrainer/);
+  assert.match(guitar, /const STRINGS =/);
+  assert.match(guitar, /frets: 3/);
+  assert.match(guitar, /frets: 5/);
+  assert.match(guitar, /frets: 12/);
+  assert.match(guitar, /NATURAL\.has/);
+  assert.match(guitar, /\[\.\.\.items\.slice\(1\), \{ \.\.\.items\[0\], misses: items\[0\]\.misses \+ 1 \}\]/);
   assert.match(page, /<CommunityResult/);
   assert.match(community, /nota-nota-pending-score/);
   assert.match(community, /rememberPendingScore\(score\)/);
@@ -78,6 +87,8 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(community, /leaderboard-segments/);
   assert.match(community, /aria-pressed=\{sessionType === "standard"\}/);
   assert.match(community, /leaderboard-current-view/);
+  assert.ok(community.indexOf('className="leaderboard-main"') < community.indexOf('className="leaderboard-controls"'));
+  assert.match(community, /modal-card--leaderboard/);
   assert.match(insights, /toLocaleLowerCase\("tr-TR"\)/);
   assert.match(page, /firstTryCorrect/);
   assert.match(page, /wrongByNote/);
@@ -112,6 +123,9 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /className="mobile-answer-pad"/);
   assert.match(page, /value=\{name\} onClick=\{chooseAnswer\}/);
   assert.match(styles, /@media \(hover: none\) and \(pointer: coarse\)/);
+  assert.match(styles, /grid-template-areas: "filters ranking"/);
+  assert.match(styles, /grid-template-areas: "ranking" "filters"/);
+  assert.match(styles, /scale\(\.68\)/);
   assert.match(styles, /\.mobile-answer-pad \{ display: none; \}/);
   assert.doesNotMatch(styles, /:has\(\.answer-line input:focus\)/);
   assert.doesNotMatch(page, /window\.visualViewport|window\.scrollBy|quiz-keyboard-open/);

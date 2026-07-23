@@ -10,8 +10,17 @@ test("GitHub Pages output uses portable relative asset paths", async () => {
   assert.match(html, /\.\/assets\/[^\"']+\.js/);
   assert.match(html, /\.\/assets\/[^\"']+\.css/);
   assert.match(html, /href="\.\/nota-nota-icon\.png"/);
-  assert.match(html, /content="https:\/\/notanota\.online\/og-social\.png"/);
-  assert.match(html, /property="og:image:width" content="1729"/);
+  assert.match(html, /content="https:\/\/notanota\.online\/og\.png"/);
+  assert.match(html, /name="theme-color" content="#F4EFE4"/);
+  assert.match(html, /<title>NotaNota — Note Reading Trainer<\/title>/);
+  assert.match(html, /property="og:site_name" content="NotaNota"/);
+  assert.match(html, /property="og:image:secure_url"\s+content="https:\/\/notanota\.online\/og\.png"/);
+  assert.match(html, /name="twitter:image"\s+content="https:\/\/notanota\.online\/og\.png"/);
+  const socialImage = await readFile(new URL("../public/og.png", import.meta.url));
+  const socialImageWidth = socialImage.readUInt32BE(16);
+  const socialImageHeight = socialImage.readUInt32BE(20);
+  assert.match(html, new RegExp(`property="og:image:width" content="${socialImageWidth}"`));
+  assert.match(html, new RegExp(`property="og:image:height" content="${socialImageHeight}"`));
   assert.match(html, /name="twitter:card" content="summary_large_image"/);
   assert.doesNotMatch(html, /(?:src|href)="\/assets\//);
   assert.doesNotMatch(html, /(?:localhost|127\.0\.0\.1|file:\/\/)/i);
@@ -27,7 +36,7 @@ test("GitHub Pages output contains every referenced local asset", async () => {
   await Promise.all(paths.map((path) => access(new URL(path, output))));
   await access(new URL(".nojekyll", output));
   await access(new URL("nota-nota-icon.png", output));
-  await access(new URL("og-social.png", output));
+  await access(new URL("og.png", output));
 
   const assetFiles = await readdir(new URL("assets/", output));
   assert.ok(assetFiles.some((file) => file.endsWith(".js")));

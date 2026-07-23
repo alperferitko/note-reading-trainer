@@ -19,14 +19,14 @@ async function render() {
   );
 }
 
-test("Nota Nota çalışma ekranını sunar", async () => {
+test("NotaNota çalışma ekranını sunar", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
   assert.match(html, /<html lang="tr">/i);
-  assert.match(html, /<title>Nota Nota — Sight-Reading &amp; Instrument Practice<\/title>/i);
+  assert.match(html, /<title>NotaNota — Sight-Reading &amp; Instrument Practice<\/title>/i);
   assert.match(html, /Notaları gör/);
   assert.match(html, /Enstrümanında bul/);
   assert.match(html, /Porte okuma/);
@@ -62,6 +62,9 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /id: "d3"[\s\S]*position: -8/);
   assert.match(page, /id: "g6"[\s\S]*position: 16/);
   assert.match(page, /id: "genis"[\s\S]*count: 25/);
+  assert.match(page, /id: "temel"[\s\S]*count: 9/);
+  assert.match(page, /id: "yakin"[\s\S]*count: 13/);
+  assert.match(page, /id: "tam"[\s\S]*count: 15/);
   assert.match(page, /ledgerPositionsFor/);
   assert.match(page, /\[-8, -6, -4, -2, 10, 12, 14, 16\]/);
   assert.match(page, /if \(sessionType === "endless"\) \{[\s\S]*setFeedback\(null\);[\s\S]*setStage\("done"\);[\s\S]*return;/);
@@ -127,6 +130,51 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /grid-template-areas: "ranking" "filters"/);
   assert.match(styles, /scale\(\.68\)/);
   assert.match(styles, /\.mobile-answer-pad \{ display: none; \}/);
+  assert.match(styles, /--primary: #8b2f3c/);
+  assert.match(styles, /--background: #f4efe4/);
+  assert.match(styles, /--background-deep: #e9e2d5/);
+  assert.match(styles, /--surface: #fbf8f1/);
+  assert.match(styles, /--surface-elevated: #fffdf8/);
+  assert.match(styles, /--foreground: #20231f/);
+  assert.match(styles, /--foreground-muted: #64665f/);
+  assert.match(styles, /--primary-hover: #772533/);
+  assert.match(styles, /--primary-active: #651e2b/);
+  assert.match(styles, /--success: #73826b/);
+  assert.match(styles, /--accent: #c6a15b/);
+  assert.match(styles, /--border: #d5caba/);
+  assert.match(styles, /--danger: #b94a48/);
+  assert.match(styles, /--shadow-color: rgba\(54, 43, 30, \.12\)/);
+  assert.match(styles, /grid-template-columns: 174px minmax\(0, 1fr\)/);
+  assert.match(styles, /@media \(max-width: 820px\)/);
+  assert.match(styles, /@media \(max-width: 900px\) and \(min-width: 821px\)/);
+  assert.match(styles, /@media \(max-width: 520px\)/);
+  assert.match(styles, /@media \(max-width: 390px\)/);
+  assert.match(page, /className="quiz-stat-panel"/);
+  assert.match(page, /revealAnswer=\{Boolean\(feedback\)\}/);
+  assert.match(page, /"Sol anahtarında bir nota"/);
+  assert.match(page, /"A note on the treble staff"/);
+  assert.match(page, /role="status" aria-live="polite" aria-atomic="true"/);
+  assert.match(page, /ref=\{feedbackButtonRef\}/);
+  assert.doesNotMatch(page, /window\.addEventListener\("keydown"/);
+  assert.match(page, /document\.documentElement\.lang = locale/);
+  assert.match(page, /className="result-session-meta"/);
+  assert.match(page, /<dd>\{selectedLevel\.title\}<\/dd>/);
+  assert.match(page, /<dd>\{copy\.modes\[mode\]\.title\}<\/dd>/);
+  assert.match(page, /extra\.standard\.title : extra\.endless\.title/);
+  assert.match(page, /<dd>\{totalTime\}<\/dd>/);
+  assert.doesNotMatch(page, /7 Günlük Seri|%92/);
+  assert.doesNotMatch(page, /"Nota Nota (?:ana sayfa|home)|Nota Nota ·/);
+  assert.match(community, /event\.key === "Escape"/);
+  assert.match(community, /appShell\?\.setAttribute\("inert", ""\)/);
+  assert.match(community, /const last = focusable\[focusable\.length - 1\]/);
+  assert.match(community, /last\.focus\(\)/);
+  assert.match(community, /const closePanel = useCallback/);
+  assert.match(guitar, /role="region"/);
+  assert.match(guitar, /tabIndex=\{0\}/);
+  assert.match(guitar, /role="progressbar"/);
+  assert.match(guitar, /aria-describedby="guitar-feedback-message"/);
+  assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(styles, /@media \(hover: none\) and \(pointer: coarse\)[\s\S]*\.answer-form > label \{ display: block; \}[\s\S]*\.answer-line \{ display: grid; \}/);
   assert.doesNotMatch(styles, /:has\(\.answer-line input:focus\)/);
   assert.doesNotMatch(page, /window\.visualViewport|window\.scrollBy|quiz-keyboard-open/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
@@ -148,6 +196,222 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   );
   assert.match(migration, /profiles_username_format/i);
   assert.match(migration, /security definer/i);
+});
+
+test("günlük çalışma serisi gerçek tamamlamaları hesapta güvenle ve dürüstçe saklar", async () => {
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const guitar = await readFile(new URL("../app/guitar-trainer.tsx", import.meta.url), "utf8");
+  const community = await readFile(new URL("../app/community.tsx", import.meta.url), "utf8");
+  const streakClient = await readFile(new URL("../lib/practice-streak.ts", import.meta.url), "utf8");
+  const streakMigration = await readFile(
+    new URL("../supabase/migrations/202607240001_add_daily_practice_streaks.sql", import.meta.url),
+    "utf8",
+  );
+
+  // A standard session counts only after the complete range is finished. An
+  // endless session must contain at least one correct answer, so opening and
+  // immediately ending a session cannot manufacture a practice day.
+  assert.match(
+    page,
+    /const completedStandardSession = sessionType === "standard" && !endedEarly && correctCount === uniqueCount;/,
+  );
+  assert.match(
+    page,
+    /const completedDailyPractice = completedStandardSession \|\| \(sessionType === "endless" && correctCount > 0\);/,
+  );
+  assert.match(
+    page,
+    /<CommunityPracticeRecorder active=\{completedDailyPractice\} activityKey=\{`notes-\$\{sessionStartedAt\}`\} \/>/,
+  );
+  assert.match(page, /\{completedDailyPractice && <CommunityPracticeStreak compact \/>\}/);
+
+  // Guitar practice is recorded only from its completed-results branch. The
+  // per-session key keeps a new completed run distinct from a previous run.
+  assert.match(guitar, /setSessionKey\(sessionStartedAt\);[\s\S]*setStage\("quiz"\);/);
+  assert.match(
+    guitar,
+    /if \(queue\.length === 0\) \{[\s\S]*setStage\("done"\);[\s\S]*return;/,
+  );
+  assert.match(
+    guitar,
+    /if \(stage === "done"\) \{[\s\S]*<CommunityPracticeRecorder active activityKey=\{`guitar-\$\{sessionKey\}`\} \/>[\s\S]*<CommunityPracticeStreak compact \/>/,
+  );
+  assert.ok(
+    guitar.indexOf('<CommunityPracticeRecorder active activityKey={`guitar-${sessionKey}`} />')
+      > guitar.indexOf('if (stage === "done")'),
+  );
+
+  // The live quiz answer streak is explicitly named so it cannot be confused
+  // with the account's day streak.
+  assert.match(page, /\{locale === "tr" \? "Doğru serisi" : "Answer streak"\}/);
+  assert.doesNotMatch(page, /\{locale === "tr" \? "Seri" : "Streak"\}/);
+
+  // Both reads and writes use the browser's IANA time zone and the Supabase
+  // RPC boundary. No streak total is fabricated in browser storage.
+  assert.match(
+    streakClient,
+    /Intl\.DateTimeFormat\(\)\.resolvedOptions\(\)\.timeZone \|\| "UTC"/,
+  );
+  assert.match(
+    streakClient,
+    /\.rpc\("get_my_practice_streak", \{[\s\S]*p_timezone: browserTimeZone\(\)/,
+  );
+  assert.match(
+    streakClient,
+    /\.rpc\("record_practice_day", \{[\s\S]*p_timezone: browserTimeZone\(\)/,
+  );
+  assert.match(streakClient, /currentStreak: Number\(row\.current_streak\) \|\| 0/);
+  assert.match(streakClient, /longestStreak: Number\(row\.longest_streak\) \|\| 0/);
+  assert.match(streakClient, /todayCompleted: Boolean\(row\.today_completed\)/);
+  assert.match(
+    streakClient,
+    /activeDates: Array\.isArray\(row\.active_dates\) \? row\.active_dates\.map\(String\) : \[\]/,
+  );
+  assert.doesNotMatch(streakClient, /localStorage|sessionStorage/);
+
+  // The recorder waits for auth, never writes for a guest, and marks an
+  // activity key only after the idempotent server call succeeds.
+  assert.match(
+    community,
+    /const recordPracticeCompletion = useCallback\(async \(\) => \{[\s\S]*if \(!user\) return false;/,
+  );
+  assert.match(
+    community,
+    /if \(!active \|\| !authReady \|\| !user \|\| recordedKey\.current === activityKey\) return;/,
+  );
+  assert.match(
+    community,
+    /recordPracticeCompletion\(\)\.then\(\(recorded\) => \{[\s\S]*if \(!cancelled && recorded\) recordedKey\.current = activityKey;/,
+  );
+
+  // Loading, guest, error, and signed-in states remain honest: guests see an
+  // invitation rather than a number/week, failures offer retry, and account
+  // changes clear stale streak data.
+  assert.match(
+    community,
+    /if \(!authReady \|\| \(user && streakLoading && !streak\)\) \{[\s\S]*aria-busy="true"[\s\S]*copy\.loading/,
+  );
+  assert.match(
+    community,
+    /if \(!user\) \{[\s\S]*practice-streak-card--guest[\s\S]*copy\.guestTitle[\s\S]*copy\.guestCopy[\s\S]*openPanel\("auth"\)/,
+  );
+  assert.match(
+    community,
+    /if \(streakError && !streak\) \{[\s\S]*practice-streak-card--error[\s\S]*copy\.error[\s\S]*refreshPracticeStreak\(\)/,
+  );
+  assert.match(
+    community,
+    /if \(!nextUser\) \{[\s\S]*setProfile\(null\);[\s\S]*setStreak\(null\);[\s\S]*setStreakError\(false\);/,
+  );
+  assert.match(community, /copy\.title\(streak\.currentStreak\)/);
+  assert.match(community, /new Set\(streak\.activeDates\)/);
+  assert.match(community, /streak\.longestStreak > 0 && <small>/);
+  assert.match(community, /aria-live="polite"/);
+  assert.doesNotMatch(community, /7 Günlük Seri|7-day streak|%92/);
+
+  // The database owns identity and calendar calculation. One row per
+  // user/day makes repeated or concurrent completion calls idempotent.
+  assert.match(
+    streakMigration,
+    /user_id uuid not null references auth\.users\(id\) on delete cascade/i,
+  );
+  assert.match(streakMigration, /primary key \(user_id, practiced_on\)/i);
+  assert.match(streakMigration, /alter table public\.practice_days enable row level security;/i);
+  assert.match(
+    streakMigration,
+    /create policy "Users can read their practice days"[\s\S]*for select[\s\S]*to authenticated[\s\S]*auth\.uid\(\)\) = user_id/i,
+  );
+  assert.doesNotMatch(streakMigration, /create policy[\s\S]{0,120}\bfor insert\b/i);
+  assert.doesNotMatch(streakMigration, /\bgrant insert\b/i);
+  assert.equal(
+    [...streakMigration.matchAll(/v_user_id uuid := auth\.uid\(\);/gi)].length,
+    2,
+  );
+  assert.equal(
+    [...streakMigration.matchAll(/raise exception 'authentication_required';/gi)].length,
+    2,
+  );
+  assert.match(
+    streakMigration,
+    /on conflict \(user_id, practiced_on\)[\s\S]*do nothing;/i,
+  );
+
+  // IANA validation and server time prevent the client from choosing an
+  // arbitrary date. The returned week is the real Monday-Sunday window.
+  assert.equal(
+    [...streakMigration.matchAll(/from pg_catalog\.pg_timezone_names/gi)].length,
+    2,
+  );
+  assert.equal(
+    [...streakMigration.matchAll(/raise exception 'invalid_timezone';/gi)].length,
+    2,
+  );
+  assert.equal(
+    [...streakMigration.matchAll(/\(statement_timestamp\(\) at time zone v_timezone\)::date/gi)].length,
+    2,
+  );
+  assert.doesNotMatch(streakMigration, /\bp_user_id\b|\bp_practiced_on\b|\bp_date\b/i);
+  assert.match(
+    streakMigration,
+    /v_week_start := date_trunc\('week', v_today::timestamp\)::date;/i,
+  );
+  assert.match(
+    streakMigration,
+    /practiced_on between v_week_start and v_week_start \+ 6/i,
+  );
+  assert.match(streakMigration, /array_agg\(practiced_on order by practiced_on\)/i);
+
+  // Current streak stays alive through yesterday; longest streak is derived
+  // independently from every consecutive run in the account history.
+  assert.match(
+    streakMigration,
+    /v_cursor := case when v_today_completed then v_today else v_today - 1 end;/i,
+  );
+  assert.match(
+    streakMigration,
+    /while exists \([\s\S]*practiced_on = v_cursor[\s\S]*v_current := v_current \+ 1;[\s\S]*v_cursor := v_cursor - 1;/i,
+  );
+  assert.match(
+    streakMigration,
+    /practiced_on - \(row_number\(\) over \(order by practiced_on\)\)::integer as run_group/i,
+  );
+  assert.match(
+    streakMigration,
+    /select coalesce\(max\(run_length\), 0\)::integer[\s\S]*group by run_group/i,
+  );
+  assert.match(
+    streakMigration,
+    /select v_current, v_longest, v_today_completed, v_last_practice_date, v_active_dates;/i,
+  );
+  assert.equal(
+    [...streakMigration.matchAll(/security definer[\s\S]*?set search_path = ''/gi)].length,
+    2,
+  );
+  assert.match(streakMigration, /revoke all on function public\.get_my_practice_streak\(text\) from public;/i);
+  assert.match(streakMigration, /revoke all on function public\.record_practice_day\(text\) from public;/i);
+  assert.match(streakMigration, /grant execute on function public\.get_my_practice_streak\(text\) to authenticated;/i);
+  assert.match(streakMigration, /grant execute on function public\.record_practice_day\(text\) to authenticated;/i);
+
+  // KVKK copy discloses the extra dates/time-zone data, its private purpose,
+  // retention, and deletion behavior in both supported languages.
+  assert.match(
+    community,
+    /Tamamlanan çalışma günleri ve tarayıcının bildirdiği saat dilimi,[\s\S]*özel günlük seri ve devamlılık istatistiklerini hesaplamak için saklanır\./,
+  );
+  assert.match(
+    community,
+    /Completed practice dates and the browser-reported time zone are stored to calculate private daily-streak and consistency statistics\./,
+  );
+  assert.match(community, /E-posta ve günlük seri verileri leaderboard’da yayımlanmaz\./);
+  assert.match(community, /Email and streak data are never published on the leaderboard\./);
+  assert.match(
+    community,
+    /tamamlanan çalışma günleri hesap silinene kadar saklanır; hesap silindiğinde seri kayıtları da silinir\./,
+  );
+  assert.match(
+    community,
+    /completed practice dates are retained until the account is deleted; streak records are deleted with the account\./,
+  );
 });
 
 test("geçerli nota cevaplarını karışıklık çiftlerine dönüştürür", () => {

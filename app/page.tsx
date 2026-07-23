@@ -1,7 +1,15 @@
 "use client";
 
 import { FormEvent, MouseEvent, useEffect, useMemo, useRef, useState } from "react";
-import { CommunityHeader, CommunityLegalLink, CommunityProvider, CommunityResult } from "./community";
+import {
+  CommunityHeader,
+  CommunityLeaderboardButton,
+  CommunityLegalLink,
+  CommunityPracticeRecorder,
+  CommunityPracticeStreak,
+  CommunityProvider,
+  CommunityResult,
+} from "./community";
 import { GuitarTrainer } from "./guitar-trainer";
 import type { ScoreSubmission, SessionType } from "@/lib/leaderboard";
 import {
@@ -95,11 +103,11 @@ type Copy = {
 
 const COPY: Record<Locale, Copy> = {
   tr: {
-    homeLabel: "Nota Nota ana sayfa",
+    homeLabel: "NotaNota ana sayfa",
     kicker: "Sol anahtarı · doğal notalar",
-    heroLine1: "Notayı gör.",
-    heroLine2: "İsmini söyle.",
-    heroLead: "Porte üzerindeki notaları ezberlemek için kısa, odaklı ve her seferinde farklı bir çalışma.",
+    heroLine1: "Bugünkü Çalışma",
+    heroLine2: "Nota Oku",
+    heroLead: "Seviyeni, soru biçimini ve oturum türünü seç; kısa ve odaklı çalışmana başla.",
     scribble: "Her gün biraz daha akıcı.",
     rangeEyebrow: "Çalışma alanı",
     chooseRange: "Seviyeni seç",
@@ -155,11 +163,11 @@ const COPY: Record<Locale, Copy> = {
     seconds: "sn",
   },
   en: {
-    homeLabel: "Nota Nota home",
+    homeLabel: "NotaNota home",
     kicker: "Treble clef · natural notes",
-    heroLine1: "See the note.",
-    heroLine2: "Name it.",
-    heroLead: "Build fluent note recognition with short, focused sessions that reshuffle every time.",
+    heroLine1: "Today’s Practice",
+    heroLine2: "Sight-Reading",
+    heroLead: "Choose your range, question style and session type, then begin a focused round.",
     scribble: "A little more fluent every day.",
     rangeEyebrow: "Practice range",
     chooseRange: "Choose your range",
@@ -249,7 +257,7 @@ const EXTRA_COPY = {
 
 const LANDING_COPY = {
   tr: {
-    eyebrow: "Nota Nota · müzik okuryazarlığı",
+    eyebrow: "NotaNota · müzik okuryazarlığı",
     title: "Notaları gör.",
     titleAccent: "Enstrümanında bul.",
     lead: "Porte okumayı ve notaların enstrümanındaki yerlerini aynı sakin, odaklı çalışma düzeninde geliştir.",
@@ -270,7 +278,7 @@ const LANDING_COPY = {
     coming: "Piyano ve başka enstrümanlar sonraki bölümlerde stüdyoya katılacak.",
   },
   en: {
-    eyebrow: "Nota Nota · music literacy",
+    eyebrow: "NotaNota · music literacy",
     title: "Read the note.",
     titleAccent: "Find it on your instrument.",
     lead: "Build confident sight-reading and fretboard knowledge through calm, focused practice that adapts to your range.",
@@ -289,6 +297,37 @@ const LANDING_COPY = {
     guitarMeta: "Frets 0–3 · 0–5 · 0–12",
     open: "Open module",
     coming: "Piano and more instruments will join the studio in future releases.",
+  },
+} as const;
+
+const SHELL_COPY = {
+  tr: {
+    navigation: "Çalışma bölümleri",
+    studio: "Stüdyo",
+    sightReading: "Nota oku",
+    guitar: "Gitar",
+    currentSession: "Etkin oturum",
+    question: "Soru",
+    remaining: "Kalan",
+    elapsed: "Geçen süre",
+    accuracy: "Doğruluk",
+    correct: "Doğru",
+    mistakes: "Hata",
+    leaderboard: "Sıralamayı görüntüle",
+  },
+  en: {
+    navigation: "Practice sections",
+    studio: "Studio",
+    sightReading: "Sight-reading",
+    guitar: "Guitar",
+    currentSession: "Current session",
+    question: "Question",
+    remaining: "Remaining",
+    elapsed: "Elapsed",
+    accuracy: "Accuracy",
+    correct: "Correct",
+    mistakes: "Mistakes",
+    leaderboard: "View leaderboard",
   },
 } as const;
 
@@ -427,7 +466,7 @@ function RangePreview({ level }: { level: LevelId }) {
   );
 }
 
-function Staff({ note, locale, compact = false }: { note: NoteQuestion; locale: Locale; compact?: boolean }) {
+function Staff({ note, locale, compact = false, revealAnswer = false }: { note: NoteQuestion; locale: Locale; compact?: boolean; revealAnswer?: boolean }) {
   const step = compact ? 8 : 12;
   const firstLineY = compact ? 67 : 126;
   const noteY = firstLineY - note.position * (step / 2);
@@ -438,7 +477,13 @@ function Staff({ note, locale, compact = false }: { note: NoteQuestion; locale: 
   const stemDown = note.position >= 4;
 
   return (
-    <div className={`staff ${compact ? "staff--compact" : ""}`} aria-label={`${noteName(note, locale)}, ${note.location[locale]}`} role="img">
+    <div
+      className={`staff ${compact ? "staff--compact" : ""}`}
+      aria-label={revealAnswer
+        ? `${noteName(note, locale)}, ${note.location[locale]}`
+        : locale === "tr" ? "Sol anahtarında bir nota" : "A note on the treble staff"}
+      role="img"
+    >
       <span className="clef" aria-hidden="true">𝄞</span>
       <div className="staff-lines" aria-hidden="true">
         {[0, 1, 2, 3, 4].map((index) => (
@@ -489,12 +534,18 @@ export default function Home() {
   const [totalWrong, setTotalWrong] = useState(0);
   const [answerTimes, setAnswerTimes] = useState<number[]>([]);
   const [questionStartedAt, setQuestionStartedAt] = useState(0);
+  const [sessionStartedAt, setSessionStartedAt] = useState(0);
+  const [clockNow, setClockNow] = useState(0);
+  const [currentStreak, setCurrentStreak] = useState(0);
   const [endedEarly, setEndedEarly] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const feedbackButtonRef = useRef<HTMLButtonElement>(null);
+  const resultsHeadingRef = useRef<HTMLHeadingElement>(null);
   const questionKey = useRef(0);
   const copy = COPY[locale];
   const extra = EXTRA_COPY[locale];
   const landing = LANDING_COPY[locale];
+  const shell = SHELL_COPY[locale];
   const levels = LEVELS[locale];
 
   const uniqueCount = questionsFor(level).length;
@@ -547,12 +598,28 @@ export default function Home() {
     if (hasDesktopPointer) inputRef.current?.focus({ preventScroll: true });
   }, [stage, feedback, currentItem?.key]);
 
+  useEffect(() => {
+    if (stage !== "quiz" || !feedback) return;
+    feedbackButtonRef.current?.focus({ preventScroll: true });
+  }, [stage, feedback]);
+
+  useEffect(() => {
+    if (stage === "done") resultsHeadingRef.current?.focus({ preventScroll: true });
+  }, [stage]);
+
+  useEffect(() => {
+    if (stage !== "quiz") return;
+    const timer = window.setInterval(() => setClockNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [stage]);
+
   function changeLocale(nextLocale: Locale) {
     setLocale(nextLocale);
     setAnswer("");
   }
 
   function startSession() {
+    const startedAt = Date.now();
     const initialQueue = shuffledWithoutRuns(questionsFor(level)).map((note) => ({
       key: questionKey.current++,
       misses: 0,
@@ -568,7 +635,10 @@ export default function Home() {
     setAnswer("");
     setFeedback(null);
     setEndedEarly(false);
-    setQuestionStartedAt(Date.now());
+    setCurrentStreak(0);
+    setQuestionStartedAt(startedAt);
+    setSessionStartedAt(startedAt);
+    setClockNow(startedAt);
     setStage("quiz");
   }
 
@@ -598,6 +668,7 @@ export default function Home() {
       setFeedback({ correct: true, note: current, guessed });
       if (currentItem.misses === 0) setFirstTryCorrect((count) => count + 1);
       setCorrectCount((count) => count + 1);
+      setCurrentStreak((count) => count + 1);
       setQueue((items) => {
         const remaining = items.slice(1);
         if (sessionType === "standard") return remaining;
@@ -612,6 +683,7 @@ export default function Home() {
         setConfusionByPair((values) => ({ ...values, [confusionKey]: (values[confusionKey] ?? 0) + 1 }));
       }
       setTotalWrong((count) => count + 1);
+      setCurrentStreak(0);
       if (sessionType === "endless") {
         setFeedback(null);
         setStage("done");
@@ -639,26 +711,18 @@ export default function Home() {
     setStage("done");
   }
 
-  useEffect(() => {
-    function handleKeydown(event: KeyboardEvent) {
-      if (stage === "quiz" && feedback && event.key === "Enter") {
-        event.preventDefault();
-        nextQuestion();
-      }
-    }
-    window.addEventListener("keydown", handleKeydown);
-    return () => window.removeEventListener("keydown", handleKeydown);
-  });
-
   const totalResponseTimeMs = answerTimes.reduce((sum, value) => sum + value, 0);
   const averageResponseMs = answerTimes.length ? totalResponseTimeMs / answerTimes.length : 0;
   const averageTime = answerTimes.length
     ? `${(averageResponseMs / 1000).toFixed(2).replace(".", locale === "tr" ? "," : ".")} ${copy.seconds}`
     : `0${locale === "tr" ? "," : "."}00 ${copy.seconds}`;
   const totalTime = `${(totalResponseTimeMs / 1000).toFixed(2).replace(".", locale === "tr" ? "," : ".")} ${copy.seconds}`;
+  const elapsedTime = `${(Math.max(0, clockNow - sessionStartedAt) / 1000).toFixed(0)} ${copy.seconds}`;
+  const currentAccuracy = answerTimes.length ? Math.round((correctCount / answerTimes.length) * 100) : 0;
   const rateDenominator = sessionType === "standard" ? uniqueCount : correctCount;
   const firstTryRate = rateDenominator ? Math.round((firstTryCorrect / rateDenominator) * 100) : 0;
   const completedStandardSession = sessionType === "standard" && !endedEarly && correctCount === uniqueCount;
+  const completedDailyPractice = completedStandardSession || (sessionType === "endless" && correctCount > 0);
   const sessionInsight = buildSessionInsight({
     locale,
     sessionType,
@@ -685,8 +749,20 @@ export default function Home() {
       <header className="site-header">
         <button className="brand" type="button" onClick={() => setStage("landing")} aria-label={copy.homeLabel}>
           <span className="brand-mark" aria-hidden="true">♪</span>
-          <span>Nota Nota</span>
+          <span>NotaNota</span>
         </button>
+        <span className="brand-ornament" aria-hidden="true"><i /><b>◇</b><i /></span>
+        <nav className="app-navigation" aria-label={shell.navigation}>
+          <button type="button" className={stage === "landing" ? "is-active" : ""} onClick={() => setStage("landing")} aria-label={shell.studio} aria-current={stage === "landing" ? "page" : undefined}>
+            <span aria-hidden="true">00</span><b>{shell.studio}</b>
+          </button>
+          <button type="button" className={["setup", "quiz", "done"].includes(stage) ? "is-active" : ""} onClick={() => setStage("setup")} aria-label={shell.sightReading} aria-current={["setup", "quiz", "done"].includes(stage) ? "page" : undefined}>
+            <span aria-hidden="true">01</span><b>{shell.sightReading}</b>
+          </button>
+          <button type="button" className={stage === "guitar" ? "is-active" : ""} onClick={() => setStage("guitar")} aria-label={shell.guitar} aria-current={stage === "guitar" ? "page" : undefined}>
+            <span aria-hidden="true">02</span><b>{shell.guitar}</b>
+          </button>
+        </nav>
         <div className="header-actions">
           {stage === "quiz" && (
             <div className="session-meta">
@@ -703,6 +779,7 @@ export default function Home() {
             <button type="button" className={locale === "en" ? "is-active" : ""} onClick={() => changeLocale("en")} aria-pressed={locale === "en"}>EN</button>
           </div>
         </div>
+        <p className="rail-motto">{copy.footer}</p>
       </header>
 
       {stage === "landing" && (
@@ -727,6 +804,7 @@ export default function Home() {
               <span className="landing-orbit landing-orbit--two" />
             </div>
           </div>
+          <CommunityPracticeStreak />
           <div className="module-section">
             <div className="module-heading"><p className="kicker">{landing.modulesEyebrow}</p><h2>{landing.modulesTitle}</h2></div>
             <div className="module-grid">
@@ -848,11 +926,13 @@ export default function Home() {
             <span className="remaining">{sessionType === "standard" ? copy.remaining(queue.length) : totalWrong === 0 ? extra.noMistakes : `${totalWrong} · ${copy.totalWrong}`}</span>
           </div>
 
+          <div className="quiz-layout">
+          <div className="quiz-main-column">
           <div className="question-card">
             <div className="question-number">{copy.question(sessionType === "standard" ? Math.min(answeredCorrectly + 1, uniqueCount) : answerTimes.length + (feedback ? 0 : 1))}</div>
             <p className="question-prompt">{copy.prompt}</p>
             {mode === "porte" ? (
-              <Staff note={displayedNote} locale={locale} />
+              <Staff note={displayedNote} locale={locale} revealAnswer={Boolean(feedback)} />
             ) : (
               <div className="location-question">
                 <span>{copy.positionLabel}</span>
@@ -890,9 +970,9 @@ export default function Home() {
                 </div>
               </form>
             ) : (
-              <div className={`feedback ${feedback.correct ? "feedback--correct" : "feedback--wrong"}`} aria-live="polite">
+              <div className={`feedback ${feedback.correct ? "feedback--correct" : "feedback--wrong"}`} role="status" aria-live="polite" aria-atomic="true">
                 <span className="feedback-icon" aria-hidden="true"><UiIcon name={feedback.correct ? "check" : "close"} /></span>
-                <div>
+                <div id="note-feedback-message">
                   <strong>{feedback.correct ? copy.correct : copy.incorrect}</strong>
                   {feedback.correct ? (
                     <p>{copy.correctCopy(noteName(feedback.note, locale))}</p>
@@ -904,23 +984,51 @@ export default function Home() {
                     </p>
                   )}
                 </div>
-                <button type="button" onClick={nextQuestion}>{sessionType === "endless" || queue.length ? copy.next : copy.results} <span aria-hidden="true">→</span></button>
+                <button ref={feedbackButtonRef} type="button" aria-describedby="note-feedback-message" onClick={nextQuestion}>{sessionType === "endless" || queue.length ? copy.next : copy.results} <span aria-hidden="true">→</span></button>
               </div>
             )}
           </div>
 
           <button className="text-button" type="button" onClick={endSession}>{copy.endSession}</button>
+          </div>
+          <aside className="quiz-stat-panel" aria-label={shell.currentSession}>
+            <p className="kicker">{shell.currentSession}</p>
+            <div className="quiz-stat-primary">
+              <span>{shell.question}</span>
+              <strong>{sessionType === "standard" ? Math.min(answeredCorrectly + 1, uniqueCount) : answerTimes.length + (feedback ? 0 : 1)}<small>{sessionType === "standard" ? ` / ${uniqueCount}` : ""}</small></strong>
+            </div>
+            <dl>
+              <div><dt>{shell.remaining}</dt><dd>{sessionType === "standard" ? queue.length : "∞"}</dd></div>
+              <div><dt>{shell.elapsed}</dt><dd>{elapsedTime}</dd></div>
+              <div><dt>{shell.accuracy}</dt><dd>%{currentAccuracy}</dd></div>
+              <div><dt>{shell.correct}</dt><dd>{correctCount}</dd></div>
+              <div><dt>{shell.mistakes}</dt><dd>{totalWrong}</dd></div>
+              <div><dt>{locale === "tr" ? "Doğru serisi" : "Answer streak"}</dt><dd>{currentStreak}</dd></div>
+            </dl>
+            <blockquote>“{locale === "tr" ? "Her nota, bir adım ilerlemedir." : "Every note is one step forward."}”</blockquote>
+          </aside>
+          </div>
         </section>
       )}
 
       {stage === "done" && (
         <section className="results-shell">
+          <CommunityPracticeRecorder active={completedDailyPractice} activityKey={`notes-${sessionStartedAt}`} />
           <div className="results-intro">
             <span className="brand-mark result-flourish" aria-hidden="true">♪</span>
             <p className="kicker">{completedStandardSession ? copy.sessionComplete : copy.sessionSummary}</p>
-            <h1>{sessionType === "endless" ? extra.endlessResultTitle : sessionInsight.title}</h1>
+            <h1 ref={resultsHeadingRef} tabIndex={-1}>{sessionType === "endless" ? extra.endlessResultTitle : sessionInsight.title}</h1>
             <p>{sessionType === "endless" ? extra.endedSession(correctCount, totalTime) : endedEarly ? extra.stoppedSession(correctCount) : copy.completedCopy(selectedLevel.title)}</p>
           </div>
+
+          <dl className="result-session-meta" aria-label={copy.sessionSummary}>
+            <div><dt>{locale === "tr" ? "Seviye" : "Range"}</dt><dd>{selectedLevel.title}</dd></div>
+            <div><dt>{locale === "tr" ? "Çalışma biçimi" : "Practice mode"}</dt><dd>{copy.modes[mode].title}</dd></div>
+            <div><dt>{locale === "tr" ? "Oturum" : "Session"}</dt><dd>{sessionType === "standard" ? extra.standard.title : extra.endless.title}</dd></div>
+            <div><dt>{locale === "tr" ? "Toplam süre" : "Total time"}</dt><dd>{totalTime}</dd></div>
+          </dl>
+
+          {completedDailyPractice && <CommunityPracticeStreak compact />}
 
           {sessionType === "standard" && <aside className={`session-insight session-insight--${sessionInsight.tone} ${totalWrong > 0 && hardestNotes[0] ? "session-insight--split" : ""}`} aria-label={copy.sessionSummary}>
             <div className="session-insight-copy">
@@ -991,11 +1099,12 @@ export default function Home() {
           <div className="result-actions">
             <button className="primary-button" type="button" onClick={startSession}>{copy.repeat} <span>↻</span></button>
             <button className="secondary-button" type="button" onClick={() => setStage("setup")}>{copy.changeLevel}</button>
+            <CommunityLeaderboardButton label={shell.leaderboard} />
           </div>
         </section>
       )}
 
-      <footer><span>Nota Nota</span><p>{copy.footer}</p><CommunityLegalLink /><span className="brand-mark brand-mark--footer" aria-hidden="true">♪</span></footer>
+      <footer><span>NotaNota</span><p>{copy.footer}</p><CommunityLegalLink /><span className="brand-mark brand-mark--footer" aria-hidden="true">♪</span></footer>
     </main>
     </CommunityProvider>
   );

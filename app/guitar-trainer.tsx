@@ -1,7 +1,8 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { noteClassFromAnswer } from "@/lib/session-insights.mjs";
+import { CommunityPracticeRecorder, CommunityPracticeStreak } from "./community";
 
 type Locale = "tr" | "en";
 type GuitarStage = "setup" | "quiz" | "done";
@@ -114,19 +115,23 @@ function noteAt(open: string, fret: number) {
 }
 
 function buildQuestions(maxFret: number): GuitarQuestion[] {
-  return STRINGS.flatMap((string) => Array.from({ length: maxFret + 1 }, (_, fret) => {
-    const letter = noteAt(string.open, fret) as Letter | `${Letter}#`;
-    if (!NATURAL.has(letter as Letter)) return null;
-    return {
-      id: `${string.id}-${fret}`,
-      stringId: string.id,
-      stringNumber: string.number,
-      stringLabel: string.label,
-      fret,
-      letter: letter as Letter,
-      misses: 0,
-    };
-  }).filter((item): item is GuitarQuestion => Boolean(item)));
+  const questions: GuitarQuestion[] = [];
+  for (const string of STRINGS) {
+    for (let fret = 0; fret <= maxFret; fret += 1) {
+      const letter = noteAt(string.open, fret);
+      if (!NATURAL.has(letter as Letter)) continue;
+      questions.push({
+        id: `${string.id}-${fret}`,
+        stringId: string.id,
+        stringNumber: string.number,
+        stringLabel: string.label,
+        fret,
+        letter: letter as Letter,
+        misses: 0,
+      });
+    }
+  }
+  return questions;
 }
 
 function shuffle<T>(items: T[]) {
@@ -155,8 +160,30 @@ function Fretboard({
 }) {
   const columns = `68px repeat(${maxFret + 1}, minmax(48px, 1fr))`;
   return (
-    <div className="fretboard-scroll">
-      <div className="fretboard" style={{ minWidth: `${Math.max(620, 90 + (maxFret + 1) * 58)}px` }}>
+    <div
+      className="fretboard-scroll"
+      role="region"
+      tabIndex={0}
+      aria-label={active
+        ? locale === "tr" ? `${active.stringNumber}. tel, ${active.fret === 0 ? "açık tel" : `${active.fret}. perde`} işaretli` : `String ${active.stringNumber}, ${active.fret === 0 ? "open string" : `fret ${active.fret}`} highlighted`
+        : locale === "tr" ? `Açık tellerden ${maxFret}. perdeye doğal nota haritası` : `Natural-note map from open strings to fret ${maxFret}`}
+    >
+      {reveal && (
+        <ul className="sr-only">
+          {STRINGS.flatMap((string) => Array.from({ length: maxFret + 1 }, (_, fret) => {
+            const letter = noteAt(string.open, fret);
+            if (!NATURAL.has(letter as Letter)) return null;
+            return (
+              <li key={`${string.id}-${fret}`}>
+                {locale === "tr"
+                  ? `${string.number}. tel, ${fret === 0 ? "açık tel" : `${fret}. perde`}: ${noteName(letter as Letter, locale)}`
+                  : `String ${string.number}, ${fret === 0 ? "open string" : `fret ${fret}`}: ${noteName(letter as Letter, locale)}`}
+              </li>
+            );
+          }))}
+        </ul>
+      )}
+      <div className="fretboard" aria-hidden="true" style={{ minWidth: `${Math.max(620, 90 + (maxFret + 1) * 58)}px` }}>
         <div className="fretboard-fret-numbers" style={{ gridTemplateColumns: columns }}>
           <span />
           {Array.from({ length: maxFret + 1 }, (_, fret) => <span key={fret}>{fret === 0 ? (locale === "tr" ? "Açık" : "Open") : fret}</span>)}
@@ -207,7 +234,11 @@ export function GuitarTrainer({
   const [wrong, setWrong] = useState(0);
   const [times, setTimes] = useState<number[]>([]);
   const [startedAt, setStartedAt] = useState(0);
+  const [sessionKey, setSessionKey] = useState(0);
   const [initialCount, setInitialCount] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const feedbackButtonRef = useRef<HTMLButtonElement>(null);
+  const resultsHeadingRef = useRef<HTMLHeadingElement>(null);
   const text = COPY[locale];
   const ranges = RANGES[locale];
   const current = queue[0];
@@ -218,7 +249,18 @@ export function GuitarTrainer({
 
   const previewQuestions = useMemo(() => buildQuestions(maxFret), [maxFret]);
 
+  useEffect(() => {
+    if (stage === "quiz" && feedback) {
+      feedbackButtonRef.current?.focus({ preventScroll: true });
+    } else if (stage === "quiz") {
+      inputRef.current?.focus({ preventScroll: true });
+    } else if (stage === "done") {
+      resultsHeadingRef.current?.focus({ preventScroll: true });
+    }
+  }, [feedback, stage]);
+
   function start() {
+    const sessionStartedAt = Date.now();
     const questions = shuffle(buildQuestions(maxFret));
     setInitialCount(questions.length);
     setQueue(questions);
@@ -228,7 +270,8 @@ export function GuitarTrainer({
     setAnswer("");
     setFeedback(null);
     setFeedbackQuestion(null);
-    setStartedAt(Date.now());
+    setStartedAt(sessionStartedAt);
+    setSessionKey(sessionStartedAt);
     setStage("quiz");
   }
 
@@ -307,9 +350,10 @@ export function GuitarTrainer({
   if (stage === "done") {
     return (
       <section className="guitar-shell guitar-results">
+        <CommunityPracticeRecorder active activityKey={`guitar-${sessionKey}`} />
         <button className="module-back" type="button" onClick={onHome}>← {text.exit}</button>
         <p className="kicker">{text.kicker}</p>
-        <h1>{text.complete}</h1>
+        <h1 ref={resultsHeadingRef} tabIndex={-1}>{text.complete}</h1>
         <p>{text.completeCopy}</p>
         <div className="guitar-stats">
           <div><strong>{initialCount}</strong><span>{text.unique}</span></div>
@@ -317,6 +361,7 @@ export function GuitarTrainer({
           <div><strong>{wrong}</strong><span>{text.wrong}</span></div>
           <div><strong>{average}</strong><span>{text.average}</span></div>
         </div>
+        <CommunityPracticeStreak compact />
         <div className="guitar-actions">
           <button className="primary-button" type="button" onClick={start}>{text.repeat} <span aria-hidden="true">↻</span></button>
           <button className="secondary-button" type="button" onClick={() => setStage("setup")}>{text.change}</button>
@@ -329,7 +374,7 @@ export function GuitarTrainer({
     <section className="guitar-shell guitar-quiz">
       <div className="guitar-quiz-top">
         <button className="module-back" type="button" onClick={() => setStage("setup")}>← {text.change}</button>
-        <div><span>{text.progress}</span><strong>{completed} / {initialCount}</strong></div>
+        <div role="progressbar" aria-label={text.progress} aria-valuemin={0} aria-valuemax={initialCount} aria-valuenow={completed}><span>{text.progress}</span><strong>{completed} / {initialCount}</strong></div>
       </div>
       <div className="guitar-question-card">
         <p className="kicker">{displayed && text.location(displayed.stringNumber, displayed.fret)}</p>
@@ -338,14 +383,16 @@ export function GuitarTrainer({
         {!feedback ? (
           <form className="guitar-answer" onSubmit={submit}>
             <label htmlFor="guitar-answer">{text.answer}</label>
-            <div><input id="guitar-answer" value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder={text.placeholder} autoComplete="off" spellCheck={false} /><button type="submit">{text.check}</button></div>
+            <div><input id="guitar-answer" ref={inputRef} value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder={text.placeholder} autoComplete="off" autoCorrect="off" autoCapitalize="none" enterKeyHint="done" spellCheck={false} /><button type="submit">{text.check}</button></div>
             <div className="guitar-note-choices" role="group" aria-label={text.choices}>{choices.map((choice) => <button type="button" key={choice} onClick={() => answerQuestion(choice)}>{choice}</button>)}</div>
           </form>
         ) : (
-          <div className={`guitar-feedback guitar-feedback--${feedback}`}>
-            <strong>{feedback === "correct" ? text.correct : text.incorrect}</strong>
-            <span>{feedback === "correct" ? noteName(feedbackQuestion?.letter ?? "C", locale) : text.wrongCopy(noteName(feedbackQuestion?.letter ?? "C", locale))}</span>
-            <button type="button" onClick={next}>{text.next} →</button>
+          <div className={`guitar-feedback guitar-feedback--${feedback}`} role="status" aria-live="polite" aria-atomic="true">
+            <div id="guitar-feedback-message">
+              <strong>{feedback === "correct" ? text.correct : text.incorrect}</strong>
+              <span>{feedback === "correct" ? noteName(feedbackQuestion?.letter ?? "C", locale) : text.wrongCopy(noteName(feedbackQuestion?.letter ?? "C", locale))}</span>
+            </div>
+            <button ref={feedbackButtonRef} type="button" aria-describedby="guitar-feedback-message" onClick={next}>{text.next} →</button>
           </div>
         )}
       </div>

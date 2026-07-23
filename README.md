@@ -1,42 +1,44 @@
 <div align="center">
 
-# ♪ Nota Nota
+# ♪ NotaNota
 
 **Build fluent treble-clef note recognition through focused practice.**
 
-[![Status](https://img.shields.io/badge/Status-Private_Development-EA5A42?style=for-the-badge)](#development-status)
+[![Status](https://img.shields.io/badge/Status-Active_Development-EA5A42?style=for-the-badge)](#development-status)
 [![React](https://img.shields.io/badge/React-19-182D28?style=for-the-badge&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-182D28?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Languages](https://img.shields.io/badge/Languages-TR_%2F_EN-EA5A42?style=for-the-badge)](#language-support)
 
-[Features](#features) · [Practice modes](#practice-modes) · [Local development](#local-development)
+[Live site](https://notanota.online) · [Features](#features) · [Practice modes](#practice-modes) · [Local development](#local-development)
 
 </div>
 
-![Nota Nota shown on desktop and mobile](./docs/nota-nota-preview.jpg)
+![NotaNota practice studio preview](./public/og.png)
 
 ## About
 
-**Nota Nota** is a bilingual, mobile-friendly trainer for learning natural notes on the treble clef. It combines focused practice, immediate feedback, session statistics, and optional community rankings.
+**NotaNota** is a bilingual, mobile-friendly trainer for learning natural notes on the treble clef and locating them on an instrument. It combines focused practice, immediate feedback, session statistics, daily streaks, and optional community rankings.
 
 ## Development status
 
-Nota Nota is currently in private development. The former GitHub Pages deployment and public demo are disabled while account, leaderboard, privacy, and production hosting work is completed.
+NotaNota is under active development. The static frontend is deployed from `main` through GitHub Pages and is available at [notanota.online](https://notanota.online).
 
-The practice experience works locally. Community features require a configured Supabase project and transactional email provider before they can be enabled in production.
+Practice runs in the browser. Passwordless accounts, private streaks, and leaderboards use the configured Supabase project and transactional email provider.
 
 ## Features
 
-- Three progressive treble-clef practice ranges
+- Four progressive treble-clef practice ranges
 - Visual staff and written-position question modes
 - Turkish solfege and English letter names
 - Normal and endless practice modes
+- Guitar-fretboard practice across selectable fret ranges
 - Automatic repetition of incorrectly answered notes
 - First-attempt accuracy and response-time statistics
 - Responsive controls designed for desktop and mobile
 - Passwordless email sign-in and a 3–7 character username
+- Private, account-backed daily practice streaks with a Monday-to-Sunday activity view
 - Separate, privacy-conscious leaderboards for each mode, range, and question style
-- Turkish and English privacy information with a minimum user age of 13
+- Turkish and English privacy information
 
 ## Practice modes
 
@@ -48,7 +50,7 @@ Only perfect sessions—with every note answered and no mistakes—qualify for t
 
 ### Endless
 
-Questions continue until the learner chooses to end the session. Only mistake-free sessions qualify for the leaderboard. Rankings prioritize the highest number of correct answers, with average response speed breaking ties.
+Questions continue until the learner chooses to end the session or makes the first mistake. Only runs with no mistakes qualify for the leaderboard. Rankings prioritize the highest number of correct answers, with average response speed breaking ties.
 
 ## Practice ranges
 
@@ -57,6 +59,11 @@ Questions continue until the learner chooses to end the session. Only mistake-fr
 | **1** | Five staff lines and four spaces | 9 |
 | **2** | Staff and nearby ledger lines | 13 |
 | **3** | Every natural note from middle C to high C | 15 |
+| **4** | Full staff with four ledger lines above and below | 25 |
+
+## Instrument practice
+
+The guitar module asks learners to identify natural notes on a standard-tuned fretboard. Practice ranges can include frets 0–3, 0–5, or 0–12.
 
 ## Language support
 
@@ -87,19 +94,21 @@ Useful commands:
 npm run lint
 npm test
 npm run build
+npm run build:pages
+npm run test:pages
 ```
 
 ## Architecture
 
-The interface is built with React, TypeScript, Vinext, and Vite. Practice sessions run in the browser. Supabase provides passwordless authentication, profiles, row-level security, and leaderboard score validation; email delivery is intended to use Resend through Supabase SMTP.
+The interface is built with React, TypeScript, Vinext, and Vite. Practice sessions run in the browser. Supabase provides passwordless authentication, profiles, private daily practice streaks, row-level security, and leaderboard score validation; email delivery is intended to use Resend through Supabase SMTP.
 
-The previous GitHub Pages workflow is intentionally disabled. GitHub Pages is not suitable for the complete community feature set on its own because it cannot provide the required authenticated data layer.
+GitHub Pages hosts the static frontend. Supabase provides the external authenticated data layer, so no secrets or server runtime are bundled into the Pages output. Pushes to `main` run linting, tests, the static build, and deployment through GitHub Actions.
 
 ## Privacy and safety
 
-Public leaderboard entries contain only a username and the qualifying score. Email addresses stay private and are used for authentication and account communication. The service is intended only for users aged 13 and older.
+Public leaderboard entries contain only a username and the qualifying score. Email addresses and daily practice dates stay private and are used only for authentication, account communication, and personal streak calculations.
 
-The in-app KVKK/privacy notice is a pre-release draft and must receive a final legal and operational review before public launch.
+The in-app KVKK/privacy notice remains a draft and still requires final legal and operational review.
 
 ## Contributing
 

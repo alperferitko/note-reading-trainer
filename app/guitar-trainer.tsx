@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { noteClassFromAnswer } from "@/lib/session-insights.mjs";
+import { playPracticeNote } from "@/lib/practice-audio";
 import { CommunityPracticeRecorder, CommunityPracticeStreak } from "./community";
 
 type Locale = "tr" | "en";
@@ -15,6 +16,7 @@ type GuitarQuestion = {
   stringLabel: string;
   fret: number;
   letter: Letter;
+  midi: number;
   misses: number;
 };
 
@@ -22,12 +24,12 @@ const CHROMATIC = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "
 const NATURAL = new Set<Letter>(["C", "D", "E", "F", "G", "A", "B"]);
 const SOLFEGE: Record<Letter, string> = { C: "Do", D: "Re", E: "Mi", F: "Fa", G: "Sol", A: "La", B: "Si" };
 const STRINGS = [
-  { id: "e-high", number: 1, label: "e", open: "E" },
-  { id: "b", number: 2, label: "B", open: "B" },
-  { id: "g", number: 3, label: "G", open: "G" },
-  { id: "d", number: 4, label: "D", open: "D" },
-  { id: "a", number: 5, label: "A", open: "A" },
-  { id: "e-low", number: 6, label: "E", open: "E" },
+  { id: "e-high", number: 1, label: "e", open: "E", openMidi: 64 },
+  { id: "b", number: 2, label: "B", open: "B", openMidi: 59 },
+  { id: "g", number: 3, label: "G", open: "G", openMidi: 55 },
+  { id: "d", number: 4, label: "D", open: "D", openMidi: 50 },
+  { id: "a", number: 5, label: "A", open: "A", openMidi: 45 },
+  { id: "e-low", number: 6, label: "E", open: "E", openMidi: 40 },
 ] as const;
 
 const RANGES = {
@@ -75,6 +77,7 @@ const COPY = {
     repeat: "Aynı aralıkla yeniden çalış",
     change: "Perde aralığını değiştir",
     choices: "Nota seçenekleri",
+    listen: "Notayı dinle",
   },
   en: {
     kicker: "Guitar · standard tuning",
@@ -107,6 +110,7 @@ const COPY = {
     repeat: "Practise this range again",
     change: "Change fret range",
     choices: "Note choices",
+    listen: "Listen to the note",
   },
 } as const;
 
@@ -127,6 +131,7 @@ function buildQuestions(maxFret: number): GuitarQuestion[] {
         stringLabel: string.label,
         fret,
         letter: letter as Letter,
+        midi: string.openMidi + fret,
         misses: 0,
       });
     }
@@ -217,10 +222,12 @@ function Fretboard({
 
 export function GuitarTrainer({
   locale,
+  soundEnabled,
   onHome,
   onSightReading,
 }: {
   locale: Locale;
+  soundEnabled: boolean;
   onHome: () => void;
   onSightReading: () => void;
 }) {
@@ -284,6 +291,7 @@ export function GuitarTrainer({
     if (!current || feedback) return;
     const guessed = noteClassFromAnswer(value);
     if (!guessed) return;
+    playPracticeNote(current.midi, soundEnabled);
     setFeedbackQuestion(current);
     setAnswer(value);
     setTimes((items) => [...items, Math.max(100, Date.now() - startedAt)]);
@@ -380,6 +388,15 @@ export function GuitarTrainer({
         <p className="kicker">{displayed && text.location(displayed.stringNumber, displayed.fret)}</p>
         <h1>{text.question}</h1>
         {displayed && <Fretboard maxFret={maxFret} locale={locale} active={displayed} />}
+        {displayed && (
+          <button className="listen-note-button listen-note-button--dark" type="button" onClick={() => playPracticeNote(displayed.midi, soundEnabled)} disabled={!soundEnabled}>
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M4 10v4h4l5 4V6L8 10H4Z" fill="currentColor" />
+              <path d="M16 9c1.2 1.7 1.2 4.3 0 6M18.7 6.8c2.8 3 2.8 7.4 0 10.4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+            {text.listen}
+          </button>
+        )}
         {!feedback ? (
           <form className="guitar-answer" onSubmit={submit}>
             <label htmlFor="guitar-answer">{text.answer}</label>

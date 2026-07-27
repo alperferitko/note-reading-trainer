@@ -30,9 +30,13 @@ import {
   PracticeStreak,
   recordPracticeDay,
 } from "@/lib/practice-streak";
+import {
+  DELETE_ACCOUNT_CONFIRMATION,
+  deleteCurrentAccount,
+} from "@/lib/delete-account.mjs";
 
 type Locale = "tr" | "en";
-type Panel = "auth" | "account" | "leaderboard" | "legal" | "confirm" | null;
+type Panel = "auth" | "account" | "delete" | "leaderboard" | "legal" | "confirm" | null;
 type AccountStatus = "saved" | "not_better" | "ineligible" | "backend_pending" | null;
 
 const PENDING_SCORE_KEY = "nota-nota-pending-score";
@@ -102,8 +106,20 @@ const TEXT = {
     usernameInvalid: "3–7 karakterlik harf, rakam veya alt çizgi kullan.",
     signedInAs: "Giriş yapılan e-posta",
     signOut: "Çıkış yap",
+    deleteTitle: "Hesabı sil",
+    deleteExplanation: "Hesabın, kullanıcı adın, skorların ve çalışma serisi kayıtların kalıcı olarak silinir. Bu işlem geri alınamaz.",
+    deleteButton: "Hesabımı sil",
+    deleteDangerLabel: "Kalıcı işlem",
+    deleteConfirmCopy: "Devam etmek için aşağıdaki ifadeyi eksiksiz yaz:",
+    deletePhrase: "HESABIMI SİL",
+    deleteInputLabel: "Onay ifadesi",
+    deleteConfirmButton: "Hesabımı kalıcı olarak sil",
+    deleting: "Hesabın siliniyor…",
+    deleteError: "Hesabın şu anda silinemedi. Hesabın açık kalmaya devam ediyor; tekrar deneyebilirsin.",
+    deleteSuccess: "Hesabın ve ilişkili kayıtların silindi.",
+    cancel: "Vazgeç",
     boardTitle: "NotaNota sıralaması",
-    boardEmpty: "Bu kategoride henüz bir skor yok.",
+    boardEmpty: "Bu kategoride henüz skor yok. İlk sırayı sen aç.",
     loading: "Yükleniyor…",
     standard: "Normal",
     endless: "Sonsuz",
@@ -147,8 +163,20 @@ const TEXT = {
     usernameInvalid: "Use 3–7 letters, numbers, or underscores.",
     signedInAs: "Signed-in email",
     signOut: "Sign out",
+    deleteTitle: "Delete account",
+    deleteExplanation: "Your account, username, scores and practice streak records will be permanently deleted. This action cannot be undone.",
+    deleteButton: "Delete my account",
+    deleteDangerLabel: "Permanent action",
+    deleteConfirmCopy: "To continue, type the following phrase exactly:",
+    deletePhrase: DELETE_ACCOUNT_CONFIRMATION,
+    deleteInputLabel: "Confirmation phrase",
+    deleteConfirmButton: "Permanently delete my account",
+    deleting: "Deleting your account…",
+    deleteError: "Your account could not be deleted right now. It remains active; you can try again.",
+    deleteSuccess: "Your account and related records were deleted.",
+    cancel: "Cancel",
     boardTitle: "NotaNota leaderboard",
-    boardEmpty: "There are no scores in this category yet.",
+    boardEmpty: "No scores here yet. Set the first benchmark.",
     loading: "Loading…",
     standard: "Standard",
     endless: "Endless",
@@ -206,8 +234,11 @@ export function CommunityProvider({ locale, children }: { locale: Locale; childr
   const [confirming, setConfirming] = useState(false);
   const [panelNotice, setPanelNotice] = useState("");
   const [accountStatus, setAccountStatus] = useState<AccountStatus>(null);
+  const [deletionBusy, setDeletionBusy] = useState(false);
+  const [accountDeleted, setAccountDeleted] = useState(false);
   const pendingScoreInFlight = useRef(false);
   const streakRequestId = useRef(0);
+  const deletionNoticeRef = useRef<HTMLDivElement>(null);
   const text = TEXT[locale];
 
   const refreshPracticeStreak = useCallback(async () => {
@@ -309,15 +340,37 @@ export function CommunityProvider({ locale, children }: { locale: Locale; childr
     return () => data.subscription.unsubscribe();
   }, [refreshPracticeStreak]);
 
+  useEffect(() => {
+    if (accountDeleted) deletionNoticeRef.current?.focus({ preventScroll: true });
+  }, [accountDeleted]);
+
   function openPanel(nextPanel: Exclude<Panel, "confirm">, notice = "") {
     setPanelNotice(notice);
     setPanel(nextPanel);
   }
 
   const closePanel = useCallback(() => {
+    if (deletionBusy) return;
     setPanel(null);
     setPanelNotice("");
     setAccountStatus(null);
+  }, [deletionBusy]);
+
+  const finishAccountDeletion = useCallback(() => {
+    clearPendingScore();
+    pendingScoreInFlight.current = false;
+    streakRequestId.current += 1;
+    setUser(null);
+    setProfile(null);
+    setStreak(null);
+    setStreakError(false);
+    setStreakLoading(false);
+    setAccountStatus(null);
+    setPanelNotice("");
+    setPanel(null);
+    setDeletionBusy(false);
+    setAuthReady(true);
+    setAccountDeleted(true);
   }, []);
 
   async function confirmEmail() {
@@ -355,8 +408,15 @@ export function CommunityProvider({ locale, children }: { locale: Locale; childr
       recordPracticeCompletion,
     }}>
       {children}
+      {accountDeleted && (
+        <div className="community-toast" ref={deletionNoticeRef} role="status" aria-live="polite" tabIndex={-1}>
+          <span aria-hidden="true">✓</span>
+          <p>{text.deleteSuccess}</p>
+          <button type="button" onClick={() => setAccountDeleted(false)} aria-label={text.close}>×</button>
+        </div>
+      )}
       {panel && (
-        <Modal title={panel === "account" && profile ? text.account : panelTitle(panel, text)} closeLabel={text.close} onClose={closePanel} wide={panel === "leaderboard"}>
+        <Modal title={panel === "account" && profile ? text.account : panelTitle(panel, text)} closeLabel={text.close} onClose={closePanel} wide={panel === "leaderboard"} dismissible={!deletionBusy}>
           {panel === "auth" && <AuthPanel locale={locale} notice={panelNotice} />}
           {panel === "account" && (
             <AccountPanel
@@ -367,6 +427,15 @@ export function CommunityProvider({ locale, children }: { locale: Locale; childr
               notice={accountStatus ? accountStatusCopy(accountStatus, text) : ""}
               onScoreStatus={setAccountStatus}
               onClose={closePanel}
+              onDelete={() => openPanel("delete")}
+            />
+          )}
+          {panel === "delete" && user && supabase && (
+            <DeleteAccountPanel
+              locale={locale}
+              onBusyChange={setDeletionBusy}
+              onCancel={closePanel}
+              onDeleted={finishAccountDeletion}
             />
           )}
           {panel === "leaderboard" && <LeaderboardPanel locale={locale} />}
@@ -389,6 +458,7 @@ export function CommunityProvider({ locale, children }: { locale: Locale; childr
 function panelTitle(panel: Panel, text: (typeof TEXT)[Locale]) {
   if (panel === "auth") return text.emailTitle;
   if (panel === "account") return text.usernameTitle;
+  if (panel === "delete") return text.deleteTitle;
   if (panel === "leaderboard") return text.boardTitle;
   if (panel === "legal") return text.legal;
   return text.confirmTitle;
@@ -401,7 +471,7 @@ function accountStatusCopy(status: Exclude<AccountStatus, null>, text: (typeof T
   return text.backendPending;
 }
 
-function Modal({ title, closeLabel, onClose, children, wide = false }: { title: string; closeLabel: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
+function Modal({ title, closeLabel, onClose, children, wide = false, dismissible = true }: { title: string; closeLabel: string; onClose: () => void; children: ReactNode; wide?: boolean; dismissible?: boolean }) {
   const dialogRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -421,6 +491,7 @@ function Modal({ title, closeLabel, onClose, children, wide = false }: { title: 
     function handleKeydown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
+        if (!dismissible) return;
         onClose();
         return;
       }
@@ -448,14 +519,14 @@ function Modal({ title, closeLabel, onClose, children, wide = false }: { title: 
       if (!appWasInert) appShell?.removeAttribute("inert");
       previouslyFocused?.focus();
     };
-  }, [onClose]);
+  }, [dismissible, onClose]);
 
   return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => dismissible && event.target === event.currentTarget && onClose()}>
       <section ref={dialogRef} className={`modal-card ${wide ? "modal-card--leaderboard" : ""}`} role="dialog" aria-modal="true" aria-labelledby="community-modal-title">
         <header>
           <h2 id="community-modal-title">{title}</h2>
-          <button type="button" onClick={onClose} aria-label={closeLabel} data-modal-close>
+          <button type="button" onClick={onClose} aria-label={closeLabel} data-modal-close disabled={!dismissible}>
             <svg className="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path d="m7 7 10 10M17 7 7 17" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
             </svg>
@@ -513,7 +584,7 @@ function AuthPanel({ locale, notice }: { locale: Locale; notice: string }) {
   );
 }
 
-function AccountPanel({ locale, user, profile, onProfile, notice, onScoreStatus, onClose }: { locale: Locale; user: User | null; profile: Profile | null; onProfile: (username: string) => void; notice: string; onScoreStatus: (status: AccountStatus) => void; onClose: () => void }) {
+function AccountPanel({ locale, user, profile, onProfile, notice, onScoreStatus, onClose, onDelete }: { locale: Locale; user: User | null; profile: Profile | null; onProfile: (username: string) => void; notice: string; onScoreStatus: (status: AccountStatus) => void; onClose: () => void; onDelete: () => void }) {
   const [username, setUsername] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -573,18 +644,104 @@ function AccountPanel({ locale, user, profile, onProfile, notice, onScoreStatus,
           {notice && <p className="community-message" aria-live="polite">{notice}</p>}
           <button className="secondary-button" type="button" onClick={() => void signOut()} disabled={busy}>{text.signOut}</button>
           {message && <p className="community-message" role="alert">{message}</p>}
+          <AccountDangerZone locale={locale} onDelete={onDelete} disabled={busy} />
         </>
       ) : (
-        <form className="community-form" onSubmit={save}>
-          <p>{text.usernameCopy}</p>
-          <label htmlFor="community-username">{text.username}</label>
-          <input id="community-username" value={username} onChange={(event) => setUsername(event.target.value)} minLength={3} maxLength={7} pattern="[A-Za-z0-9_]{3,7}" required autoComplete="username" aria-describedby="community-username-hint community-username-status" aria-invalid={Boolean(message)} />
-          <small id="community-username-hint">{text.usernameHint}</small>
-          <button className="primary-button" type="submit" disabled={busy}>{text.saveUsername}<span aria-hidden="true">→</span></button>
-          <p id="community-username-status" className="community-message" role={message ? "alert" : "status"} aria-live="polite">{message}</p>
-        </form>
+        <>
+          <form className="community-form" onSubmit={save}>
+            <p>{text.usernameCopy}</p>
+            <label htmlFor="community-username">{text.username}</label>
+            <input id="community-username" value={username} onChange={(event) => setUsername(event.target.value)} minLength={3} maxLength={7} pattern="[A-Za-z0-9_]{3,7}" required autoComplete="username" aria-describedby="community-username-hint community-username-status" aria-invalid={Boolean(message)} disabled={busy} />
+            <small id="community-username-hint">{text.usernameHint}</small>
+            <button className="primary-button" type="submit" disabled={busy}>{text.saveUsername}<span aria-hidden="true">→</span></button>
+            <p id="community-username-status" className="community-message" role={message ? "alert" : "status"} aria-live="polite">{message}</p>
+          </form>
+          <button className="secondary-button" type="button" onClick={() => void signOut()} disabled={busy}>{text.signOut}</button>
+          <AccountDangerZone locale={locale} onDelete={onDelete} disabled={busy} />
+        </>
       )}
     </div>
+  );
+}
+
+function AccountDangerZone({ locale, onDelete, disabled }: { locale: Locale; onDelete: () => void; disabled: boolean }) {
+  const text = TEXT[locale];
+  const descriptionId = useId();
+  return (
+    <section className="account-danger-zone" aria-labelledby={`${descriptionId}-title`}>
+      <p>{text.deleteDangerLabel}</p>
+      <h3 id={`${descriptionId}-title`}>{text.deleteTitle}</h3>
+      <span id={descriptionId}>{text.deleteExplanation}</span>
+      <button className="danger-button" type="button" onClick={onDelete} disabled={disabled} aria-describedby={descriptionId}>
+        {text.deleteButton}
+      </button>
+    </section>
+  );
+}
+
+function DeleteAccountPanel({ locale, onBusyChange, onCancel, onDeleted }: { locale: Locale; onBusyChange: (busy: boolean) => void; onCancel: () => void; onDeleted: () => void }) {
+  const [confirmation, setConfirmation] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const inputId = useId();
+  const statusId = useId();
+  const text = TEXT[locale];
+  const matches = confirmation === text.deletePhrase;
+
+  async function confirmDeletion(event: FormEvent) {
+    event.preventDefault();
+    if (!supabase || busy || !matches) return;
+
+    setBusy(true);
+    onBusyChange(true);
+    setMessage("");
+    try {
+      await deleteCurrentAccount(supabase);
+      clearPendingScore();
+      try {
+        await supabase.auth.signOut({ scope: "local" });
+      } catch {
+        // The Auth user is already deleted; local React state is cleared below
+        // even if the client cannot complete its best-effort session cleanup.
+      }
+      onDeleted();
+    } catch {
+      setMessage(text.deleteError);
+    } finally {
+      setBusy(false);
+      onBusyChange(false);
+    }
+  }
+
+  return (
+    <form className="delete-account-panel" onSubmit={confirmDeletion} aria-describedby={statusId}>
+      <div className="delete-account-warning">
+        <strong>{text.deleteDangerLabel}</strong>
+        <p>{text.deleteExplanation}</p>
+      </div>
+      <p>{text.deleteConfirmCopy}</p>
+      <code>{text.deletePhrase}</code>
+      <label htmlFor={inputId}>{text.deleteInputLabel}</label>
+      <input
+        id={inputId}
+        value={confirmation}
+        onChange={(event) => setConfirmation(event.target.value)}
+        autoComplete="off"
+        autoCapitalize="characters"
+        autoCorrect="off"
+        spellCheck={false}
+        disabled={busy}
+      />
+      <div className="delete-account-actions">
+        <button className="secondary-button" type="button" onClick={onCancel} disabled={busy}>{text.cancel}</button>
+        <button className="danger-button" type="submit" disabled={busy || !matches} aria-busy={busy}>
+          {busy ? text.deleting : text.deleteConfirmButton}
+        </button>
+      </div>
+      <p id={statusId} className="community-message" role={message ? "alert" : "status"} aria-live="polite">
+        {busy ? text.deleting : message}
+      </p>
+    </form>
   );
 }
 
@@ -940,17 +1097,17 @@ function LegalNotice({ locale }: { locale: Locale }) {
   const isTurkish = locale === "tr";
   return (
     <article className="legal-copy">
-      <p className="legal-draft"><strong>{isTurkish ? "Yayın öncesi taslak" : "Pre-release draft"}</strong> — {isTurkish ? "Başvuru adresi/KEP bilgisi ve yurt dışı aktarım mekanizması hukukçu tarafından tamamlanmalıdır." : "The application address/KEP details and cross-border transfer mechanism must be completed with legal counsel."}</p>
+      <p className="legal-updated">{isTurkish ? "Son güncelleme: 26 Temmuz 2026" : "Last updated: 26 July 2026"}</p>
       <h3>{isTurkish ? "Veri sorumlusu" : "Data controller"}</h3>
       <p>Alper Ferit Koç · kvkk@notanota.online</p>
       <h3>{isTurkish ? "İşlenen veriler ve amaçlar" : "Data and purposes"}</h3>
       <p>{isTurkish ? "E-posta adresi yalnızca şifresiz hesap doğrulaması ve hesap güvenliği için; 3–7 karakterli kullanıcı adı ile en iyi oturum skorları leaderboard için işlenir. Tamamlanan çalışma günleri ve tarayıcının bildirdiği saat dilimi, özel günlük seri ve devamlılık istatistiklerini hesaplamak için saklanır. E-posta ve günlük seri verileri leaderboard’da yayımlanmaz. Hizmet reklam veya pazarlama profili oluşturmaz." : "Email is processed only for passwordless account verification and account security. A 3–7 character username and personal-best session scores are processed for the leaderboard. Completed practice dates and the browser-reported time zone are stored to calculate private daily-streak and consistency statistics. Email and streak data are never published on the leaderboard. The service does not build advertising or marketing profiles."}</p>
       <h3>{isTurkish ? "Toplama yöntemi, hukuki sebep ve aktarım" : "Collection, legal basis, and transfers"}</h3>
-      <p>{isTurkish ? "Veriler hesap oluşturma ve çalışma oturumları sırasında elektronik olarak toplanır. Hesap ve leaderboard hizmetinin kurulması/ifası ile hizmet güvenliğine ilişkin meşru menfaat dayanakları taslak olarak esas alınmıştır. Kimlik doğrulama ve veritabanı hizmetleri Supabase; e-posta teslimi Resend veya yapılandırılacak SMTP sağlayıcısı üzerinden yürütülecektir. Bu sağlayıcılar yurt dışında veri işleyebilir; KVKK madde 9 kapsamındaki uygun güvence süreci tamamlanmadan hizmet kamuya açılmayacaktır." : "Data is collected electronically during account creation and practice sessions. This draft relies on service performance and legitimate interests in service security. Authentication and database services will use Supabase; email delivery will use Resend or the configured SMTP provider. These processors may handle data abroad; the public service will not open until the applicable KVKK Article 9 safeguard process is complete."}</p>
+      <p>{isTurkish ? "Veriler hesap oluşturma ve çalışma oturumları sırasında elektronik olarak toplanır. Hesap, günlük seri ve leaderboard işlevleri hizmetin kurulması/ifası; hesap güvenliği kayıtları ise hizmet güvenliğine ilişkin meşru menfaat kapsamında işlenir. Kimlik doğrulama ve veritabanı hizmetleri Supabase, e-posta teslimi Resend üzerinden yürütülür. Bu sağlayıcılar verileri yurt dışında işleyebilir. Aktarımın dayanağı ve uygulanan güvenceler hakkında ayrıntı istemek için kvkk@notanota.online adresine yazabilirsin." : "Data is collected electronically during account creation and practice sessions. Account, daily-streak and leaderboard features are processed to provide the service; account-security records are processed for the legitimate interest of keeping the service secure. Authentication and database services are provided by Supabase, and email is delivered through Resend. These providers may process data outside Türkiye. You can ask for details about the transfer basis and safeguards at kvkk@notanota.online."}</p>
       <h3>{isTurkish ? "Saklama ve güvenlik" : "Retention and security"}</h3>
       <p>{isTurkish ? "Hesap, kullanıcı adı, kişisel rekorlar ve tamamlanan çalışma günleri hesap silinene kadar saklanır; hesap silindiğinde seri kayıtları da silinir. Tek kullanımlık giriş bağlantıları kısa süreli ve tek kullanımlıdır. E-posta adresleri satılmaz; reklam veya pazarlama amacıyla paylaşılmaz. Güvenli girişin sağlanması için yalnızca Supabase ve yapılandırılan e-posta teslim sağlayıcısı tarafından işlenir. Zorunlu oturum verileri dışında takip/analiz çerezi kullanılmaz." : "The account, username, personal-best scores and completed practice dates are retained until the account is deleted; streak records are deleted with the account. Sign-in links are short-lived and single-use. Email addresses are never sold or shared for advertising or marketing. They are processed only by Supabase and the configured email delivery provider to provide secure sign-in. No tracking or analytics cookies are used beyond essential authentication storage."}</p>
       <h3>{isTurkish ? "Haklar ve başvuru" : "Rights and requests"}</h3>
-      <p>{isTurkish ? "KVKK madde 11 kapsamındaki erişim, düzeltme, silme, işleme ve aktarıma ilişkin bilgi alma ile itiraz hakların için kvkk@notanota.online adresine başvurabilirsin. Başvurular en geç 30 gün içinde sonuçlandırılır. Kamuya açılmadan önce posta/KEP başvuru adresi buraya eklenecektir." : "You may contact kvkk@notanota.online regarding access, correction, deletion, processing and transfer information, and objection rights under KVKK Article 11. Requests are answered within 30 days. A postal/KEP application address will be added before public launch."}</p>
+      <p>{isTurkish ? "Hesabını ve ilişkili kayıtlarını Hesabım panelinden kendin silebilirsin. Ayrıca KVKK madde 11 kapsamındaki erişim, düzeltme, silme, işleme ve aktarıma ilişkin bilgi alma ile itiraz hakların için hesabında kayıtlı e-posta adresinden kvkk@notanota.online adresine başvurabilirsin. Başvurular talebin niteliğine göre en kısa sürede ve en geç 30 gün içinde sonuçlandırılır." : "You can delete your account and related records yourself from the Account panel. You may also contact kvkk@notanota.online from the email address registered to your account regarding access, correction, deletion, processing and transfer information, and objection rights under KVKK Article 11. Requests are answered as soon as possible and no later than 30 days, depending on their nature."}</p>
     </article>
   );
 }

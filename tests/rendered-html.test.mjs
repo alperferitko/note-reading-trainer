@@ -6,6 +6,10 @@ import {
   noteClassFromAnswer,
   pickDominantConfusion,
 } from "../lib/session-insights.mjs";
+import {
+  DELETE_ACCOUNT_CONFIRMATION,
+  deleteCurrentAccount,
+} from "../lib/delete-account.mjs";
 
 async function render() {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
@@ -106,7 +110,12 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.selection-indicator::after[\s\S]*opacity: 0;[\s\S]*transform: scale\(\.35\)/);
   assert.match(styles, /\.mode-card\.is-selected \.selection-indicator::after[\s\S]*opacity: 1;[\s\S]*transform: scale\(1\)/);
   assert.match(styles, /\.level-card\.is-selected \.range-preview-note[\s\S]*transition-delay: \.1s/);
-  assert.match(page, /Bol şans — her doğru cevap biraz daha akıcılık!/);
+  assert.match(page, /Hazırsan başlayalım — sakin bak, net cevapla\./);
+  assert.match(page, /const GuitarTrainer = lazy/);
+  assert.match(page, /className="mobile-module-navigation"/);
+  assert.match(page, /playPracticeNote\(noteIdToMidi\(current\.id\), soundEnabled\)/);
+  assert.match(page, /className="listen-note-button"/);
+  assert.match(styles, /\.mobile-module-navigation/);
   assert.match(page, /className="brand-mark" aria-hidden="true">♪<\/span>/);
   assert.match(page, /className="brand-mark result-flourish" aria-hidden="true">♪<\/span>/);
   assert.doesNotMatch(page, /name="note"/);
@@ -412,6 +421,84 @@ test("günlük çalışma serisi gerçek tamamlamaları hesapta güvenle ve dür
     community,
     /completed practice dates are retained until the account is deleted; streak records are deleted with the account\./,
   );
+});
+
+test("hesap silme istemcisi yalnızca doğrulanmış Edge Function sözleşmesini kullanır", async () => {
+  const calls = [];
+  const mockClient = {
+    functions: {
+      async invoke(name, options) {
+        calls.push({ name, options });
+        return { data: { deleted: true }, error: null };
+      },
+    },
+  };
+
+  const result = await deleteCurrentAccount(mockClient);
+  assert.deepEqual(result, { deleted: true });
+  assert.deepEqual(calls, [{
+    name: "delete-account",
+    options: { body: { confirmation: "DELETE MY ACCOUNT" } },
+  }]);
+  assert.equal(DELETE_ACCOUNT_CONFIRMATION, "DELETE MY ACCOUNT");
+
+  const failingClient = {
+    functions: {
+      async invoke() {
+        return {
+          data: null,
+          error: { message: "internal database detail that must not reach the UI" },
+        };
+      },
+    },
+  };
+  await assert.rejects(
+    deleteCurrentAccount(failingClient),
+    (error) => error instanceof Error
+      && error.message === "delete_account_failed"
+      && !error.message.includes("database"),
+  );
+});
+
+test("hesap paneli iki dilli, erişilebilir ve tekrar denenebilir silme akışı sunar", async () => {
+  const community = await readFile(new URL("../app/community.tsx", import.meta.url), "utf8");
+  const deletionClient = await readFile(new URL("../lib/delete-account.mjs", import.meta.url), "utf8");
+  const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+
+  assert.match(community, /deleteTitle: "Hesabı sil"/);
+  assert.match(community, /deleteButton: "Hesabımı sil"/);
+  assert.match(community, /deletePhrase: "HESABIMI SİL"/);
+  assert.match(community, /deleteSuccess: "Hesabın ve ilişkili kayıtların silindi\."/);
+  assert.match(community, /deleteTitle: "Delete account"/);
+  assert.match(community, /deleteButton: "Delete my account"/);
+  assert.match(community, /deletePhrase: DELETE_ACCOUNT_CONFIRMATION/);
+  assert.match(community, /deleteSuccess: "Your account and related records were deleted\."/);
+  assert.match(community, /panel === "delete" && user && supabase/);
+  assert.match(community, /const matches = confirmation === text\.deletePhrase;/);
+  assert.match(community, /disabled=\{busy \|\| !matches\}/);
+  assert.match(community, /disabled=\{busy\}/);
+  assert.match(community, /aria-busy=\{busy\}/);
+  assert.match(community, /onBusyChange\(true\)/);
+  assert.match(community, /onBusyChange\(false\)/);
+  assert.match(community, /await deleteCurrentAccount\(supabase\)/);
+  assert.match(community, /clearPendingScore\(\)/);
+  assert.match(community, /supabase\.auth\.signOut\(\{ scope: "local" \}\)/);
+  assert.match(community, /setUser\(null\)/);
+  assert.match(community, /setProfile\(null\)/);
+  assert.match(community, /setStreak\(null\)/);
+  assert.match(community, /role="status" aria-live="polite" tabIndex=\{-1\}/);
+  assert.match(community, /role=\{message \? "alert" : "status"\} aria-live="polite"/);
+  assert.match(community, /dismissible=\{!deletionBusy\}/);
+  assert.match(community, /Hesabını ve ilişkili kayıtlarını Hesabım panelinden kendin silebilirsin\./);
+  assert.match(community, /You can delete your account and related records yourself from the Account panel\./);
+  assert.doesNotMatch(community, /window\.confirm/);
+  assert.doesNotMatch(community, /service[_-]?role|secret[_-]?key|admin[_-]?credential/i);
+  assert.match(deletionClient, /functions\.invoke\("delete-account"/);
+  assert.match(deletionClient, /confirmation: DELETE_ACCOUNT_CONFIRMATION/);
+  assert.doesNotMatch(deletionClient, /service[_-]?role|secret[_-]?key|api[_-]?token/i);
+  assert.match(styles, /\.account-danger-zone/);
+  assert.match(styles, /\.delete-account-panel/);
+  assert.match(styles, /\.community-toast/);
 });
 
 test("geçerli nota cevaplarını karışıklık çiftlerine dönüştürür", () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, MouseEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, lazy, MouseEvent, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   CommunityHeader,
   CommunityLeaderboardButton,
@@ -10,7 +10,6 @@ import {
   CommunityProvider,
   CommunityResult,
 } from "./community";
-import { GuitarTrainer } from "./guitar-trainer";
 import type { ScoreSubmission, SessionType } from "@/lib/leaderboard";
 import {
   buildSessionInsight,
@@ -19,6 +18,12 @@ import {
   noteClassFromLetter,
   pickDominantConfusion,
 } from "@/lib/session-insights.mjs";
+import {
+  noteIdToMidi,
+  playPracticeNote,
+  readSoundPreference,
+  writeSoundPreference,
+} from "@/lib/practice-audio";
 
 type LevelId = "temel" | "yakin" | "tam" | "genis";
 type ModeId = "porte" | "konum";
@@ -42,6 +47,10 @@ type QueuedQuestion = {
 
 type AnswerNoteClass = NonNullable<ReturnType<typeof noteClassFromAnswer>>;
 type AnswerFeedback = { correct: boolean; note: NoteQuestion; guessed: AnswerNoteClass | null };
+
+const GuitarTrainer = lazy(() => import("./guitar-trainer").then((module) => ({
+  default: module.GuitarTrainer,
+})));
 
 type Copy = {
   homeLabel: string;
@@ -118,7 +127,7 @@ const COPY: Record<Locale, Copy> = {
       konum: { title: "Konumu oku", description: "Konumu gör, ismini yaz" },
     },
     start: "Oturumu başlat",
-    setupNote: "Bol şans — her doğru cevap biraz daha akıcılık!",
+    setupNote: "Hazırsan başlayalım — sakin bak, net cevapla.",
     progress: "İlerleme",
     completedLabel: (total, completed) => `${total} sorudan ${completed} tamamlandı`,
     remaining: (count) => `${count} nota kaldı`,
@@ -178,7 +187,7 @@ const COPY: Record<Locale, Copy> = {
       konum: { title: "Read the position", description: "Read the position, type its letter name" },
     },
     start: "Start session",
-    setupNote: "Good luck — every correct answer builds a little more fluency!",
+    setupNote: "Ready when you are — look calmly, answer clearly.",
     progress: "Progress",
     completedLabel: (total, completed) => `${completed} of ${total} questions completed`,
     remaining: (count) => `${count} ${count === 1 ? "note" : "notes"} left`,
@@ -230,7 +239,7 @@ const EXTRA_COPY = {
     chooseSession: "Nasıl bir oturum istiyorsun?",
     standard: { title: "Normal mod", description: "Bütün notaları hatasız ve olabildiğince hızlı tamamla" },
     endless: { title: "Sonsuz mod", description: "İlk yanlışına kadar rastgele notalarla devam et" },
-    endlessSetupNote: "Bol şans — ilk yanlış seriyi bitirir!",
+    endlessSetupNote: "Hazırsan başlayalım — ilk yanlış seriyi bitirir.",
     correctAnswers: "Doğru cevap",
     noMistakes: "Hatasız seri",
     endlessResultTitle: "Seri sona erdi.",
@@ -244,7 +253,7 @@ const EXTRA_COPY = {
     chooseSession: "How long do you want to practise?",
     standard: { title: "Standard mode", description: "Complete every note perfectly and as quickly as possible" },
     endless: { title: "Endless mode", description: "Keep receiving random notes until your first mistake" },
-    endlessSetupNote: "Good luck — the first mistake ends the streak!",
+    endlessSetupNote: "Ready when you are — the first mistake ends the streak.",
     correctAnswers: "Correct answers",
     noMistakes: "Perfect streak",
     endlessResultTitle: "Streak complete.",
@@ -274,8 +283,7 @@ const LANDING_COPY = {
     guitarTitle: "Gitar klavyesi",
     guitarCopy: "Standart akortta doğal notaların tel ve perde üzerindeki yerlerini öğren.",
     guitarMeta: "0–3 · 0–5 · 0–12 perde",
-    open: "Modülü aç",
-    coming: "Piyano ve başka enstrümanlar sonraki bölümlerde stüdyoya katılacak.",
+    open: "Çalışmaya başla",
   },
   en: {
     eyebrow: "NotaNota · music literacy",
@@ -295,8 +303,7 @@ const LANDING_COPY = {
     guitarTitle: "Guitar fretboard",
     guitarCopy: "Learn where natural notes live across strings and frets in standard tuning.",
     guitarMeta: "Frets 0–3 · 0–5 · 0–12",
-    open: "Open module",
-    coming: "Piano and more instruments will join the studio in future releases.",
+    open: "Start practising",
   },
 } as const;
 
@@ -328,6 +335,21 @@ const SHELL_COPY = {
     correct: "Correct",
     mistakes: "Mistakes",
     leaderboard: "View leaderboard",
+  },
+} as const;
+
+const SOUND_COPY = {
+  tr: {
+    listen: "Notayı dinle",
+    soundOn: "Sesi kapat",
+    soundOff: "Sesi aç",
+    navigation: "Mobil bölüm menüsü",
+  },
+  en: {
+    listen: "Listen to the note",
+    soundOn: "Mute note audio",
+    soundOff: "Turn on note audio",
+    navigation: "Mobile section navigation",
   },
 } as const;
 
@@ -538,6 +560,7 @@ export default function Home() {
   const [clockNow, setClockNow] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [endedEarly, setEndedEarly] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
   const feedbackButtonRef = useRef<HTMLButtonElement>(null);
   const resultsHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -546,6 +569,7 @@ export default function Home() {
   const extra = EXTRA_COPY[locale];
   const landing = LANDING_COPY[locale];
   const shell = SHELL_COPY[locale];
+  const soundCopy = SOUND_COPY[locale];
   const levels = LEVELS[locale];
 
   const uniqueCount = questionsFor(level).length;
@@ -592,6 +616,11 @@ export default function Home() {
   }, [locale]);
 
   useEffect(() => {
+    const timer = window.setTimeout(() => setSoundEnabled(readSoundPreference()), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
     if (stage !== "quiz" || feedback) return;
 
     const hasDesktopPointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
@@ -616,6 +645,14 @@ export default function Home() {
   function changeLocale(nextLocale: Locale) {
     setLocale(nextLocale);
     setAnswer("");
+  }
+
+  function toggleSound() {
+    setSoundEnabled((enabled) => {
+      const next = !enabled;
+      writeSoundPreference(next);
+      return next;
+    });
   }
 
   function startSession() {
@@ -661,6 +698,7 @@ export default function Home() {
     const elapsed = Math.max(100, answeredAt - questionStartedAt);
     const guessed = noteClassFromAnswer(nextAnswer);
     const correct = guessed?.letter === current.letter;
+    playPracticeNote(noteIdToMidi(current.id), soundEnabled);
     setAnswer(nextAnswer);
     setAnswerTimes((times) => [...times, elapsed]);
 
@@ -774,6 +812,20 @@ export default function Home() {
             </div>
           )}
           <CommunityHeader />
+          <button
+            className="sound-toggle"
+            type="button"
+            aria-label={soundEnabled ? soundCopy.soundOn : soundCopy.soundOff}
+            aria-pressed={soundEnabled}
+            onClick={toggleSound}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M4 10v4h4l5 4V6L8 10H4Z" fill="currentColor" />
+              {soundEnabled
+                ? <path d="M16 9c1.2 1.7 1.2 4.3 0 6M18.7 6.8c2.8 3 2.8 7.4 0 10.4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                : <path d="m16.5 9 4.5 6m0-6-4.5 6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />}
+            </svg>
+          </button>
           <div className="language-switch" role="group" aria-label={locale === "tr" ? "Dil seçimi" : "Language selection"}>
             <button type="button" className={locale === "tr" ? "is-active" : ""} onClick={() => changeLocale("tr")} aria-pressed={locale === "tr"}>TR</button>
             <button type="button" className={locale === "en" ? "is-active" : ""} onClick={() => changeLocale("en")} aria-pressed={locale === "en"}>EN</button>
@@ -781,6 +833,18 @@ export default function Home() {
         </div>
         <p className="rail-motto">{copy.footer}</p>
       </header>
+
+      <nav className="mobile-module-navigation" aria-label={soundCopy.navigation}>
+        <button type="button" className={stage === "landing" ? "is-active" : ""} onClick={() => setStage("landing")} aria-current={stage === "landing" ? "page" : undefined}>
+          <span aria-hidden="true">00</span>{shell.studio}
+        </button>
+        <button type="button" className={["setup", "quiz", "done"].includes(stage) ? "is-active" : ""} onClick={() => setStage("setup")} aria-current={["setup", "quiz", "done"].includes(stage) ? "page" : undefined}>
+          <span aria-hidden="true">01</span>{shell.sightReading}
+        </button>
+        <button type="button" className={stage === "guitar" ? "is-active" : ""} onClick={() => setStage("guitar")} aria-current={stage === "guitar" ? "page" : undefined}>
+          <span aria-hidden="true">02</span>{shell.guitar}
+        </button>
+      </nav>
 
       {stage === "landing" && (
         <section className="landing-shell">
@@ -825,13 +889,14 @@ export default function Home() {
                 <b>{landing.open} →</b>
               </button>
             </div>
-            <p className="module-coming">{landing.coming}</p>
           </div>
         </section>
       )}
 
       {stage === "guitar" && (
-        <GuitarTrainer locale={locale} onHome={() => setStage("landing")} onSightReading={() => setStage("setup")} />
+        <Suspense fallback={<section className="module-loading" aria-live="polite">{locale === "tr" ? "Gitar çalışması hazırlanıyor…" : "Preparing guitar practice…"}</section>}>
+          <GuitarTrainer locale={locale} soundEnabled={soundEnabled} onHome={() => setStage("landing")} onSightReading={() => setStage("setup")} />
+        </Suspense>
       )}
 
       {stage === "setup" && (
@@ -940,6 +1005,18 @@ export default function Home() {
                 <p>{displayedNote.location[locale].charAt(0).toUpperCase() + displayedNote.location[locale].slice(1)}</p>
               </div>
             )}
+            <button
+              className="listen-note-button"
+              type="button"
+              onClick={() => playPracticeNote(noteIdToMidi(displayedNote.id), soundEnabled)}
+              disabled={!soundEnabled}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4 10v4h4l5 4V6L8 10H4Z" fill="currentColor" />
+                <path d="M16 9c1.2 1.7 1.2 4.3 0 6M18.7 6.8c2.8 3 2.8 7.4 0 10.4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+              {soundCopy.listen}
+            </button>
 
             {!feedback ? (
               <form className="answer-form" onSubmit={submitAnswer}>

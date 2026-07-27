@@ -108,7 +108,9 @@ GitHub Pages hosts the static frontend. Supabase provides the external authentic
 
 Public leaderboard entries contain only a username and the qualifying score. Email addresses and daily practice dates stay private and are used only for authentication, account communication, and personal streak calculations.
 
-The in-app KVKK/privacy notice remains a draft and still requires final legal and operational review.
+Signed-in users can permanently delete their Supabase account and cascading profile, score, and practice-day records from the Account panel after typing an explicit confirmation phrase.
+
+The in-app KVKK/privacy notice describes the current data flow and service providers. The cross-border transfer mechanism still requires final legal and operational review before it should be represented as complete.
 
 ## Contributing
 

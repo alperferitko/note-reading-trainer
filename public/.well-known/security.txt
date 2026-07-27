@@ -1,0 +1,4 @@
+Contact: mailto:security@notanota.online
+Preferred-Languages: tr, en
+Canonical: https://notanota.online/.well-known/security.txt
+Expires: 2027-07-26T00:00:00.000Z

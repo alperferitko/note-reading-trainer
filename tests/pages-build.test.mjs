@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { access, readFile, readdir } from "node:fs/promises";
 import test from "node:test";
 
@@ -12,7 +13,16 @@ test("GitHub Pages output uses portable relative asset paths", async () => {
   assert.match(html, /href="\.\/nota-nota-icon\.png"/);
   assert.match(html, /content="https:\/\/notanota\.online\/og\.png"/);
   assert.match(html, /name="theme-color" content="#F4EFE4"/);
-  assert.match(html, /<title>NotaNota — Note Reading Trainer<\/title>/);
+  assert.match(html, /<title>NotaNota — Nota Okuma ve Gitar Çalışması<\/title>/);
+  assert.match(html, /rel="canonical" href="https:\/\/notanota\.online\/"/);
+  assert.match(html, /type="application\/ld\+json">.*"EducationalApplication"/);
+  assert.match(html, /http-equiv="Content-Security-Policy"/);
+  assert.match(html, /class="static-fallback"/);
+  assert.match(html, /<noscript>/);
+  const schema = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)?.[1];
+  assert.ok(schema);
+  const schemaHash = createHash("sha256").update(schema).digest("base64");
+  assert.match(html, new RegExp(`script-src 'self' 'sha256-${schemaHash.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}'`));
   assert.match(html, /property="og:site_name" content="NotaNota"/);
   assert.match(html, /property="og:image:secure_url"\s+content="https:\/\/notanota\.online\/og\.png"/);
   assert.match(html, /name="twitter:image"\s+content="https:\/\/notanota\.online\/og\.png"/);
@@ -37,10 +47,15 @@ test("GitHub Pages output contains every referenced local asset", async () => {
   await access(new URL(".nojekyll", output));
   await access(new URL("nota-nota-icon.png", output));
   await access(new URL("og.png", output));
+  await access(new URL("robots.txt", output));
+  await access(new URL("sitemap.xml", output));
+  await access(new URL("404.html", output));
+  await access(new URL(".well-known/security.txt", output));
 
   const assetFiles = await readdir(new URL("assets/", output));
   assert.ok(assetFiles.some((file) => file.endsWith(".js")));
   assert.ok(assetFiles.some((file) => file.endsWith(".css")));
+  assert.ok(assetFiles.some((file) => file.startsWith("guitar-trainer-") && file.endsWith(".js")));
 });
 
 test("static bundle has no unavailable server endpoint dependency", async () => {
@@ -59,5 +74,9 @@ test("static bundle has no unavailable server endpoint dependency", async () => 
   assert.doesNotMatch(
     JavaScript,
     /VITE_SUPABASE_(?:URL|PUBLISHABLE_KEY)\s*=/,
+  );
+  assert.doesNotMatch(
+    JavaScript,
+    /(?:service_role|sb_secret|github_pat|ghp_|sk_(?:live|test)_)[A-Za-z0-9_-]{10,}/i,
   );
 });

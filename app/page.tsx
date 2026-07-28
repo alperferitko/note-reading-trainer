@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element -- Relative public assets must work on both the custom domain and GitHub Pages subpath. */
 
-import { FormEvent, lazy, MouseEvent, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   CommunityHeader,
   CommunityLeaderboardButton,
@@ -28,7 +28,7 @@ import {
 
 type LevelId = "temel" | "yakin" | "tam" | "genis";
 type ModeId = "porte" | "konum";
-type Stage = "landing" | "setup" | "quiz" | "done" | "guitar";
+type Stage = "landing" | "setup" | "quiz" | "done";
 type Locale = "tr" | "en";
 
 type NoteQuestion = {
@@ -48,10 +48,6 @@ type QueuedQuestion = {
 
 type AnswerNoteClass = NonNullable<ReturnType<typeof noteClassFromAnswer>>;
 type AnswerFeedback = { correct: boolean; note: NoteQuestion; guessed: AnswerNoteClass | null };
-
-const GuitarTrainer = lazy(() => import("./guitar-trainer").then((module) => ({
-  default: module.GuitarTrainer,
-})));
 
 type Copy = {
   homeLabel: string;
@@ -269,41 +265,33 @@ const LANDING_COPY = {
   tr: {
     eyebrow: "NotaNota · müzik okuryazarlığı",
     title: "Notaları gör.",
-    titleAccent: "Enstrümanında bul.",
-    lead: "Porte okumayı ve notaların enstrümanındaki yerlerini aynı sakin, odaklı çalışma düzeninde geliştir.",
+    titleAccent: "Adını söyle.",
+    lead: "Sol anahtarındaki doğal notaları çizgi, aralık ve ek çizgiler üzerinde sakin, odaklı oturumlarla akıcı biçimde tanımayı öğren.",
     primary: "Nota okumaya başla",
-    secondary: "Gitar klavyesini keşfet",
     proofOne: "Türkçe + English",
     proofTwo: "Kısa, odaklı oturumlar",
     proofThree: "Hız ve doğruluk takibi",
     modulesEyebrow: "Çalışma stüdyosu",
-    modulesTitle: "Bugün neyi akıcılaştırmak istiyorsun?",
+    modulesTitle: "Bugün hangi notaları akıcılaştırmak istiyorsun?",
     readingTitle: "Porte okuma",
     readingCopy: "Sol anahtarındaki doğal notaları çizgi, aralık ve ek çizgiler üzerinde tanı.",
     readingMeta: "4 seviye · 2 soru biçimi",
-    guitarTitle: "Gitar klavyesi",
-    guitarCopy: "Standart akortta doğal notaların tel ve perde üzerindeki yerlerini öğren.",
-    guitarMeta: "0–3 · 0–5 · 0–12 perde",
     open: "Çalışmaya başla",
   },
   en: {
     eyebrow: "NotaNota · music literacy",
-    title: "Read the note.",
-    titleAccent: "Find it on your instrument.",
-    lead: "Build confident sight-reading and fretboard knowledge through calm, focused practice that adapts to your range.",
+    title: "See the note.",
+    titleAccent: "Name it.",
+    lead: "Build fluent recognition of natural notes on the treble staff through calm, focused practice across four ranges.",
     primary: "Start sight-reading",
-    secondary: "Explore the guitar fretboard",
     proofOne: "Türkçe + English",
     proofTwo: "Short, focused sessions",
     proofThree: "Speed and accuracy tracking",
     modulesEyebrow: "Practice studio",
-    modulesTitle: "What would you like to make fluent today?",
+    modulesTitle: "Make treble-clef notes fluent today.",
     readingTitle: "Sight-reading",
     readingCopy: "Recognise natural notes on the treble staff, from the core range to extended ledger lines.",
     readingMeta: "4 ranges · 2 question styles",
-    guitarTitle: "Guitar fretboard",
-    guitarCopy: "Learn where natural notes live across strings and frets in standard tuning.",
-    guitarMeta: "Frets 0–3 · 0–5 · 0–12",
     open: "Start practising",
   },
 } as const;
@@ -313,7 +301,6 @@ const SHELL_COPY = {
     navigation: "Çalışma bölümleri",
     studio: "Stüdyo",
     sightReading: "Nota oku",
-    guitar: "Gitar",
     currentSession: "Etkin oturum",
     question: "Soru",
     remaining: "Kalan",
@@ -327,7 +314,6 @@ const SHELL_COPY = {
     navigation: "Practice sections",
     studio: "Studio",
     sightReading: "Sight-reading",
-    guitar: "Guitar",
     currentSession: "Current session",
     question: "Question",
     remaining: "Remaining",
@@ -800,9 +786,6 @@ export default function Home() {
           <button type="button" className={["setup", "quiz", "done"].includes(stage) ? "is-active" : ""} onClick={() => setStage("setup")} aria-label={shell.sightReading} aria-current={["setup", "quiz", "done"].includes(stage) ? "page" : undefined}>
             <span aria-hidden="true">01</span><b>{shell.sightReading}</b>
           </button>
-          <button type="button" className={stage === "guitar" ? "is-active" : ""} onClick={() => setStage("guitar")} aria-label={shell.guitar} aria-current={stage === "guitar" ? "page" : undefined}>
-            <span aria-hidden="true">02</span><b>{shell.guitar}</b>
-          </button>
         </nav>
         <div className="header-actions">
           {stage === "quiz" && (
@@ -844,9 +827,6 @@ export default function Home() {
         <button type="button" className={["setup", "quiz", "done"].includes(stage) ? "is-active" : ""} onClick={() => setStage("setup")} aria-current={["setup", "quiz", "done"].includes(stage) ? "page" : undefined}>
           <span aria-hidden="true">01</span>{shell.sightReading}
         </button>
-        <button type="button" className={stage === "guitar" ? "is-active" : ""} onClick={() => setStage("guitar")} aria-current={stage === "guitar" ? "page" : undefined}>
-          <span aria-hidden="true">02</span>{shell.guitar}
-        </button>
       </nav>
 
       {stage === "landing" && (
@@ -858,7 +838,6 @@ export default function Home() {
               <p>{landing.lead}</p>
               <div className="landing-actions">
                 <button className="primary-button" type="button" onClick={() => setStage("setup")}>{landing.primary} <span aria-hidden="true">→</span></button>
-                <button className="secondary-button" type="button" onClick={() => setStage("guitar")}>{landing.secondary}</button>
               </div>
               <div className="landing-proof" aria-label={locale === "tr" ? "Özellikler" : "Features"}>
                 <span>{landing.proofOne}</span><span>{landing.proofTwo}</span><span>{landing.proofThree}</span>
@@ -866,7 +845,6 @@ export default function Home() {
             </div>
             <div className="landing-art" aria-hidden="true">
               <div className="landing-staff-card"><Staff note={ALL_NOTES.find((note) => note.id === "d5")!} locale={locale} compact /><span>{locale === "tr" ? "4. çizgi · Re" : "4th line · D"}</span></div>
-              <div className="landing-fret-card"><b>G</b><i /><i /><i /><i /><i /><i /><span>3</span><em>{locale === "tr" ? "6. tel · Sol" : "String 6 · G"}</em></div>
               <span className="landing-orbit landing-orbit--one" />
               <span className="landing-orbit landing-orbit--two" />
             </div>
@@ -883,23 +861,9 @@ export default function Home() {
                 <small>{landing.readingMeta}</small>
                 <b>{landing.open} →</b>
               </button>
-              <button className="module-card module-card--guitar" type="button" onClick={() => setStage("guitar")}>
-                <span className="module-number">02</span>
-                <span className="module-guitar-visual" aria-hidden="true"><i /><i /><i /><i /><i /><i /><b>3</b><b>5</b><b>7</b></span>
-                <strong>{landing.guitarTitle}</strong>
-                <span>{landing.guitarCopy}</span>
-                <small>{landing.guitarMeta}</small>
-                <b>{landing.open} →</b>
-              </button>
             </div>
           </div>
         </section>
-      )}
-
-      {stage === "guitar" && (
-        <Suspense fallback={<section className="module-loading" aria-live="polite">{locale === "tr" ? "Gitar çalışması hazırlanıyor…" : "Preparing guitar practice…"}</section>}>
-          <GuitarTrainer locale={locale} soundEnabled={soundEnabled} onHome={() => setStage("landing")} onSightReading={() => setStage("setup")} />
-        </Suspense>
       )}
 
       {stage === "setup" && (

@@ -30,17 +30,16 @@ test("NotaNota çalışma ekranını sunar", async () => {
 
   const html = await response.text();
   assert.match(html, /<html lang="tr">/i);
-  assert.match(html, /<title>NotaNota — Sight-Reading &amp; Instrument Practice<\/title>/i);
+  assert.match(html, /<title>NotaNota \| Note Reading Trainer<\/title>/i);
   assert.match(html, /Notaları gör/);
-  assert.match(html, /Enstrümanında bul/);
+  assert.match(html, /Adını söyle/);
   assert.match(html, /Porte okuma/);
-  assert.match(html, /Gitar klavyesi/);
+  assert.doesNotMatch(html, /Gitar klavyesi|Guitar fretboard/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
 });
 
 test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğunda tutar", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
-  const guitar = await readFile(new URL("../app/guitar-trainer.tsx", import.meta.url), "utf8");
   const community = await readFile(new URL("../app/community.tsx", import.meta.url), "utf8");
   const insights = await readFile(new URL("../lib/session-insights.mjs", import.meta.url), "utf8");
   const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
@@ -81,13 +80,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.endless-results-card/);
   assert.match(page, /questionKey\.current\+\+/);
   assert.match(page, /useState<Stage>\("landing"\)/);
-  assert.match(page, /<GuitarTrainer/);
-  assert.match(guitar, /const STRINGS =/);
-  assert.match(guitar, /frets: 3/);
-  assert.match(guitar, /frets: 5/);
-  assert.match(guitar, /frets: 12/);
-  assert.match(guitar, /NATURAL\.has/);
-  assert.match(guitar, /\[\.\.\.items\.slice\(1\), \{ \.\.\.items\[0\], misses: items\[0\]\.misses \+ 1 \}\]/);
+  assert.doesNotMatch(page, /GuitarTrainer|guitar-trainer|setStage\("guitar"\)/);
   assert.match(page, /<CommunityResult/);
   assert.match(community, /nota-nota-pending-score/);
   assert.match(community, /rememberPendingScore\(score\)/);
@@ -115,7 +108,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.mode-card\.is-selected \.selection-indicator::after[\s\S]*opacity: 1;[\s\S]*transform: scale\(1\)/);
   assert.match(styles, /\.level-card\.is-selected \.range-preview-note[\s\S]*transition-delay: \.1s/);
   assert.match(page, /Hazırsan başlayalım — sakin bak, net cevapla\./);
-  assert.match(page, /const GuitarTrainer = lazy/);
+  assert.doesNotMatch(page, /const GuitarTrainer = lazy/);
   assert.match(page, /className="mobile-module-navigation"/);
   assert.match(page, /playPracticeNote\(noteIdToMidi\(current\.id\), soundEnabled\)/);
   assert.match(page, /className="listen-note-button"/);
@@ -193,10 +186,6 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(community, /const last = focusable\[focusable\.length - 1\]/);
   assert.match(community, /last\.focus\(\)/);
   assert.match(community, /const closePanel = useCallback/);
-  assert.match(guitar, /role="region"/);
-  assert.match(guitar, /tabIndex=\{0\}/);
-  assert.match(guitar, /role="progressbar"/);
-  assert.match(guitar, /aria-describedby="guitar-feedback-message"/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(styles, /@media \(hover: none\) and \(pointer: coarse\)[\s\S]*\.answer-form > label \{ display: block; \}[\s\S]*\.answer-line \{ display: grid; \}/);
   assert.doesNotMatch(styles, /:has\(\.answer-line input:focus\)/);
@@ -224,7 +213,6 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
 
 test("günlük çalışma serisi gerçek tamamlamaları hesapta güvenle ve dürüstçe saklar", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
-  const guitar = await readFile(new URL("../app/guitar-trainer.tsx", import.meta.url), "utf8");
   const community = await readFile(new URL("../app/community.tsx", import.meta.url), "utf8");
   const streakClient = await readFile(new URL("../lib/practice-streak.ts", import.meta.url), "utf8");
   const streakMigration = await readFile(
@@ -248,22 +236,6 @@ test("günlük çalışma serisi gerçek tamamlamaları hesapta güvenle ve dür
     /<CommunityPracticeRecorder active=\{completedDailyPractice\} activityKey=\{`notes-\$\{sessionStartedAt\}`\} \/>/,
   );
   assert.match(page, /\{completedDailyPractice && <CommunityPracticeStreak compact \/>\}/);
-
-  // Guitar practice is recorded only from its completed-results branch. The
-  // per-session key keeps a new completed run distinct from a previous run.
-  assert.match(guitar, /setSessionKey\(sessionStartedAt\);[\s\S]*setStage\("quiz"\);/);
-  assert.match(
-    guitar,
-    /if \(queue\.length === 0\) \{[\s\S]*setStage\("done"\);[\s\S]*return;/,
-  );
-  assert.match(
-    guitar,
-    /if \(stage === "done"\) \{[\s\S]*<CommunityPracticeRecorder active activityKey=\{`guitar-\$\{sessionKey\}`\} \/>[\s\S]*<CommunityPracticeStreak compact \/>/,
-  );
-  assert.ok(
-    guitar.indexOf('<CommunityPracticeRecorder active activityKey={`guitar-${sessionKey}`} />')
-      > guitar.indexOf('if (stage === "done")'),
-  );
 
   // The live quiz answer streak is explicitly named so it cannot be confused
   // with the account's day streak.

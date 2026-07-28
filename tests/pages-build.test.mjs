@@ -10,11 +10,11 @@ test("GitHub Pages output uses portable relative asset paths", async () => {
 
   assert.match(html, /\.\/assets\/[^\"']+\.js/);
   assert.match(html, /\.\/assets\/[^\"']+\.css/);
-  assert.match(html, /href="\.\/nota-nota-icon\.svg"/);
+  assert.match(html, /href="\.\/notanota-app-icon\.svg"/);
   assert.match(html, /src="\.\/notanota-monogram\.png"/);
   assert.match(html, /content="https:\/\/notanota\.online\/og\.png"/);
   assert.match(html, /name="theme-color" content="#F4EFE4"/);
-  assert.match(html, /<title>NotaNota — Nota Okuma ve Gitar Çalışması<\/title>/);
+  assert.match(html, /<title>NotaNota \| Nota Okuma Çalışması<\/title>/);
   assert.match(html, /rel="canonical" href="https:\/\/notanota\.online\/"/);
   assert.match(html, /type="application\/ld\+json">.*"EducationalApplication"/);
   assert.match(html, /http-equiv="Content-Security-Policy"/);
@@ -46,11 +46,11 @@ test("GitHub Pages output contains every referenced local asset", async () => {
   assert.ok(paths.length >= 3);
   await Promise.all(paths.map((path) => access(new URL(path, output))));
   await access(new URL(".nojekyll", output));
-  await access(new URL("nota-nota-icon.svg", output));
+  await access(new URL("notanota-app-icon.svg", output));
   await access(new URL("notanota-monogram.png", output));
-  const favicon = await readFile(new URL("nota-nota-icon.svg", output), "utf8");
-  assert.match(favicon, /<rect[^>]+rx="112"[^>]+fill="#FBF8F1"[^>]+stroke="#C6A15B"/);
-  assert.match(favicon, /transform="translate\(21 21\) scale\(0\.94\)"/);
+  const favicon = await readFile(new URL("notanota-app-icon.svg", output), "utf8");
+  assert.match(favicon, /<rect[^>]+rx="72"[^>]+fill="#FBF8F1"[^>]+stroke="#C6A15B"/);
+  assert.match(favicon, /transform="translate\(31 31\) scale\(0\.90\)"/);
   await access(new URL("og.png", output));
   await access(new URL("robots.txt", output));
   await access(new URL("sitemap.xml", output));
@@ -60,7 +60,7 @@ test("GitHub Pages output contains every referenced local asset", async () => {
   const assetFiles = await readdir(new URL("assets/", output));
   assert.ok(assetFiles.some((file) => file.endsWith(".js")));
   assert.ok(assetFiles.some((file) => file.endsWith(".css")));
-  assert.ok(assetFiles.some((file) => file.startsWith("guitar-trainer-") && file.endsWith(".js")));
+  assert.ok(!assetFiles.some((file) => file.startsWith("guitar-trainer-") && file.endsWith(".js")));
 });
 
 test("static bundle has no unavailable server endpoint dependency", async () => {

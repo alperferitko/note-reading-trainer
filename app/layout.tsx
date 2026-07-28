@@ -7,18 +7,18 @@ export async function generateMetadata(): Promise<Metadata> {
   const host = requestHeaders.get("host") ?? "localhost:3000";
   const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.includes("localhost") ? "http" : "https");
   const image = `${protocol}://${host}/og.png`;
-  const icon = `${protocol}://${host}/nota-nota-icon.svg`;
+  const icon = `${protocol}://${host}/notanota-app-icon.svg`;
 
   return {
-    title: "NotaNota — Sight-Reading & Instrument Practice",
-    description: "Bilingual sight-reading and instrument note practice. Porte okumayı ve notaların enstrümanındaki yerlerini Türkçe veya İngilizce çalış.",
+    title: "NotaNota | Note Reading Trainer",
+    description: "Build fluent recognition of natural notes on the treble clef with focused bilingual practice. Sol anahtarındaki doğal notaları Türkçe veya İngilizce çalış.",
     icons: {
       icon: [{ url: icon, type: "image/svg+xml" }],
       shortcut: icon,
     },
     openGraph: {
-      title: "NotaNota",
-      description: "Read the note. Find it on your instrument. · Notayı gör. Enstrümanında bul.",
+      title: "NotaNota | Note Reading Trainer",
+      description: "See the note. Name it. · Notayı gör. Adını söyle.",
       type: "website",
       siteName: "NotaNota",
       locale: "tr_TR",
@@ -28,13 +28,13 @@ export async function generateMetadata(): Promise<Metadata> {
         type: "image/png",
         width: 1731,
         height: 909,
-        alt: "NotaNota sight-reading and instrument practice",
+        alt: "NotaNota treble-clef note-reading practice",
       }],
     },
     twitter: {
       card: "summary_large_image",
-      title: "NotaNota",
-      description: "Read the note. Find it on your instrument. · Notayı gör. Enstrümanında bul.",
+      title: "NotaNota | Note Reading Trainer",
+      description: "See the note. Name it. · Notayı gör. Adını söyle.",
       images: [image],
     },
   };

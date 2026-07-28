@@ -17,7 +17,7 @@
 
 ## About
 
-**NotaNota** is a bilingual, mobile-friendly trainer for learning natural notes on the treble clef and locating them on an instrument. It combines focused practice, immediate feedback, session statistics, daily streaks, and optional community rankings.
+**NotaNota** is a bilingual, mobile-friendly trainer for learning natural notes on the treble clef. It combines focused practice, immediate feedback, session statistics, daily streaks, and optional community rankings.
 
 ## Development status
 
@@ -31,7 +31,6 @@ Practice runs in the browser. Passwordless accounts, private streaks, and leader
 - Visual staff and written-position question modes
 - Turkish solfege and English letter names
 - Normal and endless practice modes
-- Guitar-fretboard practice across selectable fret ranges
 - Automatic repetition of incorrectly answered notes
 - First-attempt accuracy and response-time statistics
 - Responsive controls designed for desktop and mobile
@@ -60,10 +59,6 @@ Questions continue until the learner chooses to end the session or makes the fir
 | **2** | Staff and nearby ledger lines | 13 |
 | **3** | Every natural note from middle C to high C | 15 |
 | **4** | Full staff with four ledger lines above and below | 25 |
-
-## Instrument practice
-
-The guitar module asks learners to identify natural notes on a standard-tuned fretboard. Practice ranges can include frets 0–3, 0–5, or 0–12.
 
 ## Language support
 

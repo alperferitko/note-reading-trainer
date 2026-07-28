@@ -125,8 +125,11 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.doesNotMatch(page, /className="brand-mark" aria-hidden="true">♪/);
   assert.doesNotMatch(page, /name="note"/);
   assert.match(styles, /font-family: "Bodoni MT", Didot/);
-  assert.match(styles, /\.brand-mark \{[\s\S]*border: 1px solid rgba\(198, 161, 91, \.72\);[\s\S]*background: var\(--surface-elevated\);/);
+  assert.match(styles, /\.brand \.brand-mark \{[\s\S]*border: 0;[\s\S]*background: transparent;/);
   assert.match(styles, /\.brand-mark img \{[\s\S]*object-fit: contain;/);
+  assert.match(styles, /\.brand::before \{[\s\S]*repeating-linear-gradient\([\s\S]*rgba\(32, 35, 31, \.42\)/);
+  assert.match(styles, /\.brand-name \{[\s\S]*text-shadow:/);
+  assert.match(styles, /\.result-flourish \{[\s\S]*border-radius: 0;[\s\S]*background: transparent;/);
   assert.match(magicLink, /https:\/\/notanota\.online\/notanota-monogram\.png/);
   assert.match(magicLink, /background:#E9E2D5/);
   assert.match(magicLink, /background:#FBF8F1/);

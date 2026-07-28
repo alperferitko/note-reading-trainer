@@ -50,6 +50,7 @@ test("GitHub Pages output contains every referenced local asset", async () => {
   await access(new URL("notanota-monogram.png", output));
   const favicon = await readFile(new URL("nota-nota-icon.svg", output), "utf8");
   assert.match(favicon, /<circle[^>]+fill="#FBF8F1"[^>]+stroke="#C6A15B"/);
+  assert.match(favicon, /transform="translate\(-19 -19\) scale\(1\.1\)"/);
   await access(new URL("og.png", output));
   await access(new URL("robots.txt", output));
   await access(new URL("sitemap.xml", output));

@@ -151,12 +151,12 @@ textarea:focus-visible {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  border-radius: 50%;
-  padding: 4px;
-  overflow: hidden;
-  border: 1px solid rgba(198, 161, 91, .72);
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
   color: var(--coral);
-  background: var(--surface-elevated);
+  background: transparent;
   user-select: none;
   -webkit-user-select: none;
   caret-color: transparent;
@@ -1109,9 +1109,12 @@ body::before {
   border: 1px solid var(--border);
   background: var(--surface);
 }
-.static-fallback header { display: flex; align-items: center; gap: 10px; font-family: var(--serif); font-size: 24px; }
-.static-fallback header > span { width: 32px; height: 32px; padding: 4px; display: grid; place-items: center; border: 1px solid var(--accent); border-radius: 50%; background: var(--surface-elevated); }
+.static-fallback header { position: relative; isolation: isolate; width: max-content; min-height: 48px; display: flex; align-items: center; gap: 2px; font-family: var(--serif); font-size: 24px; }
+.static-fallback header::before { position: absolute; z-index: 0; inset: 12px 0 11px; content: ""; background: repeating-linear-gradient(to bottom, rgba(32, 35, 31, .42) 0 1px, transparent 1px 6px); }
+.static-fallback header > * { position: relative; z-index: 1; }
+.static-fallback header > span { width: 40px; height: 44px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 0; background: transparent; }
 .static-fallback header > span img { width: 100%; height: 100%; display: block; object-fit: contain; }
+.static-fallback header > strong { padding-inline: 3px; text-shadow: -2px -2px 0 var(--surface), 2px -2px 0 var(--surface), -2px 2px 0 var(--surface), 2px 2px 0 var(--surface); }
 .static-fallback section { margin-top: 42px; }
 .static-fallback h1 { margin: 10px 0 22px; font-family: var(--serif); font-size: clamp(46px, 8vw, 78px); font-weight: 500; letter-spacing: -.05em; line-height: .95; }
 .static-fallback p { max-width: 650px; color: var(--foreground-muted); line-height: 1.65; }
@@ -1139,23 +1142,65 @@ body::before {
 .brand {
   width: 100%;
   min-height: 52px;
+  position: relative;
+  isolation: isolate;
+  padding: 0 4px;
   justify-content: center;
-  gap: 8px;
+  gap: 3px;
   color: var(--foreground);
   font-family: var(--serif);
-  font-size: 25px;
+  font-size: 23px;
   font-weight: 500;
   letter-spacing: -.045em;
 }
 
-.brand-mark {
-  width: 27px;
-  height: 27px;
-  padding: 3px;
-  overflow: hidden;
-  border: 1px solid rgba(198, 161, 91, .72);
-  border-radius: 50%;
-  background: var(--surface-elevated);
+.brand::before {
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  right: 2px;
+  left: 2px;
+  height: 25px;
+  content: "";
+  pointer-events: none;
+  transform: translateY(-50%);
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(32, 35, 31, .42) 0 1px,
+    transparent 1px 6px
+  );
+}
+
+.brand > * {
+  position: relative;
+  z-index: 1;
+}
+
+.brand .brand-mark {
+  width: 38px;
+  height: 50px;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.brand .brand-mark img {
+  width: 46px;
+  height: 46px;
+  margin-left: -4px;
+  transform: scale(1.12);
+}
+
+.brand-name {
+  padding: 1px 3px 0;
+  line-height: 1;
+  text-shadow:
+    -2px -2px 0 rgba(251, 248, 241, .96),
+    2px -2px 0 rgba(251, 248, 241, .96),
+    -2px 2px 0 rgba(251, 248, 241, .96),
+    2px 2px 0 rgba(251, 248, 241, .96);
 }
 
 .brand-ornament {
@@ -1765,10 +1810,13 @@ footer {
 }
 .result-session-meta dd { margin: 0; font-family: var(--serif); font-size: 17px; }
 .result-flourish {
-  padding: 6px;
-  border-color: var(--accent);
-  background: var(--surface-elevated);
-  box-shadow: 0 8px 20px rgba(54, 43, 30, .08);
+  width: 62px;
+  height: 62px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 .results-intro h1 { color: var(--foreground); font-size: clamp(50px, 6vw, 76px); }
 .session-insight,
@@ -2088,8 +2136,9 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
     background: rgba(251, 248, 241, .96);
     z-index: 30;
   }
-  .brand { width: auto; min-height: 48px; justify-content: flex-start; font-size: 23px; }
-  .brand-mark { width: 28px; height: 28px; font-size: 17px; }
+  .brand { width: auto; min-width: 136px; min-height: 52px; justify-content: flex-start; font-size: 22px; }
+  .brand .brand-mark { width: 34px; height: 46px; }
+  .brand .brand-mark img { width: 42px; height: 42px; }
   .brand-ornament,
   .app-navigation,
   .rail-motto { display: none; }

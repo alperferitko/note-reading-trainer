@@ -128,7 +128,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.brand \.brand-mark \{[\s\S]*border: 0;[\s\S]*background: transparent;/);
   assert.match(styles, /\.brand-mark img \{[\s\S]*object-fit: contain;/);
   assert.match(styles, /\.brand::before \{[\s\S]*repeating-linear-gradient\([\s\S]*rgba\(32, 35, 31, \.42\)/);
-  assert.match(styles, /\.brand-name \{[\s\S]*text-shadow:/);
+  assert.match(styles, /\.brand-name \{[\s\S]*margin-left: -5px;[\s\S]*text-shadow:/);
   assert.match(styles, /\.result-flourish \{[\s\S]*border-radius: 0;[\s\S]*background: transparent;/);
   assert.match(magicLink, /https:\/\/notanota\.online\/notanota-monogram\.png/);
   assert.match(magicLink, /background:#E9E2D5/);

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="512" height="512" viewBox="0 0 512 512" style="shape-rendering:geometricPrecision; text-rendering:geometricPrecision; image-rendering:optimizeQuality; fill-rule:evenodd; clip-rule:evenodd" xmlns:xlink="http://www.w3.org/1999/xlink">
-<circle cx="256" cy="256" r="248" fill="#FBF8F1" stroke="#C6A15B" stroke-width="8"/>
-<g transform="translate(-19 -19) scale(1.1)">
+<rect x="8" y="8" width="496" height="496" rx="112" fill="#FBF8F1" stroke="#C6A15B" stroke-width="8"/>
+<g transform="translate(21 21) scale(0.94)">
 <g><path fill="#cda1a3" fill-opacity="0.204" stroke="#cda1a3" stroke-width="0.5" stroke-opacity="0.204" d="M 153.97,143.99 c 0.48,-0.03 0.97,-0.06 1.45,-0.08 c -0.38,0.81 -0.55,1.67 -0.5,2.58 c 0.05,14.68 0.09,29.37 0.13,44.06 c 0.08,0.81 -0.27,1.31 -1.03,1.48 c -0.13,-16.01 -0.14,-32.02 -0.05,-48.04 Z"/></g>
 <g><path fill="#f1bdc3" fill-opacity="0.082" stroke="#f1bdc3" stroke-width="0.5" stroke-opacity="0.082" d="M 133.48,248.17 c -0.32,14.31 -0.52,28.61 -0.6,42.92 c -0.8,-0.65 -1.16,-1.5 -1.08,-2.57 c 0.14,-13.05 0.2,-26.11 0.17,-39.16 c 0.06,-1 0.56,-1.39 1.51,-1.19 Z"/></g>
 <g><path fill="#be7882" fill-opacity="0.286" stroke="#be7882" stroke-width="0.5" stroke-opacity="0.286" d="M 383.9,368.08 c 0.27,0.08 0.54,0.17 0.81,0.25 c 1.94,1.53 0.86,13.97 0.53,16.75 c -0.33,-0.11 -0.66,-0.21 -0.99,-0.32 c -0.79,-5.61 -0.07,-11.1 -0.35,-16.68 Z"/></g>

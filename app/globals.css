@@ -1146,7 +1146,7 @@ body::before {
   isolation: isolate;
   padding: 0 4px;
   justify-content: center;
-  gap: 3px;
+  gap: 0;
   color: var(--foreground);
   font-family: var(--serif);
   font-size: 23px;
@@ -1194,6 +1194,7 @@ body::before {
 }
 
 .brand-name {
+  margin-left: -5px;
   padding: 1px 3px 0;
   line-height: 1;
   text-shadow:

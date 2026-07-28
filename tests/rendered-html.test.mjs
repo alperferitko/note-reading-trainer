@@ -44,6 +44,10 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   const community = await readFile(new URL("../app/community.tsx", import.meta.url), "utf8");
   const insights = await readFile(new URL("../lib/session-insights.mjs", import.meta.url), "utf8");
   const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  const magicLink = await readFile(
+    new URL("../supabase/templates/magic-link.html", import.meta.url),
+    "utf8",
+  );
   const packageJson = await readFile(new URL("../package.json", import.meta.url), "utf8");
   const migration = await readFile(
     new URL("../supabase/migrations/202607170001_notanota_community.sql", import.meta.url),
@@ -116,11 +120,19 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /playPracticeNote\(noteIdToMidi\(current\.id\), soundEnabled\)/);
   assert.match(page, /className="listen-note-button"/);
   assert.match(styles, /\.mobile-module-navigation/);
-  assert.match(page, /className="brand-mark" aria-hidden="true">♪<\/span>/);
-  assert.match(page, /className="brand-mark result-flourish" aria-hidden="true">♪<\/span>/);
+  assert.match(page, /className="brand-mark" aria-hidden="true">[\s\S]*notanota-monogram\.png/);
+  assert.match(page, /className="brand-mark result-flourish" aria-hidden="true">[\s\S]*notanota-monogram\.png/);
+  assert.doesNotMatch(page, /className="brand-mark" aria-hidden="true">♪/);
   assert.doesNotMatch(page, /name="note"/);
   assert.match(styles, /font-family: "Bodoni MT", Didot/);
-  assert.match(styles, /\.brand-mark \{[\s\S]*background: var\(--coral\);[\s\S]*text-shadow: none;/);
+  assert.match(styles, /\.brand-mark \{[\s\S]*border: 1px solid rgba\(198, 161, 91, \.72\);[\s\S]*background: var\(--surface-elevated\);/);
+  assert.match(styles, /\.brand-mark img \{[\s\S]*object-fit: contain;/);
+  assert.match(magicLink, /https:\/\/notanota\.online\/notanota-monogram\.png/);
+  assert.match(magicLink, /background:#E9E2D5/);
+  assert.match(magicLink, /background:#FBF8F1/);
+  assert.match(magicLink, /background:#8B2F3C/);
+  assert.match(magicLink, /border:1px solid #C6A15B/);
+  assert.match(magicLink, /\{\{ \.RedirectTo \}\}\?token_hash=\{\{ \.TokenHash \}\}/);
   assert.doesNotMatch(page, /level-indicator/);
   assert.doesNotMatch(styles, /translateY\(-2px\)/);
   assert.doesNotMatch(styles, /inset 0 4px var\(--coral\)/);

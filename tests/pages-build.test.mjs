@@ -10,7 +10,8 @@ test("GitHub Pages output uses portable relative asset paths", async () => {
 
   assert.match(html, /\.\/assets\/[^\"']+\.js/);
   assert.match(html, /\.\/assets\/[^\"']+\.css/);
-  assert.match(html, /href="\.\/nota-nota-icon\.png"/);
+  assert.match(html, /href="\.\/nota-nota-icon\.svg"/);
+  assert.match(html, /src="\.\/notanota-monogram\.png"/);
   assert.match(html, /content="https:\/\/notanota\.online\/og\.png"/);
   assert.match(html, /name="theme-color" content="#F4EFE4"/);
   assert.match(html, /<title>NotaNota — Nota Okuma ve Gitar Çalışması<\/title>/);
@@ -45,7 +46,10 @@ test("GitHub Pages output contains every referenced local asset", async () => {
   assert.ok(paths.length >= 3);
   await Promise.all(paths.map((path) => access(new URL(path, output))));
   await access(new URL(".nojekyll", output));
-  await access(new URL("nota-nota-icon.png", output));
+  await access(new URL("nota-nota-icon.svg", output));
+  await access(new URL("notanota-monogram.png", output));
+  const favicon = await readFile(new URL("nota-nota-icon.svg", output), "utf8");
+  assert.match(favicon, /<circle[^>]+fill="#FBF8F1"[^>]+stroke="#C6A15B"/);
   await access(new URL("og.png", output));
   await access(new URL("robots.txt", output));
   await access(new URL("sitemap.xml", output));

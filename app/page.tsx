@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element -- Relative public assets must work on both the custom domain and GitHub Pages subpath. */
 
 import { FormEvent, lazy, MouseEvent, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -786,7 +787,9 @@ export default function Home() {
     <main className="app-shell">
       <header className="site-header">
         <button className="brand" type="button" onClick={() => setStage("landing")} aria-label={copy.homeLabel}>
-          <span className="brand-mark" aria-hidden="true">♪</span>
+          <span className="brand-mark" aria-hidden="true">
+            <img src="./notanota-monogram.png" alt="" />
+          </span>
           <span>NotaNota</span>
         </button>
         <span className="brand-ornament" aria-hidden="true"><i /><b>◇</b><i /></span>
@@ -1092,7 +1095,9 @@ export default function Home() {
         <section className="results-shell">
           <CommunityPracticeRecorder active={completedDailyPractice} activityKey={`notes-${sessionStartedAt}`} />
           <div className="results-intro">
-            <span className="brand-mark result-flourish" aria-hidden="true">♪</span>
+            <span className="brand-mark result-flourish" aria-hidden="true">
+              <img src="./notanota-monogram.png" alt="" />
+            </span>
             <p className="kicker">{completedStandardSession ? copy.sessionComplete : copy.sessionSummary}</p>
             <h1 ref={resultsHeadingRef} tabIndex={-1}>{sessionType === "endless" ? extra.endlessResultTitle : sessionInsight.title}</h1>
             <p>{sessionType === "endless" ? extra.endedSession(correctCount, totalTime) : endedEarly ? extra.stoppedSession(correctCount) : copy.completedCopy(selectedLevel.title)}</p>
@@ -1181,7 +1186,7 @@ export default function Home() {
         </section>
       )}
 
-      <footer><span>NotaNota</span><p>{copy.footer}</p><CommunityLegalLink /><span className="brand-mark brand-mark--footer" aria-hidden="true">♪</span></footer>
+      <footer><span>NotaNota</span><p>{copy.footer}</p><CommunityLegalLink /><span className="brand-mark brand-mark--footer" aria-hidden="true"><img src="./notanota-monogram.png" alt="" /></span></footer>
     </main>
     </CommunityProvider>
   );

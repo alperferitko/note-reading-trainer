@@ -7,13 +7,13 @@ export async function generateMetadata(): Promise<Metadata> {
   const host = requestHeaders.get("host") ?? "localhost:3000";
   const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.includes("localhost") ? "http" : "https");
   const image = `${protocol}://${host}/og.png`;
-  const icon = `${protocol}://${host}/nota-nota-icon.png`;
+  const icon = `${protocol}://${host}/nota-nota-icon.svg`;
 
   return {
     title: "NotaNota — Sight-Reading & Instrument Practice",
     description: "Bilingual sight-reading and instrument note practice. Porte okumayı ve notaların enstrümanındaki yerlerini Türkçe veya İngilizce çalış.",
     icons: {
-      icon,
+      icon: [{ url: icon, type: "image/svg+xml" }],
       shortcut: icon,
     },
     openGraph: {

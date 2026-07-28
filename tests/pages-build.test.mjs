@@ -79,4 +79,6 @@ test("static bundle has no unavailable server endpoint dependency", async () => 
     JavaScript,
     /(?:service_role|sb_secret|github_pat|ghp_|sk_(?:live|test)_)[A-Za-z0-9_-]{10,}/i,
   );
+  assert.doesNotMatch(JavaScript, /DELETION_AUDIT_HMAC_KEY/);
+  assert.doesNotMatch(JavaScript, /account_deletion_audit/);
 });

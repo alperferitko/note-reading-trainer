@@ -475,7 +475,7 @@ function RangePreview({ level }: { level: LevelId }) {
   );
 }
 
-function Staff({ note, locale, compact = false, revealAnswer = false }: { note: NoteQuestion; locale: Locale; compact?: boolean; revealAnswer?: boolean }) {
+function Staff({ note, locale, compact = false, revealAnswer = false, animated = false }: { note: NoteQuestion; locale: Locale; compact?: boolean; revealAnswer?: boolean; animated?: boolean }) {
   const step = compact ? 8 : 12;
   const firstLineY = compact ? 67 : 126;
   const noteY = firstLineY - note.position * (step / 2);
@@ -487,7 +487,7 @@ function Staff({ note, locale, compact = false, revealAnswer = false }: { note: 
 
   return (
     <div
-      className={`staff ${compact ? "staff--compact" : ""}`}
+      className={`staff ${compact ? "staff--compact" : ""} ${animated ? "staff--animated" : ""}`}
       aria-label={revealAnswer
         ? `${noteName(note, locale)}, ${note.location[locale]}`
         : locale === "tr" ? "Sol anahtarında bir nota" : "A note on the treble staff"}
@@ -514,6 +514,41 @@ function Staff({ note, locale, compact = false, revealAnswer = false }: { note: 
           }}
         />
       </div>
+    </div>
+  );
+}
+
+const LANDING_DEMO_NOTES = ["d5", "g4", "e5", "b4", "f4", "c5", "e4", "f5", "a4"]
+  .map((id) => ALL_NOTES.find((note) => note.id === id)!);
+
+function LandingStaffDemo({ locale }: { locale: Locale }) {
+  const [noteIndex, setNoteIndex] = useState(0);
+  const [labelVisible, setLabelVisible] = useState(true);
+
+  useEffect(() => {
+    let changeTimer: number | undefined;
+    const rotationTimer = window.setInterval(() => {
+      setLabelVisible(false);
+      changeTimer = window.setTimeout(() => {
+        setNoteIndex((current) => (current + 1) % LANDING_DEMO_NOTES.length);
+        setLabelVisible(true);
+      }, 180);
+    }, 2800);
+
+    return () => {
+      window.clearInterval(rotationTimer);
+      if (changeTimer) window.clearTimeout(changeTimer);
+    };
+  }, []);
+
+  const note = LANDING_DEMO_NOTES[noteIndex];
+
+  return (
+    <div className="landing-staff-card">
+      <Staff note={note} locale={locale} compact animated />
+      <span className={`landing-staff-label ${labelVisible ? "is-visible" : ""}`}>
+        {note.shortLocation[locale]} · {noteName(note, locale)}
+      </span>
     </div>
   );
 }
@@ -844,7 +879,7 @@ export default function Home() {
               </div>
             </div>
             <div className="landing-art" aria-hidden="true">
-              <div className="landing-staff-card"><Staff note={ALL_NOTES.find((note) => note.id === "d5")!} locale={locale} compact /><span>{locale === "tr" ? "4. çizgi · Re" : "4th line · D"}</span></div>
+              <LandingStaffDemo locale={locale} />
               <span className="landing-orbit landing-orbit--one" />
               <span className="landing-orbit landing-orbit--two" />
             </div>

@@ -10,7 +10,7 @@ test("GitHub Pages output uses portable relative asset paths", async () => {
 
   assert.match(html, /\.\/assets\/[^\"']+\.js/);
   assert.match(html, /\.\/assets\/[^\"']+\.css/);
-  assert.match(html, /href="\.\/notanota-app-icon\.svg"/);
+  assert.match(html, /href="\.\/notanota-app-icon\.svg\?v=3"/);
   assert.match(html, /src="\.\/notanota-monogram\.png"/);
   assert.match(html, /content="https:\/\/notanota\.online\/og\.png"/);
   assert.match(html, /name="theme-color" content="#F4EFE4"/);
@@ -50,7 +50,7 @@ test("GitHub Pages output contains every referenced local asset", async () => {
   await access(new URL("notanota-monogram.png", output));
   const favicon = await readFile(new URL("notanota-app-icon.svg", output), "utf8");
   assert.match(favicon, /<rect[^>]+rx="72"[^>]+fill="#FBF8F1"[^>]+stroke="#C6A15B"/);
-  assert.match(favicon, /transform="translate\(31 31\) scale\(0\.90\)"/);
+  assert.match(favicon, /transform="translate\(29 31\) scale\(0\.90\)"/);
   await access(new URL("og.png", output));
   await access(new URL("robots.txt", output));
   await access(new URL("sitemap.xml", output));

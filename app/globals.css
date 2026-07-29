@@ -668,6 +668,13 @@ textarea:focus-visible {
 .staff--compact .note-head { width: 19px; height: 13px; }
 .note-stem { position: absolute; z-index: 2; width: 2px; height: 47px; background: var(--coral); }
 .staff--compact .note-stem { height: 35px; }
+.staff--animated .note-head,
+.staff--animated .note-stem {
+  transition:
+    top .78s cubic-bezier(.22, 1, .36, 1),
+    left .78s cubic-bezier(.22, 1, .36, 1);
+  will-change: top, left;
+}
 
 .quiz-shell {
   width: min(980px, calc(100% - 32px));
@@ -1395,6 +1402,17 @@ footer {
 .landing-staff-card { top: 0; width: 92%; padding: 22px 15px 12px; transform: rotate(1deg); }
 .landing-staff-card .staff { margin: -24px auto -10px; transform: scale(.83); }
 .landing-staff-card > span { color: var(--primary); font-size: 14px; }
+.landing-staff-label {
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity .34s ease,
+    transform .5s cubic-bezier(.22, 1, .36, 1);
+}
+.landing-staff-label.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
 .landing-fret-card { left: 2%; bottom: -12px; width: 72%; min-height: 112px; padding: 18px 18px; transform: rotate(-2deg); }
 .landing-fret-card::before { inset: 18px 17px 31px 47px; }
 .landing-fret-card > b { left: 54%; top: 43%; width: 24px; height: 24px; background: var(--primary); font-size: 11px; }

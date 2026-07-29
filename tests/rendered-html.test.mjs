@@ -110,6 +110,12 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /Hazırsan başlayalım — sakin bak, net cevapla\./);
   assert.doesNotMatch(page, /const GuitarTrainer = lazy/);
   assert.match(page, /className="mobile-module-navigation"/);
+  assert.match(page, /const LANDING_DEMO_NOTES = \["d5", "g4", "e5", "b4", "f4", "c5", "e4", "f5", "a4"\]/);
+  assert.match(page, /window\.setInterval\(\(\) => \{[\s\S]*setNoteIndex\(\(current\) => \(current \+ 1\) % LANDING_DEMO_NOTES\.length\);[\s\S]*\}, 2800\)/);
+  assert.match(page, /<Staff note=\{note\} locale=\{locale\} compact animated \/>/);
+  assert.match(page, /\{note\.shortLocation\[locale\]\} · \{noteName\(note, locale\)\}/);
+  assert.match(styles, /\.staff--animated \.note-head,[\s\S]*top \.78s cubic-bezier\(\.22, 1, \.36, 1\)/);
+  assert.match(styles, /\.landing-staff-label\.is-visible \{[\s\S]*opacity: 1;[\s\S]*transform: translateY\(0\)/);
   assert.match(page, /playPracticeNote\(noteIdToMidi\(current\.id\), soundEnabled\)/);
   assert.match(page, /className="listen-note-button"/);
   assert.match(styles, /\.mobile-module-navigation/);

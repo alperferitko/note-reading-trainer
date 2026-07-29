@@ -116,6 +116,10 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /\{note\.shortLocation\[locale\]\} · \{noteName\(note, locale\)\}/);
   assert.match(styles, /\.staff--animated \.note-head,[\s\S]*top \.78s cubic-bezier\(\.22, 1, \.36, 1\)/);
   assert.match(styles, /\.landing-staff-label\.is-visible \{[\s\S]*opacity: 1;[\s\S]*transform: translateY\(0\)/);
+  assert.match(styles, /\.landing-art \{ min-height: 180px; \}/);
+  assert.match(styles, /\.landing-staff-card \{[\s\S]*width: 88%;[\s\S]*padding: 10px 14px 9px;[\s\S]*animation: landing-staff-card-drift 14s ease-in-out infinite/);
+  assert.match(styles, /\.landing-staff-card \.staff \{[\s\S]*height: 86px;[\s\S]*margin: 0 auto 1px/);
+  assert.match(styles, /@keyframes landing-staff-card-drift \{[\s\S]*translate3d\(3px, -3px, 0\)[\s\S]*translate3d\(-3px, 2px, 0\)/);
   assert.match(page, /playPracticeNote\(noteIdToMidi\(current\.id\), soundEnabled\)/);
   assert.match(page, /className="listen-note-button"/);
   assert.match(styles, /\.mobile-module-navigation/);

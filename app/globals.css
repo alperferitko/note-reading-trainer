@@ -1391,7 +1391,7 @@ footer {
 }
 .landing-proof { margin-top: 25px; color: var(--foreground-muted); }
 .landing-proof span::before { color: var(--primary); }
-.landing-art { min-height: 230px; }
+.landing-art { min-height: 180px; }
 .landing-staff-card,
 .landing-fret-card {
   border: 1px solid var(--border);
@@ -1399,8 +1399,21 @@ footer {
   background: var(--surface-elevated);
   box-shadow: 7px 8px 0 rgba(198, 161, 91, .12);
 }
-.landing-staff-card { top: 0; width: 92%; padding: 22px 15px 12px; transform: rotate(1deg); }
-.landing-staff-card .staff { margin: -24px auto -10px; transform: scale(.83); }
+.landing-staff-card {
+  top: 8px;
+  right: 4%;
+  width: 88%;
+  max-width: 420px;
+  padding: 10px 14px 9px;
+  animation: landing-staff-card-drift 14s ease-in-out infinite;
+  will-change: transform;
+}
+.landing-staff-card .staff {
+  height: 86px;
+  margin: 0 auto 1px;
+  transform: scale(.88);
+  transform-origin: top center;
+}
 .landing-staff-card > span { color: var(--primary); font-size: 14px; }
 .landing-staff-label {
   opacity: 0;
@@ -1412,6 +1425,13 @@ footer {
 .landing-staff-label.is-visible {
   opacity: 1;
   transform: translateY(0);
+}
+@keyframes landing-staff-card-drift {
+  0%,
+  100% { transform: translate3d(0, 0, 0) rotate(1deg); }
+  25% { transform: translate3d(3px, -3px, 0) rotate(.85deg); }
+  50% { transform: translate3d(2px, 3px, 0) rotate(1.1deg); }
+  75% { transform: translate3d(-3px, 2px, 0) rotate(.9deg); }
 }
 .landing-fret-card { left: 2%; bottom: -12px; width: 72%; min-height: 112px; padding: 18px 18px; transform: rotate(-2deg); }
 .landing-fret-card::before { inset: 18px 17px 31px 47px; }

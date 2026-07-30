@@ -120,8 +120,6 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /style\.setProperty\("--shade-x"/);
   assert.match(page, /onMouseMove=\{trackSelectionShade\}/);
   assert.match(styles, /radial-gradient\(circle at var\(--shade-x\) var\(--shade-y\)/);
-  assert.match(styles, /@media \(min-width: 821px\) \{[\s\S]*\.audio-settings-panel \{[\s\S]*left: calc\(100% \+ 14px\);[\s\S]*max-height: min\(420px, calc\(100dvh - 32px\)\)/);
-  assert.match(styles, /@media \(max-width: 820px\) \{[\s\S]*\.audio-settings-panel \{[\s\S]*position: fixed;[\s\S]*right: 12px;[\s\S]*left: 12px;/);
   assert.match(styles, /--surface-shadow:/);
   assert.match(page, /Hazırsan başlayalım! Sakin bak, net cevapla\./);
   assert.doesNotMatch(page, /—/);
@@ -146,9 +144,8 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.landing-staff-card \{[\s\S]*width: 88%;[\s\S]*padding: 10px 14px 9px;[\s\S]*animation: landing-staff-card-drift 14s ease-in-out infinite/);
   assert.match(styles, /\.landing-staff-card \.staff \{[\s\S]*height: 86px;[\s\S]*margin: 0 auto 1px/);
   assert.match(styles, /@keyframes landing-staff-card-drift \{[\s\S]*translate3d\(3px, -3px, 0\)[\s\S]*translate3d\(-3px, 2px, 0\)/);
-  assert.match(page, /playPracticeNote\(noteIdToMidi\(displayedNote\.id\), soundEnabled\)/);
-  assert.doesNotMatch(page, /playPracticeNote\(noteIdToMidi\(current\.id\), soundEnabled\)/);
-  assert.match(page, /className="listen-note-button"/);
+  assert.match(page, /if \(correct\) \{[\s\S]*playPracticeNote\(noteIdToMidi\(current\.id\)\);/);
+  assert.doesNotMatch(page, /audio-settings|listen-note-button|playNotaNotaEffect|setAmbientMusicActive|unlockNotaNotaAudio/);
   assert.match(styles, /\.mobile-module-navigation/);
   assert.match(page, /className="brand-mark" aria-hidden="true">[\s\S]*notanota-monogram\.png/);
   assert.match(page, /className="brand-mark result-flourish" aria-hidden="true">[\s\S]*notanota-monogram\.png/);

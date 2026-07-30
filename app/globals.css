@@ -186,50 +186,6 @@ textarea:focus-visible {
 .session-meta { display: flex; align-items: center; gap: 10px; color: var(--ink-soft); font-size: 12px; font-weight: 650; white-space: nowrap; }
 .meta-dot { width: 4px; height: 4px; flex: 0 0 auto; background: var(--coral); border-radius: 50%; }
 .header-actions { min-width: 0; display: flex; align-items: center; gap: clamp(12px, 2vw, 26px); }
-.audio-settings { position: relative; z-index: 20; }
-.audio-settings-panel {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
-  width: min(320px, calc(100vw - 32px));
-  padding: 16px;
-  display: grid;
-  gap: 8px;
-  border: 0;
-  border-radius: var(--surface-radius);
-  background: var(--surface-elevated);
-  box-shadow: 0 20px 48px rgba(54, 43, 30, .18), 0 0 0 1px rgba(213, 202, 186, .45);
-}
-.audio-settings-panel > strong {
-  padding: 2px 4px 8px;
-  font-family: var(--serif);
-  font-size: 18px;
-}
-.audio-settings-panel > button {
-  min-height: 54px;
-  padding: 10px 11px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  border: 0;
-  border-radius: 8px;
-  background: var(--surface);
-  box-shadow: inset 0 0 0 1px rgba(213, 202, 186, .68);
-  text-align: left;
-}
-.audio-settings-panel > button span { display: grid; gap: 3px; font-size: 11px; font-weight: 750; }
-.audio-settings-panel > button small { color: var(--foreground-muted); font-size: 9px; font-weight: 500; line-height: 1.35; }
-.audio-settings-panel > button b {
-  min-width: 48px;
-  padding: 7px 9px;
-  border-radius: 999px;
-  background: var(--background-deep);
-  color: var(--foreground-muted);
-  font-size: 9px;
-  text-align: center;
-}
-.audio-settings-panel > button[aria-checked="true"] b { background: var(--success-soft); color: var(--success-deep); }
 .community-header-actions { min-width: 0; display: flex; align-items: center; gap: 8px; }
 
 .community-header-actions button {
@@ -1375,17 +1331,6 @@ body::before {
   background: transparent;
   color: var(--primary);
 }
-.sound-toggle {
-  width: 100%;
-  min-height: 44px;
-  display: inline-grid;
-  place-items: center;
-  border: 1px solid var(--border);
-  border-radius: 2px;
-  background: transparent;
-  color: var(--foreground);
-}
-.sound-toggle svg { width: 19px; height: 19px; }
 .mobile-module-navigation { display: none; }
 
 .language-switch {
@@ -1863,32 +1808,6 @@ footer {
   border-radius: 0;
   background: var(--accent);
 }
-.listen-note-button {
-  width: fit-content;
-  min-height: 44px;
-  margin: -2px auto 10px;
-  padding: 8px 13px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 1px solid var(--border-strong);
-  border-radius: 2px;
-  background: var(--surface-elevated);
-  color: var(--foreground);
-  font-size: 11px;
-  font-weight: 750;
-  transition: border-color .2s ease, background-color .2s ease, color .2s ease;
-}
-.question-card > .listen-note-button { display: flex; }
-.listen-note-button svg { width: 18px; height: 18px; }
-.listen-note-button:disabled { cursor: not-allowed; opacity: .45; }
-.listen-note-button--dark {
-  margin: 12px auto 20px;
-  border-color: rgba(255, 253, 248, .42);
-  background: rgba(255, 253, 248, .08);
-  color: var(--primary-foreground);
-}
 .question-number { color: var(--primary); }
 .question-prompt { color: var(--foreground); font-family: var(--serif); font-size: 28px; }
 .staff { height: 230px; }
@@ -2315,21 +2234,6 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
   .module-card:hover { background: rgba(255, 253, 248, .9); box-shadow: 0 13px 30px rgba(54, 43, 30, .09); }
   .primary-button:hover { background: var(--primary-hover); box-shadow: 0 10px 19px rgba(101, 30, 43, .18); }
   .note-hints button:hover { border-color: var(--primary); color: var(--primary); }
-  .sound-toggle:hover,
-  .listen-note-button:not(:disabled):hover { border-color: var(--primary); background: var(--surface-elevated); color: var(--primary); }
-}
-
-@media (min-width: 821px) {
-  .audio-settings { width: 100%; }
-  .audio-settings-panel {
-    top: auto;
-    right: auto;
-    bottom: 0;
-    left: calc(100% + 14px);
-    width: min(310px, calc(100vw - 150px));
-    max-height: min(420px, calc(100dvh - 32px));
-    overflow-y: auto;
-  }
 }
 
 @media (max-width: 1100px) and (min-width: 821px) {
@@ -2394,16 +2298,6 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
   .community-header-actions button { width: auto; min-height: 44px; justify-content: center; }
   .community-header-actions button:first-child { display: inline-flex; }
   .language-switch { width: auto; min-width: 74px; }
-  .sound-toggle { width: 44px; flex: 0 0 44px; }
-  .audio-settings-panel {
-    position: fixed;
-    top: 76px;
-    right: 12px;
-    left: 12px;
-    width: auto;
-    max-height: calc(100dvh - 154px);
-    overflow-y: auto;
-  }
   .mobile-module-navigation {
     position: fixed;
     left: 50%;
@@ -2497,8 +2391,6 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
   .brand-mark { width: 26px; height: 26px; font-size: 16px; }
   .community-header-actions button { max-width: 76px; padding-inline: 7px; }
   .community-header-actions button:first-child { display: none; }
-  .sound-toggle { width: 40px; min-height: 40px; flex-basis: 40px; }
-  .audio-settings-panel { top: 70px; }
   .landing-shell,
   .setup-shell,
   .quiz-shell,

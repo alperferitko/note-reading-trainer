@@ -3,7 +3,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { noteClassFromAnswer } from "@/lib/session-insights.mjs";
 import { playPracticeNote } from "@/lib/practice-audio";
-import { playNotaNotaEffect, unlockNotaNotaAudio } from "@/lib/notanota-audio.mjs";
 import { CommunityPracticeRecorder, CommunityPracticeStreak } from "./community";
 
 type Locale = "tr" | "en";
@@ -76,7 +75,6 @@ const COPY = {
     repeat: "Aynı aralıkla yeniden çalış",
     change: "Perde aralığını değiştir",
     choices: "Nota seçenekleri",
-    listen: "Notayı dinle",
   },
   en: {
     kicker: "Guitar · standard tuning",
@@ -107,7 +105,6 @@ const COPY = {
     repeat: "Practise this range again",
     change: "Change fret range",
     choices: "Note choices",
-    listen: "Listen to the note",
   },
 } as const;
 
@@ -219,10 +216,8 @@ function Fretboard({
 
 export function GuitarTrainer({
   locale,
-  soundEnabled,
 }: {
   locale: Locale;
-  soundEnabled: boolean;
 }) {
   const [stage, setStage] = useState<GuitarStage>("setup");
   const [maxFret, setMaxFret] = useState(3);
@@ -260,8 +255,6 @@ export function GuitarTrainer({
   }, [feedback, stage]);
 
   function start() {
-    unlockNotaNotaAudio();
-    playNotaNotaEffect("session-start", soundEnabled);
     const sessionStartedAt = Date.now();
     const questions = shuffle(buildQuestions(maxFret));
     setInitialCount(questions.length);
@@ -290,17 +283,11 @@ export function GuitarTrainer({
     setAnswer(value);
     setTimes((items) => [...items, Math.max(100, Date.now() - startedAt)]);
     if (guessed.letter === current.letter) {
-      const completesSession = queue.length === 1;
-      const nextCorrectCount = initialCount - queue.length + 1;
-      playNotaNotaEffect(
-        completesSession ? "lesson-complete" : nextCorrectCount % 5 === 0 ? "streak" : "correct",
-        soundEnabled,
-      );
+      playPracticeNote(current.midi);
       if (current.misses === 0) setFirstTry((count) => count + 1);
       setQueue((items) => items.slice(1));
       setFeedback("correct");
     } else {
-      playNotaNotaEffect("incorrect", soundEnabled);
       setWrong((count) => count + 1);
       setQueue((items) => [...items.slice(1), { ...items[0], misses: items[0].misses + 1 }]);
       setFeedback("wrong");
@@ -386,15 +373,6 @@ export function GuitarTrainer({
         <p className="kicker">{displayed && text.location(displayed.stringNumber, displayed.fret)}</p>
         <h1>{text.question}</h1>
         {displayed && <Fretboard maxFret={maxFret} locale={locale} active={displayed} />}
-        {displayed && (
-          <button className="listen-note-button listen-note-button--dark" type="button" onClick={() => playPracticeNote(displayed.midi, soundEnabled)} disabled={!soundEnabled}>
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M4 10v4h4l5 4V6L8 10H4Z" fill="currentColor" />
-              <path d="M16 9c1.2 1.7 1.2 4.3 0 6M18.7 6.8c2.8 3 2.8 7.4 0 10.4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-            </svg>
-            {text.listen}
-          </button>
-        )}
         {!feedback ? (
           <form className="guitar-answer" onSubmit={submit}>
             <label htmlFor="guitar-answer">{text.answer}</label>

@@ -1,8 +1,3 @@
-import {
-  readAudioPreferences,
-  writeAudioPreference,
-} from "./notanota-audio.mjs";
-
 let audioContext: AudioContext | null = null;
 
 function context() {
@@ -10,22 +5,6 @@ function context() {
   audioContext ??= new AudioContext();
   if (audioContext.state === "suspended") void audioContext.resume();
   return audioContext;
-}
-
-export function readSoundPreference() {
-  return readAudioPreferences().effects;
-}
-
-export function writeSoundPreference(enabled: boolean) {
-  writeAudioPreference("effects", enabled);
-}
-
-export function readMusicPreference() {
-  return readAudioPreferences().music;
-}
-
-export function writeMusicPreference(enabled: boolean) {
-  writeAudioPreference("music", enabled);
 }
 
 export function noteIdToMidi(noteId: string) {

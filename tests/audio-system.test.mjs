@@ -180,21 +180,18 @@ test("üretilen set süre, format, loudness, peak ve boyut sınırlarını karş
   assert.equal((await stat(new URL("../public/audio/notanota-ambient-loop.ogg", import.meta.url))).size, report.pieces[0].files.ogg.bytes);
 });
 
-test("entegrasyon menülerde müzik, çalışmada sessizlik ve tekil efekt sözleşmesini kullanır", async () => {
+test("uygulama yalnızca doğru cevaplanan notanın sesini çalar", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   const guitar = await readFile(new URL("../app/guitar-trainer.tsx", import.meta.url), "utf8");
-  const audio = await readFile(new URL("../lib/notanota-audio.mjs", import.meta.url), "utf8");
+  const practiceAudio = await readFile(new URL("../lib/practice-audio.ts", import.meta.url), "utf8");
 
-  assert.match(page, /setAmbientMusicActive\(audioPreferencesReady && stage !== "quiz" && stage !== "guitar", musicEnabled\)/);
-  assert.match(page, /window\.addEventListener\("pointerdown", unlock, \{ once: true \}\)/);
-  assert.match(page, /setAmbientMusicActive\(false, musicEnabled\);[\s\S]*playNotaNotaEffect\("session-start", soundEnabled\)/);
-  assert.match(page, /playNotaNotaEffect\("session-start", soundEnabled\)/);
-  assert.match(page, /completesSession \? "lesson-complete" : nextStreak % 5 === 0 \? "streak" : "correct"/);
-  assert.match(page, /playNotaNotaEffect\("incorrect", soundEnabled\)/);
-  assert.match(page, /role="switch" aria-checked=\{musicEnabled\}/);
-  assert.match(page, /role="switch" aria-checked=\{soundEnabled\}/);
-  assert.match(guitar, /playNotaNotaEffect\("session-start", soundEnabled\)/);
-  assert.match(audio, /stopEffects\(\);[\s\S]*const audio = environment\.createAudio\(\)/);
-  assert.match(audio, /if \(environment\.document\?\.hidden\) \{[\s\S]*stopMusic\(true\);[\s\S]*stopEffects\(\)/);
-  assert.doesNotMatch(page, /autoplay|autoPlay/);
+  assert.match(page, /if \(correct\) \{[\s\S]*playPracticeNote\(noteIdToMidi\(current\.id\)\);/);
+  assert.match(guitar, /if \(guessed\.letter === current\.letter\) \{[\s\S]*playPracticeNote\(current\.midi\);/);
+  assert.equal((page.match(/playPracticeNote\(/g) ?? []).length, 1);
+  assert.equal((guitar.match(/playPracticeNote\(/g) ?? []).length, 1);
+  assert.doesNotMatch(
+    `${page}\n${guitar}\n${practiceAudio}`,
+    /playNotaNotaEffect|setAmbientMusicActive|unlockNotaNotaAudio|audio-settings|listen-note-button|soundEnabled|musicEnabled|autoplay|autoPlay/,
+  );
+  assert.doesNotMatch(practiceAudio, /notanota-audio|readAudioPreferences|writeAudioPreference/);
 });

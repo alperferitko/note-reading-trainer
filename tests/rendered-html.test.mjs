@@ -116,7 +116,14 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.selection-indicator::after[\s\S]*opacity: 0;[\s\S]*transform: scale\(\.35\)/);
   assert.match(styles, /\.mode-card\.is-selected \.selection-indicator::after[\s\S]*opacity: 1;[\s\S]*transform: scale\(1\)/);
   assert.match(styles, /\.level-card\.is-selected \.range-preview-note[\s\S]*transition-delay: \.1s/);
-  assert.match(page, /Hazırsan başlayalım — sakin bak, net cevapla\./);
+  assert.match(page, /Hazırsan başlayalım! Sakin bak, net cevapla\./);
+  assert.doesNotMatch(page, /—/);
+  assert.doesNotMatch(guitar, /Modüllere dön|Back to modules|Nota okumaya dön|Switch to sight-reading/);
+  assert.match(page, /range-preview--extended/);
+  assert.match(page, /level === "genis" \? 84 - position \* 4 : 50 - position \* 4/);
+  assert.match(page, /const activeQuestionNumber = sessionType === "standard"/);
+  assert.match(page, /className="quiz-stat-context"/);
+  assert.match(page, /aria-label=\{shell\.currentSession\} aria-live="polite"/);
   assert.match(page, /const GuitarTrainer = lazy/);
   assert.match(styles, /\.quiz-stat-primary > strong \{ color: var\(--foreground\);/);
   assert.doesNotMatch(styles, /\.module-card:hover \{[^}]*transform:/);

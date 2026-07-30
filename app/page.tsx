@@ -135,7 +135,7 @@ const COPY: Record<Locale, Copy> = {
       konum: { title: "Konumu oku", description: "Konumu gör, ismini yaz" },
     },
     start: "Oturumu başlat",
-    setupNote: "Hazırsan başlayalım — sakin bak, net cevapla.",
+    setupNote: "Hazırsan başlayalım! Sakin bak, net cevapla.",
     progress: "İlerleme",
     completedLabel: (total, completed) => `${total} sorudan ${completed} tamamlandı`,
     remaining: (count) => `${count} nota kaldı`,
@@ -195,7 +195,7 @@ const COPY: Record<Locale, Copy> = {
       konum: { title: "Read the position", description: "Read the position, type its letter name" },
     },
     start: "Start session",
-    setupNote: "Ready when you are — look calmly, answer clearly.",
+    setupNote: "Ready when you are! Look calmly, answer clearly.",
     progress: "Progress",
     completedLabel: (total, completed) => `${completed} of ${total} questions completed`,
     remaining: (count) => `${count} ${count === 1 ? "note" : "notes"} left`,
@@ -209,7 +209,7 @@ const COPY: Record<Locale, Copy> = {
     correct: "Correct",
     incorrect: "Incorrect",
     correctCopy: (name) => `You identified ${name} correctly.`,
-    wrongPrefix: "The correct answer is",
+    wrongPrefix: "Correct answer",
     wrongGuess: (name) => `You answered ${name}.`,
     wrongSuffix: "This note was moved to the end of the queue.",
     next: "Next",
@@ -231,7 +231,7 @@ const COPY: Record<Locale, Copy> = {
     confusionCopy: (expected, location, guessed) => `For ${expected} ${location}, your most frequent answer was ${guessed}.`,
     confusionNext: "Next time, try comparing those two staff positions side by side.",
     reviewFocus: (name, location) => `${name} ${location} was the note that called for the most review in this run.`,
-    perfect: "Perfect run — no incorrect answers.",
+    perfect: "Perfect run. No incorrect answers.",
     noAnswers: "No answers yet. This session did not produce any review data.",
     cleanSoFar: "No incorrect answers among the notes you attempted.",
     repeat: "Practise again with the same settings",
@@ -247,7 +247,7 @@ const EXTRA_COPY = {
     chooseSession: "Nasıl bir oturum istiyorsun?",
     standard: { title: "Normal mod", description: "Bütün notaları hatasız ve olabildiğince hızlı tamamla" },
     endless: { title: "Sonsuz mod", description: "İlk yanlışına kadar rastgele notalarla devam et" },
-    endlessSetupNote: "Hazırsan başlayalım — ilk yanlış seriyi bitirir.",
+    endlessSetupNote: "Hazırsan başlayalım! İlk yanlış seriyi bitirir.",
     correctAnswers: "Doğru cevap",
     noMistakes: "Hatasız seri",
     endlessResultTitle: "Seri sona erdi.",
@@ -261,7 +261,7 @@ const EXTRA_COPY = {
     chooseSession: "How long do you want to practise?",
     standard: { title: "Standard mode", description: "Complete every note perfectly and as quickly as possible" },
     endless: { title: "Endless mode", description: "Keep receiving random notes until your first mistake" },
-    endlessSetupNote: "Ready when you are — the first mistake ends the streak.",
+    endlessSetupNote: "Ready when you are! The first mistake ends the streak.",
     correctAnswers: "Correct answers",
     noMistakes: "Perfect streak",
     endlessResultTitle: "Streak complete.",
@@ -485,12 +485,12 @@ function ledgerPositionsFor(position: number) {
 }
 
 function rangePreviewTop(level: LevelId, position: number) {
-  return level === "genis" ? 34 - position * 1.8 : 50 - position * 4;
+  return level === "genis" ? 84 - position * 4 : 50 - position * 4;
 }
 
 function RangePreview({ level }: { level: LevelId }) {
   return (
-    <span className="range-preview" aria-hidden="true">
+    <span className={`range-preview ${level === "genis" ? "range-preview--extended" : ""}`} aria-hidden="true">
       <span className="range-preview-clef">𝄞</span>
       <span className="range-preview-lines" />
       {RANGE_PREVIEW_POSITIONS[level].map((position, index) => {
@@ -865,6 +865,11 @@ export default function Home() {
   const totalTime = `${(totalResponseTimeMs / 1000).toFixed(2).replace(".", locale === "tr" ? "," : ".")} ${copy.seconds}`;
   const elapsedTime = `${(Math.max(0, clockNow - sessionStartedAt) / 1000).toFixed(0)} ${copy.seconds}`;
   const currentAccuracy = answerTimes.length ? Math.round((correctCount / answerTimes.length) * 100) : 0;
+  const activeQuestionNumber = sessionType === "standard"
+    ? feedback
+      ? Math.max(1, answeredCorrectly)
+      : Math.min(answeredCorrectly + 1, uniqueCount)
+    : answerTimes.length + (feedback ? 0 : 1);
   const rateDenominator = sessionType === "standard" ? uniqueCount : correctCount;
   const firstTryRate = rateDenominator ? Math.round((firstTryCorrect / rateDenominator) * 100) : 0;
   const completedStandardSession = sessionType === "standard" && !endedEarly && correctCount === uniqueCount;
@@ -1028,8 +1033,6 @@ export default function Home() {
           <GuitarTrainer
             locale={locale}
             soundEnabled={soundEnabled}
-            onHome={() => setStage("landing")}
-            onSightReading={() => setStage("setup")}
           />
         </Suspense>
       )}
@@ -1129,7 +1132,7 @@ export default function Home() {
           <div className="quiz-layout">
           <div className="quiz-main-column">
           <div className="question-card">
-            <div className="question-number">{copy.question(sessionType === "standard" ? Math.min(answeredCorrectly + 1, uniqueCount) : answerTimes.length + (feedback ? 0 : 1))}</div>
+            <div className="question-number">{copy.question(activeQuestionNumber)}</div>
             <p className="question-prompt">{copy.prompt}</p>
             {mode === "porte" ? (
               <Staff note={displayedNote} locale={locale} revealAnswer={Boolean(feedback)} />
@@ -1190,7 +1193,7 @@ export default function Home() {
                     <p>{copy.correctCopy(noteName(feedback.note, locale))}</p>
                   ) : (
                     <p>
-                      {copy.wrongPrefix} <b>{noteName(feedback.note, locale)}</b> — {feedback.note.location[locale]}.{" "}
+                      {copy.wrongPrefix}: <b>{noteName(feedback.note, locale)}</b>. {feedback.note.location[locale].charAt(0).toUpperCase() + feedback.note.location[locale].slice(1)}.{" "}
                       {feedback.guessed && copy.wrongGuess(locale === "tr" ? feedback.guessed.solfege : feedback.guessed.letter)}{" "}
                       {copy.wrongSuffix}
                     </p>
@@ -1203,11 +1206,16 @@ export default function Home() {
 
           <button className="text-button" type="button" onClick={endSession}>{copy.endSession}</button>
           </div>
-          <aside className="quiz-stat-panel" aria-label={shell.currentSession}>
+          <aside className="quiz-stat-panel" aria-label={shell.currentSession} aria-live="polite">
             <p className="kicker">{shell.currentSession}</p>
+            <p className="quiz-stat-context">
+              <strong>{selectedLevel.title}</strong>
+              <span>{copy.modes[mode].title}</span>
+              <span>{sessionType === "standard" ? extra.standard.title : extra.endless.title}</span>
+            </p>
             <div className="quiz-stat-primary">
               <span>{shell.question}</span>
-              <strong>{sessionType === "standard" ? Math.min(answeredCorrectly + 1, uniqueCount) : answerTimes.length + (feedback ? 0 : 1)}<small>{sessionType === "standard" ? ` / ${uniqueCount}` : ""}</small></strong>
+              <strong>{activeQuestionNumber}<small>{sessionType === "standard" ? ` / ${uniqueCount}` : ""}</small></strong>
             </div>
             <dl>
               <div><dt>{shell.remaining}</dt><dd>{sessionType === "standard" ? queue.length : "∞"}</dd></div>

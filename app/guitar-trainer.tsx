@@ -57,8 +57,6 @@ const COPY = {
     map: "Doğal nota haritası",
     mapCopy: "Seçtiğin aralıktaki bütün doğal notalar",
     start: "Gitar çalışmasını başlat",
-    back: "Nota okumaya dön",
-    exit: "Modüllere dön",
     progress: "İlerleme",
     question: "İşaretlenen nota hangisi?",
     location: (stringNumber: number, fret: number) => `${stringNumber}. tel · ${fret === 0 ? "açık tel" : `${fret}. perde`}`,
@@ -90,8 +88,6 @@ const COPY = {
     map: "Natural-note map",
     mapCopy: "Every natural note in your selected range",
     start: "Start guitar practice",
-    back: "Switch to sight-reading",
-    exit: "Back to modules",
     progress: "Progress",
     question: "Which note is highlighted?",
     location: (stringNumber: number, fret: number) => `String ${stringNumber} · ${fret === 0 ? "open string" : `fret ${fret}`}`,
@@ -224,13 +220,9 @@ function Fretboard({
 export function GuitarTrainer({
   locale,
   soundEnabled,
-  onHome,
-  onSightReading,
 }: {
   locale: Locale;
   soundEnabled: boolean;
-  onHome: () => void;
-  onSightReading: () => void;
 }) {
   const [stage, setStage] = useState<GuitarStage>("setup");
   const [maxFret, setMaxFret] = useState(3);
@@ -330,7 +322,6 @@ export function GuitarTrainer({
   if (stage === "setup") {
     return (
       <section className="guitar-shell guitar-setup">
-        <button className="module-back" type="button" onClick={onHome}>← {text.exit}</button>
         <div className="guitar-hero">
           <div>
             <p className="kicker">{text.kicker}</p>
@@ -358,7 +349,6 @@ export function GuitarTrainer({
         </div>
         <div className="guitar-actions">
           <button className="primary-button" type="button" onClick={start}>{text.start} <span aria-hidden="true">→</span></button>
-          <button className="secondary-button" type="button" onClick={onSightReading}>{text.back}</button>
         </div>
       </section>
     );
@@ -368,7 +358,6 @@ export function GuitarTrainer({
     return (
       <section className="guitar-shell guitar-results">
         <CommunityPracticeRecorder active activityKey={`guitar-${sessionKey}`} />
-        <button className="module-back" type="button" onClick={onHome}>← {text.exit}</button>
         <p className="kicker">{text.kicker}</p>
         <h1 ref={resultsHeadingRef} tabIndex={-1}>{text.complete}</h1>
         <p>{text.completeCopy}</p>

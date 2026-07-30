@@ -34,13 +34,15 @@ test("NotaNota çalışma ekranını sunar", async () => {
   assert.match(html, /Notaları gör/);
   assert.match(html, /Adını söyle/);
   assert.match(html, /Porte okuma/);
-  assert.doesNotMatch(html, /Gitar klavyesi|Guitar fretboard/);
+  assert.match(html, /Müzik aletleri/);
+  assert.match(html, /Gitar klavyesi/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
 });
 
 test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğunda tutar", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   const community = await readFile(new URL("../app/community.tsx", import.meta.url), "utf8");
+  const guitar = await readFile(new URL("../app/guitar-trainer.tsx", import.meta.url), "utf8");
   const insights = await readFile(new URL("../lib/session-insights.mjs", import.meta.url), "utf8");
   const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
   const magicLink = await readFile(
@@ -80,7 +82,14 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.endless-results-card/);
   assert.match(page, /questionKey\.current\+\+/);
   assert.match(page, /useState<Stage>\("landing"\)/);
-  assert.doesNotMatch(page, /GuitarTrainer|guitar-trainer|setStage\("guitar"\)/);
+  assert.match(page, /const GuitarTrainer = lazy/);
+  assert.match(page, /setStage\("guitar"\)/);
+  assert.match(page, /<GuitarTrainer/);
+  assert.match(guitar, /const STRINGS =/);
+  assert.match(guitar, /frets: 3/);
+  assert.match(guitar, /frets: 5/);
+  assert.match(guitar, /frets: 12/);
+  assert.match(guitar, /NATURAL\.has/);
   assert.match(page, /<CommunityResult/);
   assert.match(community, /nota-nota-pending-score/);
   assert.match(community, /rememberPendingScore\(score\)/);
@@ -108,7 +117,10 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.mode-card\.is-selected \.selection-indicator::after[\s\S]*opacity: 1;[\s\S]*transform: scale\(1\)/);
   assert.match(styles, /\.level-card\.is-selected \.range-preview-note[\s\S]*transition-delay: \.1s/);
   assert.match(page, /Hazırsan başlayalım — sakin bak, net cevapla\./);
-  assert.doesNotMatch(page, /const GuitarTrainer = lazy/);
+  assert.match(page, /const GuitarTrainer = lazy/);
+  assert.match(styles, /\.quiz-stat-primary > strong \{ color: var\(--foreground\);/);
+  assert.doesNotMatch(styles, /\.module-card:hover \{[^}]*transform:/);
+  assert.doesNotMatch(styles, /\.level-card:not\(\.is-selected\):hover,[\s\S]{0,140}transform: translateY/);
   assert.match(page, /className="mobile-module-navigation"/);
   assert.match(page, /const LANDING_DEMO_NOTES = \["d5", "g4", "e5", "b4", "f4", "c5", "e4", "f5", "a4"\]/);
   assert.match(page, /window\.setInterval\(\(\) => \{[\s\S]*setNoteIndex\(\(current\) => \(current \+ 1\) % LANDING_DEMO_NOTES\.length\);[\s\S]*\}, 2800\)/);

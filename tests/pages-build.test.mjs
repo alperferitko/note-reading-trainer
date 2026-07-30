@@ -60,7 +60,7 @@ test("GitHub Pages output contains every referenced local asset", async () => {
   const assetFiles = await readdir(new URL("assets/", output));
   assert.ok(assetFiles.some((file) => file.endsWith(".js")));
   assert.ok(assetFiles.some((file) => file.endsWith(".css")));
-  assert.ok(!assetFiles.some((file) => file.startsWith("guitar-trainer-") && file.endsWith(".js")));
+  assert.ok(assetFiles.some((file) => file.startsWith("guitar-trainer-") && file.endsWith(".js")));
 });
 
 test("static bundle has no unavailable server endpoint dependency", async () => {

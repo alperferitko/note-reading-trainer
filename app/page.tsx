@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element -- Relative public assets must work on both the custom domain and GitHub Pages subpath. */
 
-import { FormEvent, MouseEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, lazy, MouseEvent, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   CommunityHeader,
   CommunityLeaderboardButton,
@@ -28,8 +28,12 @@ import {
 
 type LevelId = "temel" | "yakin" | "tam" | "genis";
 type ModeId = "porte" | "konum";
-type Stage = "landing" | "setup" | "quiz" | "done";
+type Stage = "landing" | "setup" | "quiz" | "done" | "guitar";
 type Locale = "tr" | "en";
+
+const GuitarTrainer = lazy(() => import("./guitar-trainer").then((module) => ({
+  default: module.GuitarTrainer,
+})));
 
 type NoteQuestion = {
   id: string;
@@ -272,11 +276,17 @@ const LANDING_COPY = {
     proofTwo: "Kısa, odaklı oturumlar",
     proofThree: "Hız ve doğruluk takibi",
     modulesEyebrow: "Çalışma stüdyosu",
-    modulesTitle: "Bugün hangi notaları akıcılaştırmak istiyorsun?",
+    modulesTitle: "Bugün ne çalışmak istiyorsun?",
+    readingCategory: "Nota okuma",
     readingTitle: "Porte okuma",
     readingCopy: "Sol anahtarındaki doğal notaları çizgi, aralık ve ek çizgiler üzerinde tanı.",
     readingMeta: "4 seviye · 2 soru biçimi",
-    open: "Çalışmaya başla",
+    instrumentsCategory: "Müzik aletleri",
+    guitarTitle: "Gitar klavyesi",
+    guitarCopy: "Standart akortta doğal notaların tel ve perde üzerindeki yerlerini öğren.",
+    guitarMeta: "0–3 · 0–5 · 0–12 perde",
+    openReading: "Nota çalışmasına başla",
+    openGuitar: "Gitar çalışmasına başla",
   },
   en: {
     eyebrow: "NotaNota · music literacy",
@@ -288,11 +298,17 @@ const LANDING_COPY = {
     proofTwo: "Short, focused sessions",
     proofThree: "Speed and accuracy tracking",
     modulesEyebrow: "Practice studio",
-    modulesTitle: "Make treble-clef notes fluent today.",
+    modulesTitle: "What would you like to practise today?",
+    readingCategory: "Note reading",
     readingTitle: "Sight-reading",
     readingCopy: "Recognise natural notes on the treble staff, from the core range to extended ledger lines.",
     readingMeta: "4 ranges · 2 question styles",
-    open: "Start practising",
+    instrumentsCategory: "Musical instruments",
+    guitarTitle: "Guitar fretboard",
+    guitarCopy: "Learn where natural notes sit across the strings and frets in standard tuning.",
+    guitarMeta: "Frets 0–3 · 0–5 · 0–12",
+    openReading: "Start note practice",
+    openGuitar: "Start guitar practice",
   },
 } as const;
 
@@ -301,6 +317,7 @@ const SHELL_COPY = {
     navigation: "Çalışma bölümleri",
     studio: "Stüdyo",
     sightReading: "Nota oku",
+    instruments: "Müzik aletleri",
     currentSession: "Etkin oturum",
     question: "Soru",
     remaining: "Kalan",
@@ -314,6 +331,7 @@ const SHELL_COPY = {
     navigation: "Practice sections",
     studio: "Studio",
     sightReading: "Sight-reading",
+    instruments: "Instruments",
     currentSession: "Current session",
     question: "Question",
     remaining: "Remaining",
@@ -821,6 +839,9 @@ export default function Home() {
           <button type="button" className={["setup", "quiz", "done"].includes(stage) ? "is-active" : ""} onClick={() => setStage("setup")} aria-label={shell.sightReading} aria-current={["setup", "quiz", "done"].includes(stage) ? "page" : undefined}>
             <span aria-hidden="true">01</span><b>{shell.sightReading}</b>
           </button>
+          <button type="button" className={stage === "guitar" ? "is-active" : ""} onClick={() => setStage("guitar")} aria-label={shell.instruments} aria-current={stage === "guitar" ? "page" : undefined}>
+            <span aria-hidden="true">02</span><b>{shell.instruments}</b>
+          </button>
         </nav>
         <div className="header-actions">
           {stage === "quiz" && (
@@ -862,6 +883,9 @@ export default function Home() {
         <button type="button" className={["setup", "quiz", "done"].includes(stage) ? "is-active" : ""} onClick={() => setStage("setup")} aria-current={["setup", "quiz", "done"].includes(stage) ? "page" : undefined}>
           <span aria-hidden="true">01</span>{shell.sightReading}
         </button>
+        <button type="button" className={stage === "guitar" ? "is-active" : ""} onClick={() => setStage("guitar")} aria-current={stage === "guitar" ? "page" : undefined}>
+          <span aria-hidden="true">02</span>{shell.instruments}
+        </button>
       </nav>
 
       {stage === "landing" && (
@@ -888,17 +912,42 @@ export default function Home() {
           <div className="module-section">
             <div className="module-heading"><p className="kicker">{landing.modulesEyebrow}</p><h2>{landing.modulesTitle}</h2></div>
             <div className="module-grid">
-              <button className="module-card module-card--staff" type="button" onClick={() => setStage("setup")}>
-                <span className="module-number">01</span>
-                <span className="module-visual"><RangePreview level="tam" /></span>
-                <strong>{landing.readingTitle}</strong>
-                <span>{landing.readingCopy}</span>
-                <small>{landing.readingMeta}</small>
-                <b>{landing.open} →</b>
-              </button>
+              <section className="module-category" aria-labelledby="note-reading-category">
+                <p className="module-category-label" id="note-reading-category">{landing.readingCategory}</p>
+                <button className="module-card module-card--staff" type="button" onClick={() => setStage("setup")}>
+                  <span className="module-number">01</span>
+                  <span className="module-visual"><RangePreview level="tam" /></span>
+                  <strong>{landing.readingTitle}</strong>
+                  <span>{landing.readingCopy}</span>
+                  <small>{landing.readingMeta}</small>
+                  <b>{landing.openReading} →</b>
+                </button>
+              </section>
+              <section className="module-category" aria-labelledby="instrument-category">
+                <p className="module-category-label" id="instrument-category">{landing.instrumentsCategory}</p>
+                <button className="module-card module-card--guitar" type="button" onClick={() => setStage("guitar")}>
+                  <span className="module-number">02</span>
+                  <span className="module-guitar-visual" aria-hidden="true"><b>C</b><b>E</b><b>G</b></span>
+                  <strong>{landing.guitarTitle}</strong>
+                  <span>{landing.guitarCopy}</span>
+                  <small>{landing.guitarMeta}</small>
+                  <b>{landing.openGuitar} →</b>
+                </button>
+              </section>
             </div>
           </div>
         </section>
+      )}
+
+      {stage === "guitar" && (
+        <Suspense fallback={<section className="guitar-shell guitar-shell--loading" aria-busy="true" />}>
+          <GuitarTrainer
+            locale={locale}
+            soundEnabled={soundEnabled}
+            onHome={() => setStage("landing")}
+            onSightReading={() => setStage("setup")}
+          />
+        </Suspense>
       )}
 
       {stage === "setup" && (

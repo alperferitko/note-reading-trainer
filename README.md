@@ -28,6 +28,7 @@ Practice runs in the browser. Passwordless accounts, private streaks, and leader
 ## Features
 
 - Four progressive treble-clef practice ranges
+- An optional guitar-fretboard trainer grouped under Musical instruments
 - Visual staff and written-position question modes
 - Turkish solfege and English letter names
 - Normal and endless practice modes
@@ -59,6 +60,10 @@ Questions continue until the learner chooses to end the session or makes the fir
 | **2** | Staff and nearby ledger lines | 13 |
 | **3** | Every natural note from middle C to high C | 15 |
 | **4** | Full staff with four ledger lines above and below | 25 |
+
+## Musical instruments
+
+The main learning focus remains fluent note reading. An optional guitar module extends that skill to the fretboard, with selectable 0–3, 0–5, and 0–12 fret ranges in standard tuning.
 
 ## Language support
 

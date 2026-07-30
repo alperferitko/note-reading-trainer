@@ -310,7 +310,17 @@ textarea:focus-visible {
 .module-section { padding: 98px 0 30px; }
 .module-heading { max-width: 800px; margin-bottom: 34px; }
 .module-heading h2 { margin: 0; font-family: var(--serif); font-size: clamp(38px, 5vw, 62px); letter-spacing: -.055em; line-height: 1; }
-.module-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+.module-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: 18px; }
+.module-category { min-width: 0; display: grid; grid-template-rows: auto 1fr; gap: 10px; }
+.module-category-label {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+.module-category .module-card { width: 100%; height: 100%; }
 .module-card {
   position: relative;
   min-height: 440px;
@@ -323,7 +333,7 @@ textarea:focus-visible {
   border-radius: 28px;
   background: rgba(255,250,243,.8);
   text-align: left;
-  transition: border-color .32s ease, box-shadow .38s cubic-bezier(.22,1,.36,1), transform .38s cubic-bezier(.22,1,.36,1);
+  transition: border-color .32s ease;
 }
 .module-card--guitar { background: linear-gradient(145deg, #e4eee8, #f8f3e9); }
 .module-number { color: var(--coral); font-size: 10px; font-weight: 850; letter-spacing: .13em; }
@@ -864,13 +874,13 @@ footer span:first-child { font-family: var(--serif); font-size: 14px; text-trans
 
 @media (hover: hover) {
   .community-header-actions button:hover { border-color: var(--coral); }
-  .level-card:not(.is-selected):hover,
+  .level-card:not(.is-selected):hover { border-color: rgba(18, 52, 45, .42); }
   .mode-card:not(.is-selected):hover { border-color: rgba(18, 52, 45, .42); background-color: rgba(255, 255, 255, .62); }
   .primary-button:hover { transform: translateY(-1px); box-shadow: 0 15px 28px rgba(8, 44, 39, .17); }
   .primary-button:active { transform: translateY(0); box-shadow: 0 10px 20px rgba(8, 44, 39, .14); }
   .note-hints button:hover { border-color: var(--coral); color: var(--coral); }
   .modal-card > header button:hover { border-color: var(--coral); background: var(--coral-soft); }
-  .module-card:hover { border-color: rgba(18,52,45,.52); box-shadow: 0 24px 50px rgba(18,52,45,.1); transform: translateY(-3px); }
+  .module-card:hover { border-color: rgba(18,52,45,.52); }
 }
 
 @keyframes endless-progress { to { background-position: -200% 0; } }
@@ -1556,7 +1566,7 @@ footer {
   border-radius: 4px;
   background: rgba(251, 248, 241, .72);
   box-shadow: none;
-  transition: border-color .2s ease, background-color .2s ease, transform .2s ease;
+  transition: border-color .24s ease;
 }
 .module-card--guitar { background: rgba(233, 226, 213, .56); }
 .module-card::after {
@@ -1795,7 +1805,7 @@ footer {
   letter-spacing: .12em;
   text-transform: uppercase;
 }
-.quiz-stat-primary > strong { font-family: var(--serif); font-size: 43px; font-weight: 500; }
+.quiz-stat-primary > strong { color: var(--foreground); font-family: var(--serif); font-size: 43px; font-weight: 500; }
 .quiz-stat-primary small { color: var(--foreground-muted); font-size: 17px; }
 .quiz-stat-panel dl { margin: 0; }
 .quiz-stat-panel dl > div {
@@ -2116,8 +2126,8 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
   .app-navigation button:not(.is-active):hover { background: var(--background-deep); color: var(--foreground); }
   .community-header-actions button:hover { border-color: var(--primary); background: var(--surface-elevated); }
   .level-card:not(.is-selected):hover,
-  .mode-card:not(.is-selected):hover,
-  .module-card:hover { border-color: var(--border-strong); background: var(--surface-elevated); transform: translateY(-1px); box-shadow: 0 8px 16px rgba(54, 43, 30, .06); }
+  .module-card:hover { border-color: var(--border-strong); box-shadow: none; }
+  .mode-card:not(.is-selected):hover { border-color: var(--border-strong); background: var(--surface-elevated); box-shadow: none; }
   .primary-button:hover { background: var(--primary-hover); box-shadow: 0 10px 19px rgba(101, 30, 43, .18); }
   .note-hints button:hover { border-color: var(--primary); color: var(--primary); }
   .sound-toggle:hover,

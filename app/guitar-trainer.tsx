@@ -216,8 +216,10 @@ function Fretboard({
 
 export function GuitarTrainer({
   locale,
+  noteSoundEnabled,
 }: {
   locale: Locale;
+  noteSoundEnabled: boolean;
 }) {
   const [stage, setStage] = useState<GuitarStage>("setup");
   const [maxFret, setMaxFret] = useState(3);
@@ -283,7 +285,7 @@ export function GuitarTrainer({
     setAnswer(value);
     setTimes((items) => [...items, Math.max(100, Date.now() - startedAt)]);
     if (guessed.letter === current.letter) {
-      playPracticeNote(current.midi);
+      playPracticeNote(current.midi, noteSoundEnabled);
       if (current.misses === 0) setFirstTry((count) => count + 1);
       setQueue((items) => items.slice(1));
       setFeedback("correct");

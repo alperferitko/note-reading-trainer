@@ -22,6 +22,8 @@ import {
 import {
   noteIdToMidi,
   playPracticeNote,
+  readNoteSoundPreference,
+  writeNoteSoundPreference,
 } from "@/lib/practice-audio";
 
 type LevelId = "temel" | "yakin" | "tam" | "genis";
@@ -341,6 +343,23 @@ const SHELL_COPY = {
   },
 } as const;
 
+const NOTE_SOUND_COPY = {
+  tr: {
+    settings: "Ses ayarları",
+    title: "Doğru nota sesi",
+    help: "Yalnızca doğru cevap verdiğinde notayı çalar.",
+    on: "Açık",
+    off: "Kapalı",
+  },
+  en: {
+    settings: "Audio settings",
+    title: "Correct-note sound",
+    help: "Plays the note only after a correct answer.",
+    on: "On",
+    off: "Off",
+  },
+} as const;
+
 const ALL_NOTES: NoteQuestion[] = [
   { id: "d3", solfege: "Re", letter: "D", position: -8, location: { tr: "portenin altındaki 4. ek çizgi üzerinde", en: "on the fourth ledger line below the staff" }, shortLocation: { tr: "Alt 4. ek çizgi", en: "4th ledger line below" } },
   { id: "e3", solfege: "Mi", letter: "E", position: -7, location: { tr: "alttaki 4. ve 3. ek çizgilerin arasındaki aralıkta", en: "in the space between the fourth and third ledger lines below the staff" }, shortLocation: { tr: "Alt 4.–3. ek çizgi arası", en: "Between 4th–3rd ledger lines below" } },
@@ -583,14 +602,19 @@ export default function Home() {
   const [clockNow, setClockNow] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [endedEarly, setEndedEarly] = useState(false);
+  const [noteSoundEnabled, setNoteSoundEnabled] = useState(true);
+  const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const feedbackButtonRef = useRef<HTMLButtonElement>(null);
   const resultsHeadingRef = useRef<HTMLHeadingElement>(null);
+  const audioSettingsRef = useRef<HTMLDivElement>(null);
+  const audioSettingsButtonRef = useRef<HTMLButtonElement>(null);
   const questionKey = useRef(0);
   const copy = COPY[locale];
   const extra = EXTRA_COPY[locale];
   const landing = LANDING_COPY[locale];
   const shell = SHELL_COPY[locale];
+  const noteSoundCopy = NOTE_SOUND_COPY[locale];
   const levels = LEVELS[locale];
 
   const uniqueCount = questionsFor(level).length;
@@ -637,6 +661,33 @@ export default function Home() {
   }, [locale]);
 
   useEffect(() => {
+    const timer = window.setTimeout(() => setNoteSoundEnabled(readNoteSoundPreference()), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!audioSettingsOpen) return;
+
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (event.target instanceof Node && !audioSettingsRef.current?.contains(event.target)) {
+        setAudioSettingsOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setAudioSettingsOpen(false);
+      audioSettingsButtonRef.current?.focus();
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [audioSettingsOpen]);
+
+  useEffect(() => {
     if (stage !== "quiz" || feedback) return;
 
     const hasDesktopPointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
@@ -674,6 +725,14 @@ export default function Home() {
   function resetSelectionShade(event: MouseEvent<HTMLButtonElement>) {
     event.currentTarget.style.setProperty("--shade-x", "50%");
     event.currentTarget.style.setProperty("--shade-y", "46%");
+  }
+
+  function toggleNoteSound() {
+    setNoteSoundEnabled((enabled) => {
+      const next = !enabled;
+      writeNoteSoundPreference(next);
+      return next;
+    });
   }
 
   function startSession() {
@@ -723,7 +782,7 @@ export default function Home() {
     setAnswerTimes((times) => [...times, elapsed]);
 
     if (correct) {
-      playPracticeNote(noteIdToMidi(current.id));
+      playPracticeNote(noteIdToMidi(current.id), noteSoundEnabled);
       setFeedback({ correct: true, note: current, guessed });
       if (currentItem.misses === 0) setFirstTryCorrect((count) => count + 1);
       setCorrectCount((count) => count + 1);
@@ -840,6 +899,33 @@ export default function Home() {
             </div>
           )}
           <CommunityHeader />
+          <div className="audio-settings" ref={audioSettingsRef}>
+            <button
+              className="sound-toggle"
+              ref={audioSettingsButtonRef}
+              type="button"
+              aria-label={noteSoundCopy.settings}
+              aria-expanded={audioSettingsOpen}
+              aria-controls="audio-settings-panel"
+              onClick={() => setAudioSettingsOpen((open) => !open)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4 10v4h4l5 4V6L8 10H4Z" fill="currentColor" />
+                {noteSoundEnabled
+                  ? <path d="M16 9c1.2 1.7 1.2 4.3 0 6M18.7 6.8c2.8 3 2.8 7.4 0 10.4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  : <path d="m16.5 9 4.5 6m0-6-4.5 6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />}
+              </svg>
+            </button>
+            {audioSettingsOpen && (
+              <div className="audio-settings-panel" id="audio-settings-panel" role="group" aria-label={noteSoundCopy.settings}>
+                <strong>{noteSoundCopy.settings}</strong>
+                <button type="button" role="switch" aria-checked={noteSoundEnabled} onClick={toggleNoteSound}>
+                  <span>{noteSoundCopy.title}<small>{noteSoundCopy.help}</small></span>
+                  <b>{noteSoundEnabled ? noteSoundCopy.on : noteSoundCopy.off}</b>
+                </button>
+              </div>
+            )}
+          </div>
           <div className="language-switch" role="group" aria-label={locale === "tr" ? "Dil seçimi" : "Language selection"}>
             <button type="button" className={locale === "tr" ? "is-active" : ""} onClick={() => changeLocale("tr")} aria-pressed={locale === "tr"}>TR</button>
             <button type="button" className={locale === "en" ? "is-active" : ""} onClick={() => changeLocale("en")} aria-pressed={locale === "en"}>EN</button>
@@ -915,6 +1001,7 @@ export default function Home() {
         <Suspense fallback={<section className="guitar-shell guitar-shell--loading" aria-busy="true" />}>
           <GuitarTrainer
             locale={locale}
+            noteSoundEnabled={noteSoundEnabled}
           />
         </Suspense>
       )}

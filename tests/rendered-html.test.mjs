@@ -144,8 +144,10 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.landing-staff-card \{[\s\S]*width: 88%;[\s\S]*padding: 10px 14px 9px;[\s\S]*animation: landing-staff-card-drift 14s ease-in-out infinite/);
   assert.match(styles, /\.landing-staff-card \.staff \{[\s\S]*height: 86px;[\s\S]*margin: 0 auto 1px/);
   assert.match(styles, /@keyframes landing-staff-card-drift \{[\s\S]*translate3d\(3px, -3px, 0\)[\s\S]*translate3d\(-3px, 2px, 0\)/);
-  assert.match(page, /if \(correct\) \{[\s\S]*playPracticeNote\(noteIdToMidi\(current\.id\)\);/);
-  assert.doesNotMatch(page, /audio-settings|listen-note-button|playNotaNotaEffect|setAmbientMusicActive|unlockNotaNotaAudio/);
+  assert.match(page, /if \(correct\) \{[\s\S]*playPracticeNote\(noteIdToMidi\(current\.id\), noteSoundEnabled\);/);
+  assert.match(page, /document\.addEventListener\("pointerdown", closeOnOutsidePointer\)/);
+  assert.match(page, /!audioSettingsRef\.current\?\.contains\(event\.target\)/);
+  assert.doesNotMatch(page, /listen-note-button|playNotaNotaEffect|setAmbientMusicActive|unlockNotaNotaAudio/);
   assert.match(styles, /\.mobile-module-navigation/);
   assert.match(page, /className="brand-mark" aria-hidden="true">[\s\S]*notanota-monogram\.png/);
   assert.match(page, /className="brand-mark result-flourish" aria-hidden="true">[\s\S]*notanota-monogram\.png/);

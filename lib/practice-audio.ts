@@ -1,10 +1,21 @@
 let audioContext: AudioContext | null = null;
+const NOTE_SOUND_PREFERENCE_KEY = "nota-nota-correct-note-sound";
 
 function context() {
   if (typeof window === "undefined") return null;
   audioContext ??= new AudioContext();
   if (audioContext.state === "suspended") void audioContext.resume();
   return audioContext;
+}
+
+export function readNoteSoundPreference() {
+  if (typeof window === "undefined") return true;
+  return window.localStorage.getItem(NOTE_SOUND_PREFERENCE_KEY) !== "off";
+}
+
+export function writeNoteSoundPreference(enabled: boolean) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(NOTE_SOUND_PREFERENCE_KEY, enabled ? "on" : "off");
 }
 
 export function noteIdToMidi(noteId: string) {

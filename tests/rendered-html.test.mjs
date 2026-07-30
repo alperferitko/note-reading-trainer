@@ -117,7 +117,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.mode-card\.is-selected \.selection-indicator::after[\s\S]*opacity: 1;[\s\S]*transform: scale\(1\)/);
   assert.match(styles, /\.level-card\.is-selected \.range-preview-note[\s\S]*transition-delay: \.1s/);
   assert.doesNotMatch(page, /trackSelectionShade|--shade-x|onMouseMove=\{trackSelectionShade\}/);
-  assert.match(styles, /radial-gradient\(circle at 0 0, rgba\(139, 47, 60, \.2\)/);
+  assert.match(styles, /radial-gradient\(circle at 0 0, rgba\(139, 47, 60, \.115\)/);
   assert.match(styles, /--surface-shadow:/);
   assert.match(page, /Hazırsan başlayalım! Sakin bak, net cevapla\./);
   assert.doesNotMatch(page, /—/);
@@ -142,7 +142,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.landing-staff-card \{[\s\S]*width: 88%;[\s\S]*padding: 10px 14px 9px;[\s\S]*animation: landing-staff-card-drift 18s ease-in-out infinite/);
   assert.match(styles, /\.landing-staff-card \.staff \{[\s\S]*height: 86px;[\s\S]*margin: 0 auto 1px/);
   assert.match(styles, /@keyframes landing-staff-card-drift \{[\s\S]*translate3d\(-1px, 4px, 0\) rotate\(-1\.1deg\)[\s\S]*translate3d\(1px, 4px, 0\) rotate\(1\.1deg\)/);
-  assert.match(styles, /\.landing-staff-card \{[\s\S]*0 22px 18px -16px rgba\(54, 43, 30, \.42\)/);
+  assert.match(styles, /\.landing-staff-card \{[\s\S]*8px 14px 14px -12px rgba\(54, 43, 30, \.24\)/);
   assert.match(styles, /\.site-header \{[\s\S]*grid-row: 1 \/ span 2/);
   assert.doesNotMatch(styles, /\.module-card::after/);
   assert.match(styles, /\.module-card--guitar \{[\s\S]*linear-gradient/);
@@ -153,6 +153,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(community, /community-result-encouragement/);
   assert.match(styles, /\.guitar-range-grid > button::before \{[\s\S]*radial-gradient\(circle at 0 0/);
   assert.match(styles, /\.guitar-range-grid > button\.is-selected::before \{ opacity: 1; \}/);
+  assert.match(styles, /\.fretboard-card-heading \{[^}]*flex-direction: row-reverse;[^}]*text-align: right;/);
   assert.doesNotMatch(styles, /\.session-insight \{[^}]*border-left/);
   assert.match(page, /if \(correct\) \{[\s\S]*playPracticeNote\(noteIdToMidi\(current\.id\), noteSoundEnabled\);/);
   assert.match(page, /document\.addEventListener\("pointerdown", closeOnOutsidePointer\)/);

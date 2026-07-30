@@ -1151,7 +1151,7 @@ body::before {
   position: sticky;
   top: 0;
   grid-column: 1;
-  grid-row: 1 / span 3;
+  grid-row: 1 / span 2;
   width: 174px;
   height: 100vh;
   margin: 0;
@@ -1479,7 +1479,11 @@ footer {
   width: 88%;
   max-width: 420px;
   padding: 10px 14px 9px;
-  animation: landing-staff-card-drift 20s ease-in-out infinite;
+  animation: landing-staff-card-drift 18s ease-in-out infinite;
+  box-shadow:
+    0 22px 18px -16px rgba(54, 43, 30, .42),
+    8px 10px 0 rgba(198, 161, 91, .1),
+    0 9px 28px rgba(54, 43, 30, .13);
   transform-origin: center;
   will-change: transform;
 }
@@ -1503,10 +1507,10 @@ footer {
 }
 @keyframes landing-staff-card-drift {
   0%,
-  100% { transform: translate3d(0, 0, 0) rotate(-.55deg); }
-  25% { transform: translate3d(0, -1px, 0) rotate(0deg); }
-  50% { transform: translate3d(0, 1px, 0) rotate(.55deg); }
-  75% { transform: translate3d(0, -1px, 0) rotate(0deg); }
+  100% { transform: translate3d(-1px, 4px, 0) rotate(-1.1deg); }
+  25% { transform: translate3d(0, -3px, 0) rotate(0deg); }
+  50% { transform: translate3d(1px, 4px, 0) rotate(1.1deg); }
+  75% { transform: translate3d(0, -3px, 0) rotate(0deg); }
 }
 .landing-fret-card { left: 2%; bottom: -12px; width: 72%; min-height: 112px; padding: 18px 18px; transform: rotate(-2deg); }
 .landing-fret-card::before { inset: 18px 17px 31px 47px; }
@@ -1672,8 +1676,6 @@ footer {
 .step-heading h2 { font-size: 31px; }
 .level-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .level-card {
-  --shade-x: 50%;
-  --shade-y: 46%;
   isolation: isolate;
   min-height: 185px;
   padding: 18px 20px 20px;
@@ -1682,8 +1684,6 @@ footer {
   background: rgba(255, 253, 248, .66);
   box-shadow: var(--surface-shadow-soft);
   transition:
-    --shade-x .16s ease-out,
-    --shade-y .16s ease-out,
     border-color .42s cubic-bezier(.22, 1, .36, 1),
     background-color .42s cubic-bezier(.22, 1, .36, 1),
     box-shadow .48s cubic-bezier(.22, 1, .36, 1);
@@ -1693,10 +1693,10 @@ footer {
   z-index: 0;
   inset: 0;
   background:
-    radial-gradient(circle at var(--shade-x) var(--shade-y), rgba(139, 47, 60, .055), transparent 27%),
-    radial-gradient(ellipse at left center, rgba(139, 47, 60, .16), transparent 43%),
-    radial-gradient(ellipse at right center, rgba(139, 47, 60, .13), transparent 43%),
-    linear-gradient(180deg, rgba(198, 161, 91, .08), transparent 24%, transparent 76%, rgba(139, 47, 60, .07));
+    radial-gradient(circle at 0 0, rgba(139, 47, 60, .19), transparent 38%),
+    radial-gradient(circle at 100% 0, rgba(139, 47, 60, .15), transparent 38%),
+    radial-gradient(circle at 0 100%, rgba(139, 47, 60, .14), transparent 38%),
+    radial-gradient(circle at 100% 100%, rgba(198, 161, 91, .13), transparent 38%);
   content: "";
   opacity: 0;
   transform: scale(.985);
@@ -1754,8 +1754,6 @@ footer {
 .note-stem { background: var(--primary); }
 .divider { background: linear-gradient(90deg, transparent, var(--border), transparent); }
 .mode-card {
-  --shade-x: 50%;
-  --shade-y: 46%;
   position: relative;
   isolation: isolate;
   overflow: hidden;
@@ -1765,8 +1763,6 @@ footer {
   background: rgba(255, 253, 248, .7);
   box-shadow: var(--surface-shadow-soft);
   transition:
-    --shade-x .16s ease-out,
-    --shade-y .16s ease-out,
     border-color .4s cubic-bezier(.22, 1, .36, 1),
     background-color .4s cubic-bezier(.22, 1, .36, 1),
     box-shadow .45s cubic-bezier(.22, 1, .36, 1);
@@ -1776,10 +1772,10 @@ footer {
   z-index: 0;
   inset: 0;
   background:
-    radial-gradient(circle at var(--shade-x) var(--shade-y), rgba(139, 47, 60, .05), transparent 26%),
-    radial-gradient(ellipse at left center, rgba(139, 47, 60, .17), transparent 42%),
-    radial-gradient(ellipse at right center, rgba(139, 47, 60, .14), transparent 42%),
-    linear-gradient(180deg, rgba(198, 161, 91, .07), transparent 25%, transparent 75%, rgba(139, 47, 60, .065));
+    radial-gradient(circle at 0 0, rgba(139, 47, 60, .2), transparent 36%),
+    radial-gradient(circle at 100% 0, rgba(139, 47, 60, .16), transparent 36%),
+    radial-gradient(circle at 0 100%, rgba(139, 47, 60, .14), transparent 36%),
+    radial-gradient(circle at 100% 100%, rgba(198, 161, 91, .13), transparent 36%);
   content: "";
   opacity: 0;
   transform: scale(.985);
@@ -2302,9 +2298,10 @@ footer {
   z-index: 0;
   inset: 0;
   background:
-    radial-gradient(ellipse at left center, rgba(139, 47, 60, .17), transparent 42%),
-    radial-gradient(ellipse at right center, rgba(139, 47, 60, .14), transparent 42%),
-    linear-gradient(180deg, rgba(198, 161, 91, .07), transparent 25%, transparent 75%, rgba(139, 47, 60, .065));
+    radial-gradient(circle at 0 0, rgba(139, 47, 60, .2), transparent 38%),
+    radial-gradient(circle at 100% 0, rgba(139, 47, 60, .16), transparent 38%),
+    radial-gradient(circle at 0 100%, rgba(139, 47, 60, .14), transparent 38%),
+    radial-gradient(circle at 100% 100%, rgba(198, 161, 91, .13), transparent 38%);
   content: "";
   opacity: 0;
   transition: opacity .4s ease;

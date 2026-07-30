@@ -714,19 +714,6 @@ export default function Home() {
     setAnswer("");
   }
 
-  function trackSelectionShade(event: MouseEvent<HTMLButtonElement>) {
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const x = Math.min(100, Math.max(0, ((event.clientX - bounds.left) / bounds.width) * 100));
-    const y = Math.min(100, Math.max(0, ((event.clientY - bounds.top) / bounds.height) * 100));
-    event.currentTarget.style.setProperty("--shade-x", `${x.toFixed(1)}%`);
-    event.currentTarget.style.setProperty("--shade-y", `${y.toFixed(1)}%`);
-  }
-
-  function resetSelectionShade(event: MouseEvent<HTMLButtonElement>) {
-    event.currentTarget.style.setProperty("--shade-x", "50%");
-    event.currentTarget.style.setProperty("--shade-y", "46%");
-  }
-
   function toggleNoteSound() {
     setNoteSoundEnabled((enabled) => {
       const next = !enabled;
@@ -1030,8 +1017,6 @@ export default function Home() {
                   type="button"
                   className={`level-card ${level === item.id ? "is-selected" : ""}`}
                   onClick={() => setLevel(item.id)}
-                  onMouseMove={trackSelectionShade}
-                  onMouseLeave={resetSelectionShade}
                   aria-pressed={level === item.id}
                 >
                   <RangePreview level={item.id} />
@@ -1048,12 +1033,12 @@ export default function Home() {
               <div><p>{copy.questionStyle}</p><h2>{copy.chooseMode}</h2></div>
             </div>
             <div className="mode-grid">
-              <button type="button" className={`mode-card ${mode === "porte" ? "is-selected" : ""}`} onClick={() => setMode("porte")} onMouseMove={trackSelectionShade} onMouseLeave={resetSelectionShade} aria-pressed={mode === "porte"}>
+              <button type="button" className={`mode-card ${mode === "porte" ? "is-selected" : ""}`} onClick={() => setMode("porte")} aria-pressed={mode === "porte"}>
                 <span className="mode-icon mode-icon--clef" aria-hidden="true">𝄞</span>
                 <span><strong>{copy.modes.porte.title}</strong><small>{copy.modes.porte.description}</small></span>
                 <i className="selection-indicator" aria-hidden="true" />
               </button>
-              <button type="button" className={`mode-card ${mode === "konum" ? "is-selected" : ""}`} onClick={() => setMode("konum")} onMouseMove={trackSelectionShade} onMouseLeave={resetSelectionShade} aria-pressed={mode === "konum"}>
+              <button type="button" className={`mode-card ${mode === "konum" ? "is-selected" : ""}`} onClick={() => setMode("konum")} aria-pressed={mode === "konum"}>
                 <span className="mode-icon mode-icon--text" aria-hidden="true">1.</span>
                 <span><strong>{copy.modes.konum.title}</strong><small>{copy.modes.konum.description}</small></span>
                 <i className="selection-indicator" aria-hidden="true" />
@@ -1066,12 +1051,12 @@ export default function Home() {
               <div><p>{extra.sessionEyebrow}</p><h2>{extra.chooseSession}</h2></div>
             </div>
             <div className="mode-grid session-type-grid">
-              <button type="button" className={`mode-card ${sessionType === "standard" ? "is-selected" : ""}`} onClick={() => setSessionType("standard")} onMouseMove={trackSelectionShade} onMouseLeave={resetSelectionShade} aria-pressed={sessionType === "standard"}>
+              <button type="button" className={`mode-card ${sessionType === "standard" ? "is-selected" : ""}`} onClick={() => setSessionType("standard")} aria-pressed={sessionType === "standard"}>
                 <span className="mode-icon mode-icon--check" aria-hidden="true"><UiIcon name="check" /></span>
                 <span><strong>{extra.standard.title}</strong><small>{extra.standard.description}</small></span>
                 <i className="selection-indicator" aria-hidden="true" />
               </button>
-              <button type="button" className={`mode-card ${sessionType === "endless" ? "is-selected" : ""}`} onClick={() => setSessionType("endless")} onMouseMove={trackSelectionShade} onMouseLeave={resetSelectionShade} aria-pressed={sessionType === "endless"}>
+              <button type="button" className={`mode-card ${sessionType === "endless" ? "is-selected" : ""}`} onClick={() => setSessionType("endless")} aria-pressed={sessionType === "endless"}>
                 <span className="mode-icon mode-icon--infinity" aria-hidden="true">∞</span>
                 <span><strong>{extra.endless.title}</strong><small>{extra.endless.description}</small></span>
                 <i className="selection-indicator" aria-hidden="true" />

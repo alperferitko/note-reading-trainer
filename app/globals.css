@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+@property --shade-x {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 50%;
+}
+
+@property --shade-y {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 46%;
+}
+
 :root {
   --background: #f4efe4;
   --background-deep: #e9e2d5;
@@ -21,6 +33,9 @@
   --danger: #b94a48;
   --danger-soft: #f2deda;
   --shadow-color: rgba(54, 43, 30, .12);
+  --surface-shadow: 0 14px 34px rgba(54, 43, 30, .085), 0 2px 8px rgba(54, 43, 30, .035);
+  --surface-shadow-soft: 0 8px 22px rgba(54, 43, 30, .065);
+  --surface-radius: 12px;
   --ink: var(--foreground);
   --ink-deep: #171a17;
   --ink-soft: var(--foreground-muted);
@@ -180,10 +195,10 @@ textarea:focus-visible {
   padding: 16px;
   display: grid;
   gap: 8px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  border: 0;
+  border-radius: var(--surface-radius);
   background: var(--surface-elevated);
-  box-shadow: 0 18px 38px var(--shadow-color);
+  box-shadow: 0 20px 48px rgba(54, 43, 30, .18), 0 0 0 1px rgba(213, 202, 186, .45);
 }
 .audio-settings-panel > strong {
   padding: 2px 4px 8px;
@@ -197,9 +212,10 @@ textarea:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  border: 1px solid var(--border);
-  border-radius: 3px;
+  border: 0;
+  border-radius: 8px;
   background: var(--surface);
+  box-shadow: inset 0 0 0 1px rgba(213, 202, 186, .68);
   text-align: left;
 }
 .audio-settings-panel > button span { display: grid; gap: 3px; font-size: 11px; font-weight: 750; }
@@ -1412,11 +1428,11 @@ footer {
   padding: 46px 50px;
   grid-template-columns: minmax(0, 1.15fr) minmax(330px, .85fr);
   gap: 44px;
-  border: 1px solid var(--border);
-  border-radius: 5px;
+  border: 0;
+  border-radius: 14px;
   background: rgba(251, 248, 241, .74);
   color: var(--foreground);
-  box-shadow: 0 12px 28px rgba(54, 43, 30, .07);
+  box-shadow: var(--surface-shadow);
 }
 .landing-hero::after {
   left: 50px;
@@ -1447,10 +1463,10 @@ footer {
 .landing-art { min-height: 180px; }
 .landing-staff-card,
 .landing-fret-card {
-  border: 1px solid var(--border);
-  border-radius: 3px;
+  border: 0;
+  border-radius: 10px;
   background: var(--surface-elevated);
-  box-shadow: 7px 8px 0 rgba(198, 161, 91, .12);
+  box-shadow: 8px 10px 22px rgba(54, 43, 30, .09);
 }
 .landing-staff-card {
   top: 8px;
@@ -1499,10 +1515,10 @@ footer {
   grid-template-columns: minmax(230px, .72fr) minmax(420px, 1.28fr);
   align-items: center;
   gap: 28px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  border: 0;
+  border-radius: var(--surface-radius);
   background: rgba(251, 248, 241, .78);
-  box-shadow: 0 8px 20px rgba(54, 43, 30, .05);
+  box-shadow: var(--surface-shadow-soft);
 }
 .practice-streak-card--guest,
 .practice-streak-card--error {
@@ -1605,11 +1621,11 @@ footer {
 .module-card {
   min-height: 314px;
   padding: 27px 30px;
-  border-color: var(--border);
-  border-radius: 4px;
+  border-color: transparent;
+  border-radius: var(--surface-radius);
   background: rgba(251, 248, 241, .72);
-  box-shadow: none;
-  transition: border-color .24s ease;
+  box-shadow: var(--surface-shadow-soft);
+  transition: box-shadow .38s cubic-bezier(.22, 1, .36, 1), background-color .3s ease;
 }
 .module-card--guitar { background: rgba(233, 226, 213, .56); }
 .module-card::after {
@@ -1631,10 +1647,10 @@ footer {
   width: min(1180px, calc(100% - 56px));
   margin: 34px auto 48px;
   padding: 40px 46px 48px;
-  border: 1px solid var(--border);
-  border-radius: 5px;
+  border: 0;
+  border-radius: 14px;
   background: rgba(251, 248, 241, .72);
-  box-shadow: 0 12px 30px rgba(54, 43, 30, .07);
+  box-shadow: var(--surface-shadow);
 }
 .setup-shell::before,
 .setup-shell::after { display: none; }
@@ -1657,14 +1673,18 @@ footer {
 .step-heading h2 { font-size: 31px; }
 .level-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .level-card {
+  --shade-x: 50%;
+  --shade-y: 46%;
   isolation: isolate;
   min-height: 185px;
   padding: 18px 20px 20px;
-  border: 1px solid var(--border);
-  border-radius: 3px;
+  border: 1px solid transparent;
+  border-radius: 10px;
   background: rgba(255, 253, 248, .66);
-  box-shadow: none;
+  box-shadow: var(--surface-shadow-soft);
   transition:
+    --shade-x .16s ease-out,
+    --shade-y .16s ease-out,
     border-color .42s cubic-bezier(.22, 1, .36, 1),
     background-color .42s cubic-bezier(.22, 1, .36, 1),
     box-shadow .48s cubic-bezier(.22, 1, .36, 1);
@@ -1674,7 +1694,7 @@ footer {
   z-index: 0;
   inset: 0;
   background:
-    linear-gradient(115deg, rgba(139, 47, 60, .11), rgba(198, 161, 91, .07) 48%, rgba(255, 253, 248, .16));
+    radial-gradient(circle at var(--shade-x) var(--shade-y), rgba(139, 47, 60, .16), rgba(198, 161, 91, .08) 34%, rgba(255, 253, 248, 0) 72%);
   content: "";
   opacity: 0;
   transform: scale(.985);
@@ -1686,8 +1706,9 @@ footer {
 .level-card::after {
   position: absolute;
   z-index: 0;
-  inset: 4px;
+  inset: 5px;
   border: 1px solid transparent;
+  border-radius: 6px;
   content: "";
   opacity: 0;
   pointer-events: none;
@@ -1731,14 +1752,19 @@ footer {
 .note-stem { background: var(--primary); }
 .divider { background: linear-gradient(90deg, transparent, var(--border), transparent); }
 .mode-card {
+  --shade-x: 50%;
+  --shade-y: 46%;
   position: relative;
   isolation: isolate;
   overflow: hidden;
   min-height: 88px;
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  background: rgba(255, 253, 248, .56);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: rgba(255, 253, 248, .7);
+  box-shadow: var(--surface-shadow-soft);
   transition:
+    --shade-x .16s ease-out,
+    --shade-y .16s ease-out,
     border-color .4s cubic-bezier(.22, 1, .36, 1),
     background-color .4s cubic-bezier(.22, 1, .36, 1),
     box-shadow .45s cubic-bezier(.22, 1, .36, 1);
@@ -1747,10 +1773,11 @@ footer {
   position: absolute;
   z-index: 0;
   inset: 0;
-  background: linear-gradient(110deg, rgba(139, 47, 60, .1), rgba(198, 161, 91, .06) 52%, transparent);
+  background:
+    radial-gradient(circle at var(--shade-x) var(--shade-y), rgba(139, 47, 60, .16), rgba(198, 161, 91, .07) 36%, transparent 74%);
   content: "";
   opacity: 0;
-  transform: translateX(-2%);
+  transform: scale(.985);
   transition:
     opacity .34s ease,
     transform .5s cubic-bezier(.22, 1, .36, 1);
@@ -1769,7 +1796,7 @@ footer {
 .mode-card.is-selected::before,
 .session-type-grid .mode-card.is-selected::before {
   opacity: 1;
-  transform: translateX(0);
+  transform: scale(1);
 }
 .mode-icon { transition: background-color .38s ease, color .38s ease, transform .48s cubic-bezier(.22, 1, .36, 1); }
 .mode-card.is-selected .mode-icon { background: rgba(255, 253, 248, .82); color: var(--primary); transform: scale(1.025); }
@@ -1778,7 +1805,7 @@ footer {
 .mode-card.is-selected .selection-indicator { border-color: var(--primary); }
 .primary-button {
   border-color: var(--primary);
-  border-radius: 2px;
+  border-radius: 8px;
   background: var(--primary);
   box-shadow: 0 8px 18px rgba(101, 30, 43, .14);
 }
@@ -1788,7 +1815,7 @@ footer {
 .feedback button > span { color: var(--accent-soft); }
 .secondary-button {
   border-color: var(--border-strong);
-  border-radius: 2px;
+  border-radius: 8px;
   background: transparent;
 }
 .setup-panel > .primary-button { max-width: 430px; }
@@ -1806,10 +1833,11 @@ footer {
 .progress-row {
   margin-bottom: 16px;
   padding: 15px 18px;
-  border: 1px solid var(--border);
-  border-radius: 3px;
+  border: 0;
+  border-radius: 10px;
   background: rgba(251, 248, 241, .72);
   color: var(--foreground);
+  box-shadow: var(--surface-shadow-soft);
 }
 .progress-label,
 .remaining { color: var(--foreground-muted); }
@@ -1822,10 +1850,10 @@ footer {
 .question-card {
   min-height: 615px;
   padding: 44px 48px 34px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  border: 0;
+  border-radius: 14px;
   background: var(--surface);
-  box-shadow: 0 11px 26px rgba(54, 43, 30, .08), inset 0 0 0 5px rgba(255, 253, 248, .55);
+  box-shadow: var(--surface-shadow), inset 0 0 0 4px rgba(255, 253, 248, .52);
 }
 .question-card::before {
   right: 44px;
@@ -1903,11 +1931,11 @@ footer {
   position: sticky;
   top: 22px;
   padding: 25px 22px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  border: 0;
+  border-radius: var(--surface-radius);
   background:
     linear-gradient(150deg, rgba(255, 253, 248, .9), rgba(244, 239, 228, .76));
-  box-shadow: 0 8px 20px rgba(54, 43, 30, .06);
+  box-shadow: var(--surface-shadow-soft);
 }
 .quiz-stat-panel > .kicker { margin-bottom: 10px; }
 .quiz-stat-context {
@@ -1986,9 +2014,11 @@ footer {
   margin: 25px 0;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  border: 1px solid var(--border);
-  border-radius: 3px;
+  border: 0;
+  border-radius: 10px;
   background: rgba(251, 248, 241, .7);
+  box-shadow: var(--surface-shadow-soft);
+  overflow: hidden;
 }
 .result-session-meta > div {
   min-height: 76px;
@@ -2022,8 +2052,9 @@ footer {
 .endless-results-card,
 .hardest-card,
 .community-result-card {
-  border-radius: 4px;
-  box-shadow: 0 9px 22px rgba(54, 43, 30, .06);
+  border-color: transparent;
+  border-radius: var(--surface-radius);
+  box-shadow: var(--surface-shadow-soft);
 }
 .session-insight { border-color: var(--border); background: var(--surface); }
 .session-insight--perfect { border-color: var(--success); background: var(--success-soft); }
@@ -2032,11 +2063,10 @@ footer {
 .score-ring-progress { stroke: var(--primary); }
 .stat--accent strong { color: var(--success-deep); }
 .community-result-card {
-  border-color: var(--primary);
   background: var(--primary);
   color: var(--primary-foreground);
 }
-.community-result-card > button { border-color: var(--accent-soft); border-radius: 2px; }
+.community-result-card > button { border-color: var(--accent-soft); border-radius: 8px; }
 .hardest-card { background: rgba(251, 248, 241, .66); }
 .note-pill { background: var(--primary); }
 .result-actions { grid-template-columns: 1.25fr 1fr 1fr; }
@@ -2048,8 +2078,8 @@ footer {
   backdrop-filter: none;
 }
 .modal-card {
-  border-color: var(--border-strong);
-  border-radius: 5px;
+  border-color: transparent;
+  border-radius: 14px;
   background: var(--surface);
   box-shadow: 0 24px 64px rgba(32, 25, 18, .25);
 }
@@ -2213,31 +2243,33 @@ footer {
   text-transform: uppercase;
 }
 .leaderboard-controls {
-  border-color: var(--border);
-  border-radius: 3px;
+  border-color: transparent;
+  border-radius: 10px;
   background: var(--background-deep);
+  box-shadow: var(--surface-shadow-soft);
 }
 .leaderboard-segments { border-color: var(--border); border-radius: 2px; background: var(--surface); }
 .leaderboard-segments button { border-radius: 1px; }
 .leaderboard-segments button[aria-pressed="true"] { background: var(--primary); color: var(--primary-foreground); box-shadow: none; }
-.leaderboard-current-view { border-color: var(--border); border-radius: 3px; background: var(--surface-elevated); }
+.leaderboard-current-view { border-color: transparent; border-radius: 9px; background: var(--surface-elevated); box-shadow: var(--surface-shadow-soft); }
 .leaderboard-current-view p,
 .leaderboard-list li > b { color: var(--primary); }
-.leaderboard-list li { border-radius: 2px; background: var(--surface-elevated); }
+.leaderboard-list li { border-color: transparent; border-radius: 8px; background: var(--surface-elevated); box-shadow: 0 4px 12px rgba(54, 43, 30, .045); }
 .leaderboard-list li:nth-child(-n+3) { border-color: var(--accent); background: #faf3e4; }
 
 .guitar-shell {
-  border-color: var(--border);
-  border-radius: 5px;
+  border-color: transparent;
+  border-radius: 14px;
   background: rgba(251, 248, 241, .76);
-  box-shadow: 0 12px 28px rgba(54, 43, 30, .07);
+  box-shadow: var(--surface-shadow);
 }
 .guitar-hero,
-.guitar-question-card { border-radius: 3px; background: var(--foreground); }
+.guitar-question-card { border-radius: 12px; background: var(--foreground); }
 .guitar-range-heading aside { border-left-color: var(--primary); border-radius: 0; background: var(--danger-soft); }
 .guitar-range-grid > button,
-.fretboard-card { border-color: var(--border); border-radius: 3px; }
-.guitar-range-grid > button.is-selected { border-color: var(--primary); background: var(--surface-elevated); box-shadow: inset 3px 0 var(--primary); }
+.fretboard-card { border-color: transparent; border-radius: 10px; box-shadow: var(--surface-shadow-soft); }
+.guitar-range-grid > button { border-color: transparent; box-shadow: var(--surface-shadow-soft); }
+.guitar-range-grid > button.is-selected { border-color: var(--primary); background: var(--surface-elevated); box-shadow: 0 10px 24px rgba(101, 30, 43, .09), inset 0 0 0 1px rgba(198, 161, 91, .4); }
 .guitar-range-grid > button i { border-color: var(--primary); }
 .guitar-range-grid > button.is-selected i { background: var(--primary); box-shadow: inset 0 0 0 3px var(--surface-elevated); }
 .guitar-neck-art::before {
@@ -2274,13 +2306,30 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
 @media (hover: hover) {
   .app-navigation button:not(.is-active):hover { background: var(--background-deep); color: var(--foreground); }
   .community-header-actions button:hover { border-color: var(--primary); background: var(--surface-elevated); }
+  .level-card:hover::before,
+  .mode-card:hover::before { opacity: .72; transform: scale(1); }
+  .level-card.is-selected:hover::before,
+  .mode-card.is-selected:hover::before { opacity: 1; }
   .level-card:not(.is-selected):hover,
-  .module-card:hover { border-color: var(--border-strong); box-shadow: none; }
-  .mode-card:not(.is-selected):hover { border-color: var(--border-strong); background: var(--surface-elevated); box-shadow: none; }
+  .mode-card:not(.is-selected):hover { border-color: rgba(139, 47, 60, .32); }
+  .module-card:hover { background: rgba(255, 253, 248, .9); box-shadow: 0 13px 30px rgba(54, 43, 30, .09); }
   .primary-button:hover { background: var(--primary-hover); box-shadow: 0 10px 19px rgba(101, 30, 43, .18); }
   .note-hints button:hover { border-color: var(--primary); color: var(--primary); }
   .sound-toggle:hover,
   .listen-note-button:not(:disabled):hover { border-color: var(--primary); background: var(--surface-elevated); color: var(--primary); }
+}
+
+@media (min-width: 821px) {
+  .audio-settings { width: 100%; }
+  .audio-settings-panel {
+    top: auto;
+    right: auto;
+    bottom: 0;
+    left: calc(100% + 14px);
+    width: min(310px, calc(100vw - 150px));
+    max-height: min(420px, calc(100dvh - 32px));
+    overflow-y: auto;
+  }
 }
 
 @media (max-width: 1100px) and (min-width: 821px) {
@@ -2346,6 +2395,15 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
   .community-header-actions button:first-child { display: inline-flex; }
   .language-switch { width: auto; min-width: 74px; }
   .sound-toggle { width: 44px; flex: 0 0 44px; }
+  .audio-settings-panel {
+    position: fixed;
+    top: 76px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-height: calc(100dvh - 154px);
+    overflow-y: auto;
+  }
   .mobile-module-navigation {
     position: fixed;
     left: 50%;
@@ -2358,7 +2416,7 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 3px;
     border: 1px solid var(--border-strong);
-    border-radius: 4px;
+    border-radius: 14px;
     background: rgba(255, 253, 248, .97);
     box-shadow: 0 12px 30px rgba(54, 43, 30, .18);
     transform: translateX(-50%);
@@ -2370,7 +2428,7 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
     place-items: center;
     gap: 1px;
     border: 0;
-    border-radius: 2px;
+    border-radius: 10px;
     background: transparent;
     color: var(--foreground-muted);
     font-size: 10px;
@@ -2440,12 +2498,13 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
   .community-header-actions button { max-width: 76px; padding-inline: 7px; }
   .community-header-actions button:first-child { display: none; }
   .sound-toggle { width: 40px; min-height: 40px; flex-basis: 40px; }
+  .audio-settings-panel { top: 70px; }
   .landing-shell,
   .setup-shell,
   .quiz-shell,
   .results-shell,
   .guitar-shell { width: calc(100% - 14px); }
-  .landing-hero { padding: 34px 20px; border-radius: 3px; }
+  .landing-hero { padding: 34px 20px; border-radius: 12px; }
   .landing-copy h1 { font-size: 46px; }
   .landing-actions { grid-template-columns: 1fr; }
   .landing-actions .primary-button,
@@ -2468,7 +2527,7 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
   .hero-copy h1 { font-size: 48px; }
   .setup-panel { padding-top: 28px; }
   .level-card { display: block; min-height: 0; }
-  .question-card { padding: 34px 11px 20px; border-radius: 3px; }
+  .question-card { padding: 34px 11px 20px; border-radius: 12px; }
   .question-prompt { font-size: 23px; }
   .staff:not(.staff--compact) { height: 175px; transform: translateX(-50%) scale(.78); }
   .progress-row { padding: 12px; }
@@ -2481,7 +2540,7 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
   .mobile-answer-pad button { border-radius: 2px; background: var(--surface-elevated); }
   .quiz-stat-panel { padding: 20px 12px; }
   .quiz-stat-panel dl { grid-template-columns: repeat(2, 1fr); }
-  .modal-card { border-radius: 4px 4px 0 0; }
+  .modal-card { border-radius: 14px 14px 0 0; }
   .delete-account-actions { grid-template-columns: 1fr; }
   .community-toast { top: 10px; right: 10px; width: calc(100% - 20px); }
   .leaderboard-controls { order: 2; }
@@ -2502,6 +2561,11 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
 }
 
 @media (hover: none) and (pointer: coarse) {
+  .level-card,
+  .mode-card {
+    --shade-x: 50% !important;
+    --shade-y: 46% !important;
+  }
   .answer-form > label { display: block; }
   .answer-line { display: grid; }
   .note-hints--desktop { display: none; }

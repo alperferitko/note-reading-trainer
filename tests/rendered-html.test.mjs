@@ -116,6 +116,13 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.selection-indicator::after[\s\S]*opacity: 0;[\s\S]*transform: scale\(\.35\)/);
   assert.match(styles, /\.mode-card\.is-selected \.selection-indicator::after[\s\S]*opacity: 1;[\s\S]*transform: scale\(1\)/);
   assert.match(styles, /\.level-card\.is-selected \.range-preview-note[\s\S]*transition-delay: \.1s/);
+  assert.match(page, /function trackSelectionShade\(event: MouseEvent<HTMLButtonElement>\)/);
+  assert.match(page, /style\.setProperty\("--shade-x"/);
+  assert.match(page, /onMouseMove=\{trackSelectionShade\}/);
+  assert.match(styles, /radial-gradient\(circle at var\(--shade-x\) var\(--shade-y\)/);
+  assert.match(styles, /@media \(min-width: 821px\) \{[\s\S]*\.audio-settings-panel \{[\s\S]*left: calc\(100% \+ 14px\);[\s\S]*max-height: min\(420px, calc\(100dvh - 32px\)\)/);
+  assert.match(styles, /@media \(max-width: 820px\) \{[\s\S]*\.audio-settings-panel \{[\s\S]*position: fixed;[\s\S]*right: 12px;[\s\S]*left: 12px;/);
+  assert.match(styles, /--surface-shadow:/);
   assert.match(page, /Hazırsan başlayalım! Sakin bak, net cevapla\./);
   assert.doesNotMatch(page, /—/);
   assert.doesNotMatch(guitar, /Modüllere dön|Back to modules|Nota okumaya dön|Switch to sight-reading/);

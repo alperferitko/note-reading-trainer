@@ -39,6 +39,7 @@ Practice runs in the browser. Passwordless accounts, private streaks, and leader
 - Private, account-backed daily practice streaks with a Monday-to-Sunday activity view
 - Separate, privacy-conscious leaderboards for each mode, range, and question style
 - Turkish and English privacy information
+- Original, low-volume piano ambience and a matching set of interface sounds
 
 ## Practice modes
 
@@ -96,7 +97,13 @@ npm test
 npm run build
 npm run build:pages
 npm run test:pages
+npm run audio:generate
 ```
+
+`npm run audio:generate` reproducibly creates the original MIDI, MusicXML,
+48 kHz/24-bit WAV masters, and optimized OGG/Opus and MP3 web files. Production
+details and tool licensing are recorded in
+[THIRD_PARTY_AUDIO_LICENSES.md](./THIRD_PARTY_AUDIO_LICENSES.md).
 
 ## Architecture
 

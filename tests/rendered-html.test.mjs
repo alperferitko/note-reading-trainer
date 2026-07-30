@@ -132,7 +132,8 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.landing-staff-card \{[\s\S]*width: 88%;[\s\S]*padding: 10px 14px 9px;[\s\S]*animation: landing-staff-card-drift 14s ease-in-out infinite/);
   assert.match(styles, /\.landing-staff-card \.staff \{[\s\S]*height: 86px;[\s\S]*margin: 0 auto 1px/);
   assert.match(styles, /@keyframes landing-staff-card-drift \{[\s\S]*translate3d\(3px, -3px, 0\)[\s\S]*translate3d\(-3px, 2px, 0\)/);
-  assert.match(page, /playPracticeNote\(noteIdToMidi\(current\.id\), soundEnabled\)/);
+  assert.match(page, /playPracticeNote\(noteIdToMidi\(displayedNote\.id\), soundEnabled\)/);
+  assert.doesNotMatch(page, /playPracticeNote\(noteIdToMidi\(current\.id\), soundEnabled\)/);
   assert.match(page, /className="listen-note-button"/);
   assert.match(styles, /\.mobile-module-navigation/);
   assert.match(page, /className="brand-mark" aria-hidden="true">[\s\S]*notanota-monogram\.png/);
@@ -194,7 +195,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /"A note on the treble staff"/);
   assert.match(page, /role="status" aria-live="polite" aria-atomic="true"/);
   assert.match(page, /ref=\{feedbackButtonRef\}/);
-  assert.doesNotMatch(page, /window\.addEventListener\("keydown"/);
+  assert.doesNotMatch(page, /event\.key === "(?:Enter|Space|ArrowUp|ArrowDown)"/);
   assert.match(page, /document\.documentElement\.lang = locale/);
   assert.match(page, /className="result-session-meta"/);
   assert.match(page, /<dd>\{selectedLevel\.title\}<\/dd>/);

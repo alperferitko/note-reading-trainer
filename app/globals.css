@@ -171,6 +171,49 @@ textarea:focus-visible {
 .session-meta { display: flex; align-items: center; gap: 10px; color: var(--ink-soft); font-size: 12px; font-weight: 650; white-space: nowrap; }
 .meta-dot { width: 4px; height: 4px; flex: 0 0 auto; background: var(--coral); border-radius: 50%; }
 .header-actions { min-width: 0; display: flex; align-items: center; gap: clamp(12px, 2vw, 26px); }
+.audio-settings { position: relative; z-index: 20; }
+.audio-settings-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(320px, calc(100vw - 32px));
+  padding: 16px;
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface-elevated);
+  box-shadow: 0 18px 38px var(--shadow-color);
+}
+.audio-settings-panel > strong {
+  padding: 2px 4px 8px;
+  font-family: var(--serif);
+  font-size: 18px;
+}
+.audio-settings-panel > button {
+  min-height: 54px;
+  padding: 10px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--surface);
+  text-align: left;
+}
+.audio-settings-panel > button span { display: grid; gap: 3px; font-size: 11px; font-weight: 750; }
+.audio-settings-panel > button small { color: var(--foreground-muted); font-size: 9px; font-weight: 500; line-height: 1.35; }
+.audio-settings-panel > button b {
+  min-width: 48px;
+  padding: 7px 9px;
+  border-radius: 999px;
+  background: var(--background-deep);
+  color: var(--foreground-muted);
+  font-size: 9px;
+  text-align: center;
+}
+.audio-settings-panel > button[aria-checked="true"] b { background: var(--success-soft); color: var(--success-deep); }
 .community-header-actions { min-width: 0; display: flex; align-items: center; gap: 8px; }
 
 .community-header-actions button {

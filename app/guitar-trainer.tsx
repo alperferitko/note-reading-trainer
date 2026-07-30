@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { noteClassFromAnswer } from "@/lib/session-insights.mjs";
 import { playPracticeNote } from "@/lib/practice-audio";
+import { playNotaNotaEffect, unlockNotaNotaAudio } from "@/lib/notanota-audio.mjs";
 import { CommunityPracticeRecorder, CommunityPracticeStreak } from "./community";
 
 type Locale = "tr" | "en";
@@ -267,6 +268,8 @@ export function GuitarTrainer({
   }, [feedback, stage]);
 
   function start() {
+    unlockNotaNotaAudio();
+    playNotaNotaEffect("session-start", soundEnabled);
     const sessionStartedAt = Date.now();
     const questions = shuffle(buildQuestions(maxFret));
     setInitialCount(questions.length);
@@ -291,15 +294,21 @@ export function GuitarTrainer({
     if (!current || feedback) return;
     const guessed = noteClassFromAnswer(value);
     if (!guessed) return;
-    playPracticeNote(current.midi, soundEnabled);
     setFeedbackQuestion(current);
     setAnswer(value);
     setTimes((items) => [...items, Math.max(100, Date.now() - startedAt)]);
     if (guessed.letter === current.letter) {
+      const completesSession = queue.length === 1;
+      const nextCorrectCount = initialCount - queue.length + 1;
+      playNotaNotaEffect(
+        completesSession ? "lesson-complete" : nextCorrectCount % 5 === 0 ? "streak" : "correct",
+        soundEnabled,
+      );
       if (current.misses === 0) setFirstTry((count) => count + 1);
       setQueue((items) => items.slice(1));
       setFeedback("correct");
     } else {
+      playNotaNotaEffect("incorrect", soundEnabled);
       setWrong((count) => count + 1);
       setQueue((items) => [...items.slice(1), { ...items[0], misses: items[0].misses + 1 }]);
       setFeedback("wrong");

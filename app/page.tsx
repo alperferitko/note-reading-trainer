@@ -22,9 +22,16 @@ import {
 import {
   noteIdToMidi,
   playPracticeNote,
+  readMusicPreference,
   readSoundPreference,
+  writeMusicPreference,
   writeSoundPreference,
 } from "@/lib/practice-audio";
+import {
+  playNotaNotaEffect,
+  setAmbientMusicActive,
+  unlockNotaNotaAudio,
+} from "@/lib/notanota-audio.mjs";
 
 type LevelId = "temel" | "yakin" | "tam" | "genis";
 type ModeId = "porte" | "konum";
@@ -346,14 +353,22 @@ const SHELL_COPY = {
 const SOUND_COPY = {
   tr: {
     listen: "Notayı dinle",
-    soundOn: "Sesi kapat",
-    soundOff: "Sesi aç",
+    settings: "Ses ayarları",
+    music: "Arka plan müziği",
+    effects: "Ses efektleri",
+    musicHelp: "Menülerde düşük sesle çalar; çalışma başladığında durur.",
+    on: "Açık",
+    off: "Kapalı",
     navigation: "Mobil bölüm menüsü",
   },
   en: {
     listen: "Listen to the note",
-    soundOn: "Mute note audio",
-    soundOff: "Turn on note audio",
+    settings: "Audio settings",
+    music: "Background music",
+    effects: "Sound effects",
+    musicHelp: "Plays quietly in menus and stops when practice begins.",
+    on: "On",
+    off: "Off",
     navigation: "Mobile section navigation",
   },
 } as const;
@@ -601,6 +616,9 @@ export default function Home() {
   const [currentStreak, setCurrentStreak] = useState(0);
   const [endedEarly, setEndedEarly] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [musicEnabled, setMusicEnabled] = useState(true);
+  const [audioPreferencesReady, setAudioPreferencesReady] = useState(false);
+  const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const feedbackButtonRef = useRef<HTMLButtonElement>(null);
   const resultsHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -656,9 +674,36 @@ export default function Home() {
   }, [locale]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setSoundEnabled(readSoundPreference()), 0);
+    const timer = window.setTimeout(() => {
+      setSoundEnabled(readSoundPreference());
+      setMusicEnabled(readMusicPreference());
+      setAudioPreferencesReady(true);
+    }, 0);
     return () => window.clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    setAmbientMusicActive(audioPreferencesReady && stage !== "quiz" && stage !== "guitar", musicEnabled);
+  }, [audioPreferencesReady, musicEnabled, stage]);
+
+  useEffect(() => {
+    const unlock = () => unlockNotaNotaAudio();
+    window.addEventListener("pointerdown", unlock, { once: true });
+    window.addEventListener("keydown", unlock, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!audioSettingsOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setAudioSettingsOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [audioSettingsOpen]);
 
   useEffect(() => {
     if (stage !== "quiz" || feedback) return;
@@ -691,11 +736,28 @@ export default function Home() {
     setSoundEnabled((enabled) => {
       const next = !enabled;
       writeSoundPreference(next);
+      if (next) {
+        unlockNotaNotaAudio();
+        playNotaNotaEffect("ui-click", true);
+      }
+      return next;
+    });
+  }
+
+  function toggleMusic() {
+    setMusicEnabled((enabled) => {
+      const next = !enabled;
+      writeMusicPreference(next);
+      unlockNotaNotaAudio();
+      if (soundEnabled) playNotaNotaEffect("ui-click", true);
       return next;
     });
   }
 
   function startSession() {
+    unlockNotaNotaAudio();
+    setAmbientMusicActive(false, musicEnabled);
+    playNotaNotaEffect("session-start", soundEnabled);
     const startedAt = Date.now();
     const initialQueue = shuffledWithoutRuns(questionsFor(level)).map((note) => ({
       key: questionKey.current++,
@@ -738,11 +800,16 @@ export default function Home() {
     const elapsed = Math.max(100, answeredAt - questionStartedAt);
     const guessed = noteClassFromAnswer(nextAnswer);
     const correct = guessed?.letter === current.letter;
-    playPracticeNote(noteIdToMidi(current.id), soundEnabled);
     setAnswer(nextAnswer);
     setAnswerTimes((times) => [...times, elapsed]);
 
     if (correct) {
+      const completesSession = sessionType === "standard" && queue.length === 1;
+      const nextStreak = currentStreak + 1;
+      playNotaNotaEffect(
+        completesSession ? "lesson-complete" : nextStreak % 5 === 0 ? "streak" : "correct",
+        soundEnabled,
+      );
       setFeedback({ correct: true, note: current, guessed });
       if (currentItem.misses === 0) setFirstTryCorrect((count) => count + 1);
       setCorrectCount((count) => count + 1);
@@ -755,6 +822,7 @@ export default function Home() {
         return [...remaining, { key: questionKey.current++, misses: 0, note: nextNote }];
       });
     } else {
+      playNotaNotaEffect("incorrect", soundEnabled);
       setWrongByNote((values) => ({ ...values, [current.id]: (values[current.id] ?? 0) + 1 }));
       if (guessed) {
         const confusionKey = `${current.id}:${guessed.letter}`;
@@ -854,20 +922,36 @@ export default function Home() {
             </div>
           )}
           <CommunityHeader />
-          <button
-            className="sound-toggle"
-            type="button"
-            aria-label={soundEnabled ? soundCopy.soundOn : soundCopy.soundOff}
-            aria-pressed={soundEnabled}
-            onClick={toggleSound}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M4 10v4h4l5 4V6L8 10H4Z" fill="currentColor" />
-              {soundEnabled
-                ? <path d="M16 9c1.2 1.7 1.2 4.3 0 6M18.7 6.8c2.8 3 2.8 7.4 0 10.4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                : <path d="m16.5 9 4.5 6m0-6-4.5 6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />}
-            </svg>
-          </button>
+          <div className="audio-settings">
+            <button
+              className="sound-toggle"
+              type="button"
+              aria-label={soundCopy.settings}
+              aria-expanded={audioSettingsOpen}
+              aria-controls="audio-settings-panel"
+              onClick={() => setAudioSettingsOpen((open) => !open)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4 10v4h4l5 4V6L8 10H4Z" fill="currentColor" />
+                {soundEnabled || musicEnabled
+                  ? <path d="M16 9c1.2 1.7 1.2 4.3 0 6M18.7 6.8c2.8 3 2.8 7.4 0 10.4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  : <path d="m16.5 9 4.5 6m0-6-4.5 6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />}
+              </svg>
+            </button>
+            {audioSettingsOpen && (
+              <div className="audio-settings-panel" id="audio-settings-panel" role="group" aria-label={soundCopy.settings}>
+                <strong>{soundCopy.settings}</strong>
+                <button type="button" role="switch" aria-checked={musicEnabled} onClick={toggleMusic}>
+                  <span>{soundCopy.music}<small>{soundCopy.musicHelp}</small></span>
+                  <b>{musicEnabled ? soundCopy.on : soundCopy.off}</b>
+                </button>
+                <button type="button" role="switch" aria-checked={soundEnabled} onClick={toggleSound}>
+                  <span>{soundCopy.effects}</span>
+                  <b>{soundEnabled ? soundCopy.on : soundCopy.off}</b>
+                </button>
+              </div>
+            )}
+          </div>
           <div className="language-switch" role="group" aria-label={locale === "tr" ? "Dil seçimi" : "Language selection"}>
             <button type="button" className={locale === "tr" ? "is-active" : ""} onClick={() => changeLocale("tr")} aria-pressed={locale === "tr"}>TR</button>
             <button type="button" className={locale === "en" ? "is-active" : ""} onClick={() => changeLocale("en")} aria-pressed={locale === "en"}>EN</button>

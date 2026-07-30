@@ -135,6 +135,7 @@ const TEXT = {
     pendingIneligible: "Bekleyen skor sıralama koşullarını karşılamadı.",
     ineligibleStandard: "Normal sıralamaya yalnızca hiç yanlış yapılmadan tamamlanan oturumlar girer.",
     ineligibleEndless: "Sonsuz sıralamaya yalnızca hiç yanlış yapılmayan oturumlar girer.",
+    ineligibleEncouragement: "Bir sonraki turda tamamını doğru okuyacağına inanıyorum. Sakin kal, başarabilirsin.",
     confirmTitle: "Bu e-posta adresini doğruluyor musun?",
     confirmCopy: "Giriş bağlantısını tamamlamak için aşağıdaki düğmeye bas.",
     confirmButton: "E-postamı doğrula",
@@ -192,6 +193,7 @@ const TEXT = {
     pendingIneligible: "The pending score did not meet the leaderboard requirements.",
     ineligibleStandard: "Only standard sessions completed without a mistake qualify for the leaderboard.",
     ineligibleEndless: "Only endless sessions with no mistakes qualify for the leaderboard.",
+    ineligibleEncouragement: "I’m sure you can read every note correctly next time. Stay calm, you’ve got this.",
     confirmTitle: "Do you confirm this email address?",
     confirmCopy: "Press the button below to complete the sign-in link.",
     confirmButton: "Confirm my email",
@@ -1071,11 +1073,12 @@ export function CommunityResult({ score, eligible }: { score: ScoreSubmission; e
   }
 
   return (
-    <div className="community-result-card">
+    <div className={`community-result-card ${eligible ? "" : "community-result-card--ineligible"}`}>
       <div>
         <p className="kicker">{text.leaderboard}</p>
         <strong>{eligible && !user ? text.guestScoreTitle : eligible ? text.saveScore : eligibilityCopy}</strong>
         {eligible && !user && <p className="community-result-note">{text.guestScoreCopy}</p>}
+        {!eligible && <p className="community-result-encouragement">{text.ineligibleEncouragement}</p>}
       </div>
       {eligible && (
         <button type="button" onClick={save} disabled={busy || !communityConfigured}>

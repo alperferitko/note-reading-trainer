@@ -135,7 +135,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /const LANDING_DEMO_NOTES = \["d5", "g4", "e5", "b4", "f4", "c5", "e4", "f5", "a4"\]/);
   assert.match(page, /window\.setInterval\(\(\) => \{[\s\S]*setNoteIndex\(\(current\) => \(current \+ 1\) % LANDING_DEMO_NOTES\.length\);[\s\S]*\}, 2800\)/);
   assert.match(page, /<Staff note=\{note\} locale=\{locale\} compact animated \/>/);
-  assert.match(page, /\{note\.shortLocation\[locale\]\} · \{noteName\(note, locale\)\}/);
+  assert.match(page, /\{note\.shortLocation\[locale\]\}, \{noteName\(note, locale\)\}/);
   assert.match(styles, /\.staff--animated \.note-head,[\s\S]*top \.78s cubic-bezier\(\.22, 1, \.36, 1\)/);
   assert.match(styles, /\.landing-staff-label\.is-visible \{[\s\S]*opacity: 1;[\s\S]*transform: translateY\(0\)/);
   assert.match(styles, /\.landing-art \{ min-height: 180px; \}/);
@@ -179,7 +179,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.doesNotMatch(page, /level-indicator/);
   assert.doesNotMatch(styles, /translateY\(-2px\)/);
   assert.doesNotMatch(styles, /inset 0 4px var\(--coral\)/);
-  assert.match(page, /Treble clef · natural notes/);
+  assert.match(page, /Treble clef, natural notes/);
   assert.match(page, /Staff \+ ledger lines/);
   assert.match(page, /letter: "C"/);
   assert.match(page, /nota-nota-locale/);
@@ -228,6 +228,18 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /<dd>\{totalTime\}<\/dd>/);
   assert.doesNotMatch(page, /7 Günlük Seri|%92/);
   assert.doesNotMatch(page, /"Nota Nota (?:ana sayfa|home)|Nota Nota ·/);
+  assert.doesNotMatch(page, /·/);
+  assert.doesNotMatch(community, /·/);
+  assert.doesNotMatch(guitar, /·/);
+  assert.doesNotMatch(magicLink, /·/);
+  assert.match(styles, /\.app-navigation button::after \{ display: none; \}/);
+  assert.match(styles, /\.app-navigation button\.is-active::before \{ display: none; \}/);
+  assert.match(styles, /\.app-navigation button \{[^}]*border-radius: 10px;/);
+  assert.match(styles, /\.landing-proof span::before \{ display: none; content: none; \}/);
+  assert.match(styles, /\.hero-staff \{[^}]*grid-template-rows: auto auto;[^}]*gap: 8px;/);
+  assert.match(styles, /\.scribble \{[^}]*position: static;/);
+  assert.match(styles, /\.leaderboard-segments \{[^}]*border-radius: 11px;/);
+  assert.match(styles, /\.leaderboard-segments button \{[^}]*border-radius: 8px;/);
   assert.match(community, /event\.key === "Escape"/);
   assert.match(community, /appShell\?\.setAttribute\("inert", ""\)/);
   assert.match(community, /const last = focusable\[focusable\.length - 1\]/);

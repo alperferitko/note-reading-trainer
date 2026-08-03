@@ -114,7 +114,7 @@ type Copy = {
 const COPY: Record<Locale, Copy> = {
   tr: {
     homeLabel: "NotaNota ana sayfa",
-    kicker: "Sol anahtarı · doğal notalar",
+    kicker: "Sol anahtarı, doğal notalar",
     heroLine1: "Bugünkü Çalışma",
     heroLine2: "Nota Oku",
     heroLead: "Seviyeni, soru biçimini ve oturum türünü seç; kısa ve odaklı çalışmana başla.",
@@ -174,7 +174,7 @@ const COPY: Record<Locale, Copy> = {
   },
   en: {
     homeLabel: "NotaNota home",
-    kicker: "Treble clef · natural notes",
+    kicker: "Treble clef, natural notes",
     heroLine1: "Today’s Practice",
     heroLine2: "Sight-Reading",
     heroLead: "Choose your range, question style and session type, then begin a focused round.",
@@ -245,7 +245,7 @@ const EXTRA_COPY = {
     noMistakes: "Hatasız seri",
     endlessResultTitle: "Seri sona erdi.",
     totalTime: "Toplam süre",
-    endedSession: (count: number, time: string) => `${count} doğru cevap · ${time}`,
+    endedSession: (count: number, time: string) => `${count} doğru cevap, ${time}`,
     stoppedSession: (count: number) => `Oturumu ${count} doğru cevapla bitirdin.`,
     endlessProgress: "Sonsuz çalışma",
   },
@@ -259,7 +259,7 @@ const EXTRA_COPY = {
     noMistakes: "Perfect streak",
     endlessResultTitle: "Streak complete.",
     totalTime: "Total time",
-    endedSession: (count: number, time: string) => `${count} correct ${count === 1 ? "answer" : "answers"} · ${time}`,
+    endedSession: (count: number, time: string) => `${count} correct ${count === 1 ? "answer" : "answers"}, ${time}`,
     stoppedSession: (count: number) => `You ended the session with ${count} correct answers.`,
     endlessProgress: "Endless practice",
   },
@@ -267,7 +267,7 @@ const EXTRA_COPY = {
 
 const LANDING_COPY = {
   tr: {
-    eyebrow: "NotaNota · müzik okuryazarlığı",
+    eyebrow: "NotaNota müzik okuryazarlığı",
     title: "Notaları gör.",
     titleAccent: "Adını söyle.",
     lead: "Sol anahtarındaki doğal notaları çizgi, aralık ve ek çizgiler üzerinde sakin, odaklı oturumlarla akıcı biçimde tanımayı öğren.",
@@ -280,16 +280,16 @@ const LANDING_COPY = {
     readingCategory: "Nota okuma",
     readingTitle: "Porte okuma",
     readingCopy: "Sol anahtarındaki doğal notaları çizgi, aralık ve ek çizgiler üzerinde tanı.",
-    readingMeta: "4 seviye · 2 soru biçimi",
+    readingMeta: "4 seviye, 2 soru biçimi",
     instrumentsCategory: "Müzik aletleri",
     guitarTitle: "Gitar klavyesi",
     guitarCopy: "Standart akortta doğal notaların tel ve perde üzerindeki yerlerini öğren.",
-    guitarMeta: "0–3 · 0–5 · 0–12 perde",
+    guitarMeta: "0–3 / 0–5 / 0–12 perde",
     openReading: "Nota çalışmasına başla",
     openGuitar: "Gitar çalışmasına başla",
   },
   en: {
-    eyebrow: "NotaNota · music literacy",
+    eyebrow: "NotaNota music literacy",
     title: "See the note.",
     titleAccent: "Name it.",
     lead: "Build fluent recognition of natural notes on the treble staff through calm, focused practice across four ranges.",
@@ -302,11 +302,11 @@ const LANDING_COPY = {
     readingCategory: "Note reading",
     readingTitle: "Sight-reading",
     readingCopy: "Recognise natural notes on the treble staff, from the core range to extended ledger lines.",
-    readingMeta: "4 ranges · 2 question styles",
+    readingMeta: "4 ranges, 2 question styles",
     instrumentsCategory: "Musical instruments",
     guitarTitle: "Guitar fretboard",
     guitarCopy: "Learn where natural notes sit across the strings and frets in standard tuning.",
-    guitarMeta: "Frets 0–3 · 0–5 · 0–12",
+    guitarMeta: "Frets 0–3 / 0–5 / 0–12",
     openReading: "Start note practice",
     openGuitar: "Start guitar practice",
   },
@@ -567,7 +567,7 @@ function LandingStaffDemo({ locale }: { locale: Locale }) {
     <div className="landing-staff-card">
       <Staff note={note} locale={locale} compact animated />
       <span className={`landing-staff-label ${labelVisible ? "is-visible" : ""}`}>
-        {note.shortLocation[locale]} · {noteName(note, locale)}
+        {note.shortLocation[locale]}, {noteName(note, locale)}
       </span>
     </div>
   );
@@ -879,9 +879,7 @@ export default function Home() {
           {stage === "quiz" && (
             <div className="session-meta">
               <span>{selectedLevel.title}</span>
-              <span className="meta-dot" aria-hidden="true" />
               <span>{copy.modes[mode].title}</span>
-              <span className="meta-dot" aria-hidden="true" />
               <span>{sessionType === "standard" ? extra.standard.title : extra.endless.title}</span>
             </div>
           )}
@@ -1088,7 +1086,7 @@ export default function Home() {
             >
               <span style={{ width: sessionType === "standard" ? `${(answeredCorrectly / uniqueCount) * 100}%` : "100%" }} />
             </div>
-            <span className="remaining">{sessionType === "standard" ? copy.remaining(queue.length) : totalWrong === 0 ? extra.noMistakes : `${totalWrong} · ${copy.totalWrong}`}</span>
+            <span className="remaining">{sessionType === "standard" ? copy.remaining(queue.length) : totalWrong === 0 ? extra.noMistakes : `${totalWrong} ${copy.totalWrong}`}</span>
           </div>
 
           <div className="quiz-layout">

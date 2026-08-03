@@ -18,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     openGraph: {
       title: "NotaNota | Note Reading Trainer",
-      description: "See the note. Name it. · Notayı gör. Adını söyle.",
+      description: "See the note. Name it. Notayı gör. Adını söyle.",
       type: "website",
       siteName: "NotaNota",
       locale: "tr_TR",
@@ -34,7 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: {
       card: "summary_large_image",
       title: "NotaNota | Note Reading Trainer",
-      description: "See the note. Name it. · Notayı gör. Adını söyle.",
+      description: "See the note. Name it. Notayı gör. Adını söyle.",
       images: [image],
     },
   };

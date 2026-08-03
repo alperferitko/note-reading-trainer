@@ -47,7 +47,7 @@ const RANGES = {
 
 const COPY = {
   tr: {
-    kicker: "Gitar · standart akort",
+    kicker: "Gitar, standart akort",
     title: "Klavye üzerinde notaları bul.",
     lead: "Doğal notaların gitardaki yerlerini gör, sonra işaretlenen tel ve perdeyi okuyarak hafızanı güçlendir.",
     range: "Çalışma alanını seç",
@@ -58,7 +58,7 @@ const COPY = {
     start: "Gitar çalışmasını başlat",
     progress: "İlerleme",
     question: "İşaretlenen nota hangisi?",
-    location: (stringNumber: number, fret: number) => `${stringNumber}. tel · ${fret === 0 ? "açık tel" : `${fret}. perde`}`,
+    location: (stringNumber: number, fret: number) => `${stringNumber}. tel, ${fret === 0 ? "açık tel" : `${fret}. perde`}`,
     answer: "Cevabını yaz",
     placeholder: "Do, Re, Mi…",
     check: "Kontrol et",
@@ -77,7 +77,7 @@ const COPY = {
     choices: "Nota seçenekleri",
   },
   en: {
-    kicker: "Guitar · standard tuning",
+    kicker: "Guitar, standard tuning",
     title: "Find every note on the fretboard.",
     lead: "Explore where natural notes live on the guitar, then build recall by naming the highlighted string and fret.",
     range: "Choose your fret range",
@@ -88,7 +88,7 @@ const COPY = {
     start: "Start guitar practice",
     progress: "Progress",
     question: "Which note is highlighted?",
-    location: (stringNumber: number, fret: number) => `String ${stringNumber} · ${fret === 0 ? "open string" : `fret ${fret}`}`,
+    location: (stringNumber: number, fret: number) => `String ${stringNumber}, ${fret === 0 ? "open string" : `fret ${fret}`}`,
     answer: "Type your answer",
     placeholder: "C, D, E…",
     check: "Check answer",
@@ -189,7 +189,7 @@ function Fretboard({
         </div>
         {STRINGS.map((string) => (
           <div className={`fretboard-string fretboard-string--${string.number}`} style={{ gridTemplateColumns: columns }} key={string.id}>
-            <strong>{string.number} · {string.label}</strong>
+            <strong>{string.number}. {string.label}</strong>
             {Array.from({ length: maxFret + 1 }, (_, fret) => {
               const letter = noteAt(string.open, fret);
               const natural = NATURAL.has(letter as Letter);
@@ -333,7 +333,7 @@ export function GuitarTrainer({
         </div>
 
         <div className="fretboard-card">
-          <div className="fretboard-card-heading"><div><p className="kicker">02</p><h2>{text.map}</h2></div><span>{text.mapCopy} · {previewQuestions.length}</span></div>
+          <div className="fretboard-card-heading"><div><p className="kicker">02</p><h2>{text.map}</h2></div><span>{text.mapCopy}, {previewQuestions.length}</span></div>
           <Fretboard maxFret={maxFret} locale={locale} reveal />
         </div>
         <div className="guitar-actions">

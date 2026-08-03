@@ -100,7 +100,7 @@ const TEXT = {
     usernameTitle: "Kullanıcı adını seç",
     usernameCopy: "Bu ad sıralamada görünür, e-posta adresin görünmez. Kullanıcı adı sonradan değiştirilemez.",
     username: "Kullanıcı adı",
-    usernameHint: "3–7 karakter · harf, rakam veya _",
+    usernameHint: "3–7 karakter; harf, rakam veya _",
     saveUsername: "Kullanıcı adını kaydet",
     usernameTaken: "Bu kullanıcı adı kullanılıyor.",
     usernameInvalid: "3–7 karakterlik harf, rakam veya alt çizgi kullan.",
@@ -158,7 +158,7 @@ const TEXT = {
     usernameTitle: "Choose your username",
     usernameCopy: "This name is public on the leaderboard; your email is not. The username cannot be changed later.",
     username: "Username",
-    usernameHint: "3–7 characters · letters, numbers, or _",
+    usernameHint: "3–7 characters; letters, numbers, or _",
     saveUsername: "Save username",
     usernameTaken: "That username is already taken.",
     usernameInvalid: "Use 3–7 letters, numbers, or underscores.",
@@ -768,8 +768,8 @@ function LeaderboardPanel({ locale }: { locale: Locale }) {
       tam: "Tam doğal sesler",
       genis: "Geniş porte",
     },
-    standardRule: "Bütün notaları hatasız tamamlayanlar · en hızlı süre kazanır",
-    endlessRule: "Hatasız en uzun seri · eşitlikte daha hızlı tempo öne geçer",
+    standardRule: "Bütün notaları hatasız tamamlayanlarda en hızlı süre kazanır",
+    endlessRule: "Hatasız en uzun seri kazanır; eşitlikte daha hızlı tempo öne geçer",
   } : {
     session: "Session",
     range: "Practice range",
@@ -783,8 +783,8 @@ function LeaderboardPanel({ locale }: { locale: Locale }) {
       tam: "Full natural range",
       genis: "Extended ledger range",
     },
-    standardRule: "Perfect completed runs · the fastest time wins",
-    endlessRule: "Longest perfect streak · speed breaks a tie",
+    standardRule: "Among perfect completed runs, the fastest time wins",
+    endlessRule: "The longest perfect streak wins; speed breaks a tie",
   };
 
   useEffect(() => {
@@ -815,7 +815,7 @@ function LeaderboardPanel({ locale }: { locale: Locale }) {
       <section className="leaderboard-main" aria-busy={loading} aria-labelledby="leaderboard-current-category">
         <div className="leaderboard-current-view" id="leaderboard-current-category">
           <p>{labels.current}</p>
-          <strong>{text[sessionType]} · {labels.levels[level]} · {questionMode === "porte" ? text.staff : text.position}</strong>
+          <strong>{text[sessionType]}, {labels.levels[level]}, {questionMode === "porte" ? text.staff : text.position}</strong>
           <span>{sessionType === "standard" ? labels.standardRule : labels.endlessRule}</span>
         </div>
         <p className="sr-only" role="status" aria-live="polite">{loading ? text.loading : message || `${rows.length} ${locale === "tr" ? "sonuç" : "results"}`}</p>
@@ -830,7 +830,7 @@ function LeaderboardPanel({ locale }: { locale: Locale }) {
                   {sessionType === "standard" ? (
                     <span>{formatSeconds(row.total_response_time_ms, locale)}</span>
                   ) : (
-                    <span>{row.correct_count} {locale === "tr" ? "doğru" : "correct"} · {formatSeconds(row.average_response_time_ms, locale)} / {locale === "tr" ? "nota" : "note"}</span>
+                    <span>{row.correct_count} {locale === "tr" ? "doğru" : "correct"}, {formatSeconds(row.average_response_time_ms, locale)} / {locale === "tr" ? "nota" : "note"}</span>
                   )}
                 </li>
               ))}
@@ -1093,7 +1093,7 @@ export function CommunityResult({ score, eligible }: { score: ScoreSubmission; e
 export function CommunityLegalLink() {
   const { locale, openPanel } = useCommunity();
   const text = TEXT[locale];
-  return <button className="footer-link" type="button" aria-haspopup="dialog" onClick={() => openPanel("legal")}>{text.privacy} · {text.legal}</button>;
+  return <button className="footer-link" type="button" aria-haspopup="dialog" onClick={() => openPanel("legal")}>{locale === "tr" ? `${text.privacy} ve ${text.legal}` : `${text.privacy} and ${text.legal}`}</button>;
 }
 
 function LegalNotice({ locale }: { locale: Locale }) {
@@ -1102,7 +1102,7 @@ function LegalNotice({ locale }: { locale: Locale }) {
     <article className="legal-copy">
       <p className="legal-updated">{isTurkish ? "Son güncelleme: 26 Temmuz 2026" : "Last updated: 26 July 2026"}</p>
       <h3>{isTurkish ? "Veri sorumlusu" : "Data controller"}</h3>
-      <p>Alper Ferit Koç · kvkk@notanota.online</p>
+      <p>Alper Ferit Koç, kvkk@notanota.online</p>
       <h3>{isTurkish ? "İşlenen veriler ve amaçlar" : "Data and purposes"}</h3>
       <p>{isTurkish ? "E-posta adresi yalnızca şifresiz hesap doğrulaması ve hesap güvenliği için; 3–7 karakterli kullanıcı adı ile en iyi oturum skorları leaderboard için işlenir. Tamamlanan çalışma günleri ve tarayıcının bildirdiği saat dilimi, özel günlük seri ve devamlılık istatistiklerini hesaplamak için saklanır. E-posta ve günlük seri verileri leaderboard’da yayımlanmaz. Hizmet reklam veya pazarlama profili oluşturmaz." : "Email is processed only for passwordless account verification and account security. A 3–7 character username and personal-best session scores are processed for the leaderboard. Completed practice dates and the browser-reported time zone are stored to calculate private daily-streak and consistency statistics. Email and streak data are never published on the leaderboard. The service does not build advertising or marketing profiles."}</p>
       <h3>{isTurkish ? "Toplama yöntemi, hukuki sebep ve aktarım" : "Collection, legal basis, and transfers"}</h3>

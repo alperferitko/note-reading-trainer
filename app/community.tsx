@@ -34,6 +34,7 @@ import {
   DELETE_ACCOUNT_CONFIRMATION,
   deleteCurrentAccount,
 } from "@/lib/delete-account.mjs";
+import { EMAIL_MAX_LENGTH, normalizeValidEmail } from "@/lib/email-validation.mjs";
 
 type Locale = "tr" | "en";
 type Panel = "auth" | "account" | "delete" | "leaderboard" | "legal" | "confirm" | null;
@@ -96,6 +97,8 @@ const TEXT = {
     sendingLink: "Gönderiliyor…",
     privacyAssurance: "E-posta adresini satmayız ve reklam ya da pazarlama amacıyla paylaşmayız. Yalnızca güvenli giriş için hizmet sağlayıcılarımız tarafından işlenir.",
     linkSent: "Bağlantı gönderildi. Gelen kutunu kontrol et.",
+    emailInvalid: "Geçerli bir e-posta adresi yaz. Adres en fazla 254 karakter olabilir.",
+    emailSendError: "Doğrulama bağlantısı şu anda gönderilemedi. Lütfen biraz sonra tekrar dene.",
     backendPending: "Topluluk özellikleri özel kurulum tamamlanınca açılacak.",
     usernameTitle: "Kullanıcı adını seç",
     usernameCopy: "Bu ad sıralamada görünür, e-posta adresin görünmez. Kullanıcı adı sonradan değiştirilemez.",
@@ -154,6 +157,8 @@ const TEXT = {
     sendingLink: "Sending…",
     privacyAssurance: "We never sell your email or share it for advertising or marketing. It is processed by our service providers only to provide secure sign-in.",
     linkSent: "Link sent. Check your inbox.",
+    emailInvalid: "Enter a valid email address. The address can be up to 254 characters long.",
+    emailSendError: "The verification link could not be sent right now. Please try again shortly.",
     backendPending: "Community features will open after the private setup is complete.",
     usernameTitle: "Choose your username",
     usernameCopy: "This name is public on the leaderboard; your email is not. The username cannot be changed later.",
@@ -547,9 +552,15 @@ function AuthPanel({ locale, notice }: { locale: Locale; notice: string }) {
   const [failed, setFailed] = useState(false);
   const { openPanel } = useCommunity();
   const text = TEXT[locale];
+  const normalizedEmail = normalizeValidEmail(email);
 
   async function requestLink(event: FormEvent) {
     event.preventDefault();
+    if (!normalizedEmail) {
+      setMessage(text.emailInvalid);
+      setFailed(true);
+      return;
+    }
     if (!supabase) {
       setMessage(text.backendPending);
       setFailed(true);
@@ -560,7 +571,7 @@ function AuthPanel({ locale, notice }: { locale: Locale; notice: string }) {
     setFailed(false);
     setMessage("");
     const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
+      email: normalizedEmail,
       options: {
         shouldCreateUser: true,
         emailRedirectTo: window.location.origin,
@@ -568,7 +579,7 @@ function AuthPanel({ locale, notice }: { locale: Locale; notice: string }) {
     });
     setBusy(false);
     setFailed(Boolean(error));
-    setMessage(error ? error.message : text.linkSent);
+    setMessage(error ? text.emailSendError : text.linkSent);
   }
 
   return (
@@ -576,8 +587,8 @@ function AuthPanel({ locale, notice }: { locale: Locale; notice: string }) {
       {notice && <p className="community-auth-notice" role="status">{notice}</p>}
       <p id="community-email-help">{text.emailCopy}</p>
       <label htmlFor="community-email">{text.email}</label>
-      <input id="community-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" disabled={busy} aria-describedby="community-email-help community-email-status" aria-invalid={failed} />
-      <button className="primary-button" type="submit" disabled={busy || !email.trim()} aria-busy={busy}>
+      <input id="community-email" type="email" inputMode="email" maxLength={EMAIL_MAX_LENGTH} value={email} onChange={(event) => { setEmail(event.target.value); if (failed) { setFailed(false); setMessage(""); } }} required autoComplete="email" disabled={busy} aria-describedby="community-email-help community-email-status" aria-invalid={failed} />
+      <button className="primary-button" type="submit" disabled={busy || !normalizedEmail} aria-busy={busy}>
         {busy ? text.sendingLink : text.sendLink} <span aria-hidden="true">{busy ? "…" : "→"}</span>
       </button>
       <p id="community-email-status" className="community-message" role={failed ? "alert" : "status"} aria-live={failed ? "assertive" : "polite"}>{message}</p>

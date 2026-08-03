@@ -998,8 +998,17 @@ export default function Home() {
             <h1>{copy.heroLine1}<br /><em>{copy.heroLine2}</em></h1>
             <p className="hero-lead">{copy.heroLead}</p>
             <div className="hero-staff" aria-hidden="true">
-              <Staff note={ALL_NOTES.find((note) => note.id === "b4")!} locale={locale} compact />
-              <span className="scribble">{copy.scribble}</span>
+              <div className="hero-staff-heading">
+                <span>{locale === "tr" ? "Sol anahtarı" : "Treble clef"}</span>
+                <strong>{locale === "tr" ? "Doğal nota" : "Natural note"}</strong>
+              </div>
+              <div className="hero-staff-score">
+                <Staff note={ALL_NOTES.find((note) => note.id === "b4")!} locale={locale} compact />
+              </div>
+              <div className="hero-staff-caption">
+                <span>{locale === "tr" ? "3. çizgi, Si" : "Middle line, B"}</span>
+                <em className="scribble">{copy.scribble}</em>
+              </div>
             </div>
           </div>
 
@@ -1092,17 +1101,21 @@ export default function Home() {
           <div className="quiz-layout">
           <div className="quiz-main-column">
           <div className="question-card">
-            <div className="question-number">{copy.question(activeQuestionNumber)}</div>
-            <p className="question-prompt">{copy.prompt}</p>
-            {mode === "porte" ? (
-              <Staff note={displayedNote} locale={locale} revealAnswer={Boolean(feedback)} />
-            ) : (
-              <div className="location-question">
-                <span>{copy.positionLabel}</span>
-                <strong>{displayedNote.shortLocation[locale]}</strong>
-                <p>{displayedNote.location[locale].charAt(0).toUpperCase() + displayedNote.location[locale].slice(1)}</p>
-              </div>
-            )}
+            <header className="question-heading">
+              <div className="question-number">{copy.question(activeQuestionNumber)}</div>
+              <p className="question-prompt">{copy.prompt}</p>
+            </header>
+            <div className={`notation-stage notation-stage--${mode}`}>
+              {mode === "porte" ? (
+                <Staff note={displayedNote} locale={locale} revealAnswer={Boolean(feedback)} />
+              ) : (
+                <div className="location-question">
+                  <span>{copy.positionLabel}</span>
+                  <strong>{displayedNote.shortLocation[locale]}</strong>
+                  <p>{displayedNote.location[locale].charAt(0).toUpperCase() + displayedNote.location[locale].slice(1)}</p>
+                </div>
+              )}
+            </div>
             {!feedback ? (
               <form className="answer-form" onSubmit={submitAnswer}>
                 <label htmlFor="answer">{copy.answerLabel}</label>

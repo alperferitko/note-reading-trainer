@@ -10,6 +10,7 @@ import {
   DELETE_ACCOUNT_CONFIRMATION,
   deleteCurrentAccount,
 } from "../lib/delete-account.mjs";
+import { EMAIL_MAX_LENGTH, normalizeValidEmail } from "../lib/email-validation.mjs";
 
 async function render() {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
@@ -37,6 +38,16 @@ test("NotaNota çalışma ekranını sunar", async () => {
   assert.match(html, /Müzik aletleri/);
   assert.match(html, /Gitar klavyesi/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
+});
+
+test("magic-link yalnızca makul uzunlukta geçerli e-posta adreslerini kabul eder", () => {
+  assert.equal(EMAIL_MAX_LENGTH, 254);
+  assert.equal(normalizeValidEmail("  USER@Example.COM  "), "user@example.com");
+  assert.equal(normalizeValidEmail("not-an-email"), null);
+  assert.equal(normalizeValidEmail("a@localhost"), null);
+  assert.equal(normalizeValidEmail("a..b@example.com"), null);
+  assert.equal(normalizeValidEmail(`${"a".repeat(65)}@example.com`), null);
+  assert.equal(normalizeValidEmail(`${"a".repeat(245)}@example.com`), null);
 });
 
 test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğunda tutar", async () => {
@@ -236,8 +247,16 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.app-navigation button\.is-active::before \{ display: none; \}/);
   assert.match(styles, /\.app-navigation button \{[^}]*border-radius: 10px;/);
   assert.match(styles, /\.landing-proof span::before \{ display: none; content: none; \}/);
-  assert.match(styles, /\.hero-staff \{[^}]*grid-template-rows: auto auto;[^}]*gap: 8px;/);
+  assert.match(styles, /\.hero-staff \{[^}]*grid-template-rows: auto 1fr auto;[^}]*border-radius: 18px;/);
+  assert.match(styles, /\.hero-staff-score \{[^}]*min-height: 132px;/);
   assert.match(styles, /\.scribble \{[^}]*position: static;/);
+  assert.match(page, /className="question-heading"/);
+  assert.match(page, /className=\{`notation-stage notation-stage--\$\{mode\}`\}/);
+  assert.match(styles, /\.notation-stage \{[^}]*min-height: 292px;[^}]*border-radius: 14px;/);
+  assert.match(styles, /\.answer-line input \{[^}]*border-radius: 11px;/);
+  assert.match(styles, /\.quiz-stat-context span \+ span::before \{[^}]*display: none;/);
+  assert.match(community, /if \(!normalizedEmail\) \{[\s\S]*return;[\s\S]*signInWithOtp/);
+  assert.match(community, /maxLength=\{EMAIL_MAX_LENGTH\}/);
   assert.match(styles, /\.leaderboard-segments \{[^}]*border-radius: 11px;/);
   assert.match(styles, /\.leaderboard-segments button \{[^}]*border-radius: 8px;/);
   assert.match(community, /event\.key === "Escape"/);

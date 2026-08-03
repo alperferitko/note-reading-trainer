@@ -41,13 +41,18 @@ test("NotaNota çalışma ekranını sunar", async () => {
 });
 
 test("magic-link yalnızca makul uzunlukta geçerli e-posta adreslerini kabul eder", () => {
-  assert.equal(EMAIL_MAX_LENGTH, 254);
+  assert.equal(EMAIL_MAX_LENGTH, 100);
   assert.equal(normalizeValidEmail("  USER@Example.COM  "), "user@example.com");
   assert.equal(normalizeValidEmail("not-an-email"), null);
   assert.equal(normalizeValidEmail("a@localhost"), null);
   assert.equal(normalizeValidEmail("a..b@example.com"), null);
   assert.equal(normalizeValidEmail(`${"a".repeat(65)}@example.com`), null);
-  assert.equal(normalizeValidEmail(`${"a".repeat(245)}@example.com`), null);
+  const hundredCharacters = `${"a".repeat(64)}@${"b".repeat(31)}.com`;
+  const hundredOneCharacters = `${"a".repeat(64)}@${"b".repeat(32)}.com`;
+  assert.equal(hundredCharacters.length, 100);
+  assert.equal(normalizeValidEmail(hundredCharacters), hundredCharacters);
+  assert.equal(hundredOneCharacters.length, 101);
+  assert.equal(normalizeValidEmail(hundredOneCharacters), null);
 });
 
 test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğunda tutar", async () => {
@@ -97,6 +102,11 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /setStage\("guitar"\)/);
   assert.match(page, /<GuitarTrainer/);
   assert.match(guitar, /const STRINGS =/);
+  assert.match(guitar, /const DISPLAY_STRINGS = \[\.\.\.STRINGS\]\.reverse\(\)/);
+  assert.match(guitar, /const displayedFrets = Array\.from\(\{ length: maxFret \+ 1 \}, \(_, index\) => maxFret - index\)/);
+  assert.match(guitar, /\{DISPLAY_STRINGS\.map/);
+  assert.match(guitar, /\{displayedFrets\.map/);
+  assert.match(guitar, /\$\{\(maxFret - fret \+ \.5\) \/ \(maxFret \+ 1\)\}/);
   assert.match(guitar, /frets: 3/);
   assert.match(guitar, /frets: 5/);
   assert.match(guitar, /frets: 12/);

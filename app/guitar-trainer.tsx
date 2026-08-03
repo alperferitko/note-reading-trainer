@@ -31,6 +31,7 @@ const STRINGS = [
   { id: "a", number: 5, label: "A", open: "A", openMidi: 45 },
   { id: "e-low", number: 6, label: "E", open: "E", openMidi: 40 },
 ] as const;
+const DISPLAY_STRINGS = [...STRINGS].reverse();
 
 const RANGES = {
   tr: [
@@ -158,6 +159,7 @@ function Fretboard({
   reveal?: boolean;
 }) {
   const columns = `68px repeat(${maxFret + 1}, minmax(48px, 1fr))`;
+  const displayedFrets = Array.from({ length: maxFret + 1 }, (_, index) => maxFret - index);
   return (
     <div
       className="fretboard-scroll"
@@ -169,7 +171,7 @@ function Fretboard({
     >
       {reveal && (
         <ul className="sr-only">
-          {STRINGS.flatMap((string) => Array.from({ length: maxFret + 1 }, (_, fret) => {
+          {DISPLAY_STRINGS.flatMap((string) => displayedFrets.map((fret) => {
             const letter = noteAt(string.open, fret);
             if (!NATURAL.has(letter as Letter)) return null;
             return (
@@ -185,12 +187,12 @@ function Fretboard({
       <div className="fretboard" aria-hidden="true" style={{ minWidth: `${Math.max(620, 90 + (maxFret + 1) * 58)}px` }}>
         <div className="fretboard-fret-numbers" style={{ gridTemplateColumns: columns }}>
           <span />
-          {Array.from({ length: maxFret + 1 }, (_, fret) => <span key={fret}>{fret === 0 ? (locale === "tr" ? "Açık" : "Open") : fret}</span>)}
+          {displayedFrets.map((fret) => <span key={fret}>{fret === 0 ? (locale === "tr" ? "Açık" : "Open") : fret}</span>)}
         </div>
-        {STRINGS.map((string) => (
+        {DISPLAY_STRINGS.map((string) => (
           <div className={`fretboard-string fretboard-string--${string.number}`} style={{ gridTemplateColumns: columns }} key={string.id}>
             <strong>{string.number}. {string.label}</strong>
-            {Array.from({ length: maxFret + 1 }, (_, fret) => {
+            {displayedFrets.map((fret) => {
               const letter = noteAt(string.open, fret);
               const natural = NATURAL.has(letter as Letter);
               const selected = active?.stringId === string.id && active.fret === fret;
@@ -207,7 +209,7 @@ function Fretboard({
           </div>
         ))}
         <div className="fretboard-inlays" aria-hidden="true">
-          {[3, 5, 7, 9, 12].filter((fret) => fret <= maxFret).map((fret) => <i key={fret} style={{ left: `calc(68px + ${(fret + .5) / (maxFret + 1)} * (100% - 68px))` }} />)}
+          {[3, 5, 7, 9, 12].filter((fret) => fret <= maxFret).map((fret) => <i key={fret} style={{ left: `calc(68px + ${(maxFret - fret + .5) / (maxFret + 1)} * (100% - 68px))` }} />)}
         </div>
       </div>
     </div>

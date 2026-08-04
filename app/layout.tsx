@@ -26,8 +26,8 @@ export async function generateMetadata(): Promise<Metadata> {
       images: [{
         url: image,
         type: "image/png",
-        width: 1731,
-        height: 909,
+        width: 1200,
+        height: 630,
         alt: "NotaNota treble-clef note-reading practice",
       }],
     },

@@ -15,6 +15,7 @@ Bu belge, danışmanlık raporundaki önerilerin kod ve operasyon tarafındaki k
 - Gitar oturumundan çıkış, cevap alanı, seçili aralık özeti ve çalışma başlatma alanı daha görünür hale getirildi.
 - Küçük ekranlarda yatay taşmayı önleyen genişlik sınırları ve güvenli sarma kuralları eklendi.
 - Türkçe ana meta açıklaması, canonical URL ve EducationalApplication yapılandırılmış verisi eklendi.
+- Open Graph/Twitter paylaşım görseli güncel arayüzle ve standart 1200×630 oranında yenilendi.
 - JavaScript kapalıyken ve arama motoru ilk HTML’i okurken görülebilen anlamlı içerik eklendi.
 - `robots.txt`, `sitemap.xml`, markalı `404.html` ve `.well-known/security.txt` eklendi.
 - Statik uygulamaya uyumlu temel CSP ve referrer politikası eklendi.
@@ -59,3 +60,4 @@ Bu belge, danışmanlık raporundaki önerilerin kod ve operasyon tarafındaki k
 - Kalp/enerji, ceza serisi, suçluluk bildirimleri ve yabancılarla zorunlu ligler ürünün sakin çalışma yaklaşımına uymadığı için planlanmıyor.
 - Sahte örnek skorlar veya boş tabloyu dolduran hayali kullanıcılar eklenmiyor.
 - Ayrı bir gerçek İngilizce URL yapısı oluşmadan `hreflang` eklenmiyor.
+- “Önce dinle”, yanlış cevap sesi ve arayüz efektleri raporda önerilmiş olsa da daha sonra alınan yalnızca doğru cevabı seslendirme ürün kararı nedeniyle eklenmiyor.

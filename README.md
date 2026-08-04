@@ -97,13 +97,11 @@ npm test
 npm run build
 npm run build:pages
 npm run test:pages
-npm run audio:generate
 ```
 
-`npm run audio:generate` reproducibly creates the original MIDI, MusicXML,
-48 kHz/24-bit WAV masters, and optimized OGG/Opus and MP3 web files. Production
-details and tool licensing are recorded in
-[THIRD_PARTY_AUDIO_LICENSES.md](./THIRD_PARTY_AUDIO_LICENSES.md).
+The only audio feedback is the pitch played after a correct answer. It is
+generated in the browser with Web Audio, so no ambient music or interface
+sound files are loaded.
 
 ## Architecture
 

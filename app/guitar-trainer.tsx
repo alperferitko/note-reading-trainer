@@ -13,7 +13,6 @@ type GuitarQuestion = {
   id: string;
   stringId: string;
   stringNumber: number;
-  stringLabel: string;
   fret: number;
   letter: Letter;
   midi: number;
@@ -55,11 +54,15 @@ const COPY = {
     terminology: "Perde mi, pozisyon mu?",
     terminologyCopy: "Metal bölmeler perde olarak adlandırılır. Pozisyon ise elinin klavye üzerindeki yeridir; çoğunlukla işaret parmağının bulunduğu perdeyle adlandırılır.",
     map: "Doğal nota haritası",
-    mapCopy: "Seçtiğin aralıktaki bütün doğal notalar",
+    mapCount: (count: number) => `${count} doğal nota konumu`,
+    selectedRange: "Seçili çalışma alanı",
     start: "Gitar çalışmasını başlat",
+    startReady: "Haritayı incelediğinde seçtiğin aralıkla kısa bir tura başlayabilirsin.",
     progress: "İlerleme",
     question: "İşaretlenen nota hangisi?",
     location: (stringNumber: number, fret: number) => `${stringNumber}. tel, ${fret === 0 ? "açık tel" : `${fret}. perde`}`,
+    target: "Sorulan konum",
+    exit: "Oturumdan çık",
     answer: "Cevabını yaz",
     placeholder: "Do, Re, Mi…",
     check: "Kontrol et",
@@ -85,11 +88,15 @@ const COPY = {
     terminology: "Frets or positions?",
     terminologyCopy: "The metal divisions are frets. A position describes where your fretting hand sits, usually named for the fret under your first finger.",
     map: "Natural-note map",
-    mapCopy: "Every natural note in your selected range",
+    mapCount: (count: number) => `${count} natural-note locations`,
+    selectedRange: "Selected practice range",
     start: "Start guitar practice",
+    startReady: "When you have scanned the map, begin a short round with this range.",
     progress: "Progress",
     question: "Which note is highlighted?",
     location: (stringNumber: number, fret: number) => `String ${stringNumber}, ${fret === 0 ? "open string" : `fret ${fret}`}`,
+    target: "Target location",
+    exit: "Exit session",
     answer: "Type your answer",
     placeholder: "C, D, E…",
     check: "Check answer",
@@ -123,7 +130,6 @@ function buildQuestions(maxFret: number): GuitarQuestion[] {
         id: `${string.id}-${fret}`,
         stringId: string.id,
         stringNumber: string.number,
-        stringLabel: string.label,
         fret,
         letter: letter as Letter,
         midi: string.openMidi + fret,
@@ -158,11 +164,19 @@ function Fretboard({
   active?: GuitarQuestion;
   reveal?: boolean;
 }) {
-  const columns = `68px repeat(${maxFret + 1}, minmax(48px, 1fr))`;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const columns = `46px repeat(${maxFret + 1}, minmax(58px, 1fr)) 46px`;
   const displayedFrets = Array.from({ length: maxFret + 1 }, (_, index) => maxFret - index);
+
+  useEffect(() => {
+    const scrollArea = scrollRef.current;
+    if (scrollArea) scrollArea.scrollLeft = scrollArea.scrollWidth;
+  }, [maxFret]);
+
   return (
     <div
       className="fretboard-scroll"
+      ref={scrollRef}
       role="region"
       tabIndex={0}
       aria-label={active
@@ -184,14 +198,15 @@ function Fretboard({
           }))}
         </ul>
       )}
-      <div className="fretboard" aria-hidden="true" style={{ minWidth: `${Math.max(620, 90 + (maxFret + 1) * 58)}px` }}>
+      <div className="fretboard" aria-hidden="true" style={{ minWidth: `${Math.max(650, 120 + (maxFret + 1) * 64)}px` }}>
         <div className="fretboard-fret-numbers" style={{ gridTemplateColumns: columns }}>
           <span />
-          {displayedFrets.map((fret) => <span key={fret}>{fret === 0 ? (locale === "tr" ? "Açık" : "Open") : fret}</span>)}
+          {displayedFrets.map((fret) => <span className={fret === 0 ? "is-open" : ""} key={fret}>{fret === 0 ? (locale === "tr" ? "Açık tel" : "Open") : locale === "tr" ? `${fret}. perde` : `Fret ${fret}`}</span>)}
+          <span />
         </div>
         {DISPLAY_STRINGS.map((string) => (
           <div className={`fretboard-string fretboard-string--${string.number}`} style={{ gridTemplateColumns: columns }} key={string.id}>
-            <strong>{string.number}. {string.label}</strong>
+            <strong className="fretboard-string-number" aria-label={locale === "tr" ? `${string.number}. tel` : `String ${string.number}`}>{string.number}</strong>
             {displayedFrets.map((fret) => {
               const letter = noteAt(string.open, fret);
               const natural = NATURAL.has(letter as Letter);
@@ -206,10 +221,11 @@ function Fretboard({
                 </span>
               );
             })}
+            <strong className="fretboard-string-number fretboard-string-number--end" aria-hidden="true">{string.number}</strong>
           </div>
         ))}
         <div className="fretboard-inlays" aria-hidden="true">
-          {[3, 5, 7, 9, 12].filter((fret) => fret <= maxFret).map((fret) => <i key={fret} style={{ left: `calc(68px + ${(maxFret - fret + .5) / (maxFret + 1)} * (100% - 68px))` }} />)}
+          {[3, 5, 7, 9, 12].filter((fret) => fret <= maxFret).map((fret) => <i key={fret} style={{ left: `calc(46px + ${(maxFret - fret + .5) / (maxFret + 1)} * (100% - 92px))` }} />)}
         </div>
       </div>
     </div>
@@ -240,6 +256,7 @@ export function GuitarTrainer({
   const resultsHeadingRef = useRef<HTMLHeadingElement>(null);
   const text = COPY[locale];
   const ranges = RANGES[locale];
+  const selectedRange = ranges.find((range) => range.frets === maxFret) ?? ranges[0];
   const current = queue[0];
   const displayed = feedbackQuestion ?? current;
   const choices = locale === "tr" ? Object.values(SOLFEGE) : Object.keys(SOLFEGE);
@@ -335,10 +352,19 @@ export function GuitarTrainer({
         </div>
 
         <div className="fretboard-card">
-          <div className="fretboard-card-heading"><div><p className="kicker">02</p><h2>{text.map}</h2></div><span>{text.mapCopy}, {previewQuestions.length}</span></div>
+          <div className="fretboard-card-heading">
+            <div><p className="kicker">02</p><h2>{text.map}</h2></div>
+            <aside>
+              <small>{text.selectedRange}</small>
+              <strong>{selectedRange.title}</strong>
+              <span>{selectedRange.copy}</span>
+              <b>{text.mapCount(previewQuestions.length)}</b>
+            </aside>
+          </div>
           <Fretboard maxFret={maxFret} locale={locale} reveal />
         </div>
-        <div className="guitar-actions">
+        <div className="guitar-start-panel">
+          <div><p className="kicker">03</p><strong>{selectedRange.title}</strong><span>{text.startReady}</span></div>
           <button className="primary-button" type="button" onClick={start}>{text.start} <span aria-hidden="true">→</span></button>
         </div>
       </section>
@@ -370,11 +396,11 @@ export function GuitarTrainer({
   return (
     <section className="guitar-shell guitar-quiz">
       <div className="guitar-quiz-top">
-        <button className="module-back" type="button" onClick={() => setStage("setup")}>← {text.change}</button>
+        <button className="guitar-exit-button" type="button" onClick={() => setStage("setup")}><span aria-hidden="true">←</span> {text.exit}</button>
         <div role="progressbar" aria-label={text.progress} aria-valuemin={0} aria-valuemax={initialCount} aria-valuenow={completed}><span>{text.progress}</span><strong>{completed} / {initialCount}</strong></div>
       </div>
       <div className="guitar-question-card">
-        <p className="kicker">{displayed && text.location(displayed.stringNumber, displayed.fret)}</p>
+        {displayed && <div className="guitar-target-location"><span>{text.target}</span><strong>{text.location(displayed.stringNumber, displayed.fret)}</strong></div>}
         <h1>{text.question}</h1>
         {displayed && <Fretboard maxFret={maxFret} locale={locale} active={displayed} />}
         {!feedback ? (

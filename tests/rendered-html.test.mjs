@@ -100,6 +100,10 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /useState<Stage>\("landing"\)/);
   assert.match(page, /const GuitarTrainer = lazy/);
   assert.match(page, /setStage\("guitar"\)/);
+  assert.match(page, /function InstrumentHub/);
+  assert.match(page, /setStage\("instruments"\)/);
+  assert.match(page, /Piyano/);
+  assert.match(page, /Keman/);
   assert.match(page, /<GuitarTrainer/);
   assert.match(guitar, /const STRINGS =/);
   assert.match(guitar, /const DISPLAY_STRINGS = \[\.\.\.STRINGS\]\.reverse\(\)/);
@@ -174,7 +178,13 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(community, /community-result-encouragement/);
   assert.match(styles, /\.guitar-range-grid > button::before \{[\s\S]*radial-gradient\(circle at 0 0/);
   assert.match(styles, /\.guitar-range-grid > button\.is-selected::before \{ opacity: 1; \}/);
-  assert.match(styles, /\.fretboard-card-heading \{[^}]*flex-direction: row-reverse;[^}]*text-align: right;/);
+  assert.match(styles, /\.fretboard-card-heading \{[\s\S]*flex-direction: row;[\s\S]*text-align: left;/);
+  assert.match(guitar, /className="fretboard-string-number"/);
+  assert.match(guitar, /fretboard-string-number--end/);
+  assert.doesNotMatch(guitar, /\{string\.number\}\. \{string\.label\}/);
+  assert.match(guitar, /className="guitar-exit-button"/);
+  assert.match(guitar, /className="guitar-target-location"/);
+  assert.match(guitar, /className="guitar-start-panel"/);
   assert.doesNotMatch(styles, /\.session-insight \{[^}]*border-left/);
   assert.match(page, /if \(correct\) \{[\s\S]*playPracticeNote\(noteIdToMidi\(current\.id\), noteSoundEnabled\);/);
   assert.match(page, /document\.addEventListener\("pointerdown", closeOnOutsidePointer\)/);
@@ -189,7 +199,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.brand \.brand-mark \{[\s\S]*border: 0;[\s\S]*background: transparent;/);
   assert.match(styles, /\.brand-mark img \{[\s\S]*object-fit: contain;/);
   assert.match(styles, /\.brand::before \{[\s\S]*repeating-linear-gradient\([\s\S]*rgba\(32, 35, 31, \.42\)/);
-  assert.match(styles, /\.brand-name \{[\s\S]*margin-left: -5px;[\s\S]*text-shadow:/);
+  assert.match(styles, /\.brand-name \{[\s\S]*margin-left: -10px;[\s\S]*text-shadow: none;/);
   assert.match(styles, /\.result-flourish \{[\s\S]*border-radius: 0;[\s\S]*background: transparent;/);
   assert.match(magicLink, /https:\/\/notanota\.online\/notanota-monogram\.png/);
   assert.match(magicLink, /background:#E9E2D5/);

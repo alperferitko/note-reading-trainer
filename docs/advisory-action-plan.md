@@ -1,15 +1,19 @@
 # NotaNota danışmanlık raporu — uygulama planı
 
-Son değerlendirme: 26 Temmuz 2026
+Son değerlendirme: 4 Ağustos 2026
 
 Bu belge, danışmanlık raporundaki önerilerin kod ve operasyon tarafındaki karşılığını izler. “Tamamlandı” maddeleri bu repoda uygulanmıştır; dış hizmet veya hukuki karar isteyenler ayrıca işaretlenmiştir.
 
 ## Bu sürümde tamamlananlar
 
-- Nota okuma ve gitar sorularına Web Audio tabanlı dinleme düğmesi eklendi.
-- Doğru veya yanlış cevaptan sonra doğru perde kısa bir sesle çalınıyor.
-- Ses açma/kapama tercihi cihazda saklanıyor; otomatik çalma yapılmıyor.
+- Nota okuma ve gitar sorularında yalnızca doğru cevap sonrasında doğru perde Web Audio ile çalınıyor.
+- Arka plan müziği, yanlış cevap ve arayüz efektleri ürün kararına uygun olarak kaldırıldı; kullanılmayan ses dosyaları statik pakete dahil edilmiyor.
+- Doğru nota sesi açma/kapama tercihi cihazda saklanıyor; otomatik çalma yapılmıyor.
 - Mobilde Stüdyo, Nota Oku ve Gitar arasında geçiş sağlayan erişilebilir alt menü eklendi.
+- Müzik aletleri için ayrı seçim ekranı eklendi; gitar kullanılabilir, piyano ve keman yanıltıcı eylem sunmadan sıradaki modüller olarak gösteriliyor.
+- Gitar klavyesinde tel adları kaldırıldı, tel numaraları iki kenarda gösterildi ve açık tel/perde başlıkları belirginleştirildi.
+- Gitar oturumundan çıkış, cevap alanı, seçili aralık özeti ve çalışma başlatma alanı daha görünür hale getirildi.
+- Küçük ekranlarda yatay taşmayı önleyen genişlik sınırları ve güvenli sarma kuralları eklendi.
 - Türkçe ana meta açıklaması, canonical URL ve EducationalApplication yapılandırılmış verisi eklendi.
 - JavaScript kapalıyken ve arama motoru ilk HTML’i okurken görülebilen anlamlı içerik eklendi.
 - `robots.txt`, `sitemap.xml`, markalı `404.html` ve `.well-known/security.txt` eklendi.
@@ -34,13 +38,12 @@ Bu belge, danışmanlık raporundaki önerilerin kod ve operasyon tarafındaki k
 
 ## Sonraki geliştirme paketi
 
-1. Web Audio sentezi yerine lisansı doğrulanmış piyano ve klasik gitar örnekleri.
-2. Bas anahtarı, büyük porte ve diyez/bemol seviyeleri.
-3. Aralıklı tekrar: sık hata yapılan notaları sonraki oturumlara ölçülü biçimde taşıma.
-4. Kişisel rekor ve ustalaşılan notalar haritası; genel sıralamaya alternatif kişisel ilerleme görünümü.
-5. Ritim okuma, piyano klavyesi, bağlama ve işitme eğitimi.
-6. Öğretmen paylaşım bağlantıları, sınav modu ve arama odaklı ücretsiz çalışma sayfaları.
-7. PWA ve çevrimdışı çalışma; daha sonra MIDI/mikrofon ve sınıf özellikleri.
+1. Bas anahtarı, büyük porte ve diyez/bemol seviyeleri.
+2. Aralıklı tekrar: sık hata yapılan notaları sonraki oturumlara ölçülü biçimde taşıma.
+3. Kişisel rekor ve ustalaşılan notalar haritası; genel sıralamaya alternatif kişisel ilerleme görünümü.
+4. Piyano ve keman çalışma modülleri; ardından ritim okuma, bağlama ve işitme eğitimi.
+5. Öğretmen paylaşım bağlantıları, sınav modu ve arama odaklı ücretsiz çalışma sayfaları.
+6. PWA ve çevrimdışı çalışma; daha sonra MIDI/mikrofon ve sınıf özellikleri.
 
 ## Kullanıcı/operasyon yardımı gerekenler
 
@@ -49,7 +52,6 @@ Bu belge, danışmanlık raporundaki önerilerin kod ve operasyon tarafındaki k
 - **Arama motorları:** Google Search Console ve Bing Webmaster Tools üzerinde alan adı doğrulanmalı; `https://notanota.online/sitemap.xml` gönderilmeli.
 - **Supabase Auth:** OTP gönderim sınırı ve bot koruması proje panelinde gözden geçirilmeli.
 - **HTTP güvenlik başlıkları:** GitHub Pages özel yanıt başlığı ekleyemediği için tam `frame-ancestors`, HSTS ve benzeri başlıklar isteniyorsa alan adı Cloudflare proxy veya başlık destekleyen statik barındırmaya taşınmalı.
-- **Ses örnekleri:** Örnek tabanlı sese geçmeden önce seçilecek piyano/gitar paketlerinin lisans ve atıf metni onaylanmalı.
 - **Skor güveni:** Mevcut sunucu doğrulaması temel kötüye kullanımı engelliyor; ciddi rekabet hedeflenirse sunucu tarafından başlatılan ve zamanlanan oturum sistemi için ürün kararı gerekir.
 
 ## Bilinçli olarak ertelenenler

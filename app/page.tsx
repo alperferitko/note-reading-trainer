@@ -28,7 +28,7 @@ import {
 
 type LevelId = "temel" | "yakin" | "tam" | "genis";
 type ModeId = "porte" | "konum";
-type Stage = "landing" | "setup" | "quiz" | "done" | "guitar";
+type Stage = "landing" | "setup" | "quiz" | "done" | "instruments" | "guitar";
 type Locale = "tr" | "en";
 
 const GuitarTrainer = lazy(() => import("./guitar-trainer").then((module) => ({
@@ -286,7 +286,7 @@ const LANDING_COPY = {
     guitarCopy: "Standart akortta doğal notaların tel ve perde üzerindeki yerlerini öğren.",
     guitarMeta: "0–3 / 0–5 / 0–12 perde",
     openReading: "Nota çalışmasına başla",
-    openGuitar: "Gitar çalışmasına başla",
+    openGuitar: "Müzik aletlerini keşfet",
   },
   en: {
     eyebrow: "NotaNota music literacy",
@@ -308,7 +308,7 @@ const LANDING_COPY = {
     guitarCopy: "Learn where natural notes sit across the strings and frets in standard tuning.",
     guitarMeta: "Frets 0–3 / 0–5 / 0–12",
     openReading: "Start note practice",
-    openGuitar: "Start guitar practice",
+    openGuitar: "Explore instruments",
   },
 } as const;
 
@@ -342,6 +342,72 @@ const SHELL_COPY = {
     leaderboard: "View leaderboard",
   },
 } as const;
+
+const INSTRUMENT_COPY = {
+  tr: {
+    eyebrow: "Müzik aletleri",
+    title: "Bir enstrüman seç.",
+    lead: "Notaların çalgı üzerindeki yerlerini ayrı çalışma alanlarında öğren. Gitar hazır; piyano ve keman sıradaki modüller.",
+    available: "Çalışmaya hazır",
+    coming: "Hazırlanıyor",
+    guitar: "Gitar",
+    guitarCopy: "Standart akortta telleri ve perdeleri okuyarak doğal notaların yerlerini öğren.",
+    piano: "Piyano",
+    pianoCopy: "Tuş grupları ve oktavlar üzerinden nota konumlarını çalış.",
+    violin: "Keman",
+    violinCopy: "Teller ve birinci pozisyondaki doğal seslerle başla.",
+    open: "Gitar çalışma alanını aç",
+  },
+  en: {
+    eyebrow: "Musical instruments",
+    title: "Choose an instrument.",
+    lead: "Learn where notes live on each instrument in a focused practice space. Guitar is ready; piano and violin are next.",
+    available: "Ready to practise",
+    coming: "In development",
+    guitar: "Guitar",
+    guitarCopy: "Learn natural notes in standard tuning by reading strings and frets.",
+    piano: "Piano",
+    pianoCopy: "Explore note locations through key groups and octaves.",
+    violin: "Violin",
+    violinCopy: "Begin with the strings and natural notes in first position.",
+    open: "Open guitar practice",
+  },
+} as const;
+
+function InstrumentHub({ locale, onOpenGuitar }: { locale: Locale; onOpenGuitar: () => void }) {
+  const text = INSTRUMENT_COPY[locale];
+
+  return (
+    <section className="instrument-hub" aria-labelledby="instrument-hub-title">
+      <header className="instrument-hub-heading">
+        <p className="kicker">{text.eyebrow}</p>
+        <h1 id="instrument-hub-title">{text.title}</h1>
+        <p>{text.lead}</p>
+      </header>
+      <div className="instrument-grid">
+        <button className="instrument-card instrument-card--guitar" type="button" onClick={onOpenGuitar}>
+          <span className="instrument-status instrument-status--ready">{text.available}</span>
+          <span className="instrument-illustration instrument-illustration--guitar" aria-hidden="true"><i /><i /><i /><i /><i /><i /></span>
+          <strong>{text.guitar}</strong>
+          <span>{text.guitarCopy}</span>
+          <b>{text.open} <span aria-hidden="true">→</span></b>
+        </button>
+        <article className="instrument-card instrument-card--upcoming">
+          <span className="instrument-status">{text.coming}</span>
+          <span className="instrument-illustration instrument-illustration--piano" aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /></span>
+          <strong>{text.piano}</strong>
+          <span>{text.pianoCopy}</span>
+        </article>
+        <article className="instrument-card instrument-card--upcoming">
+          <span className="instrument-status">{text.coming}</span>
+          <span className="instrument-illustration instrument-illustration--violin" aria-hidden="true"><i /><i /><i /><i /></span>
+          <strong>{text.violin}</strong>
+          <span>{text.violinCopy}</span>
+        </article>
+      </div>
+    </section>
+  );
+}
 
 const NOTE_SOUND_COPY = {
   tr: {
@@ -861,7 +927,7 @@ export default function Home() {
           <span className="brand-mark" aria-hidden="true">
             <img src="./notanota-monogram.png" alt="" />
           </span>
-          <span className="brand-name">NotaNota</span>
+          <span className="brand-name">otaNota</span>
         </button>
         <span className="brand-ornament" aria-hidden="true"><i /><b>◇</b><i /></span>
         <nav className="app-navigation" aria-label={shell.navigation}>
@@ -871,7 +937,7 @@ export default function Home() {
           <button type="button" className={["setup", "quiz", "done"].includes(stage) ? "is-active" : ""} onClick={() => setStage("setup")} aria-label={shell.sightReading} aria-current={["setup", "quiz", "done"].includes(stage) ? "page" : undefined}>
             <span aria-hidden="true">01</span><b>{shell.sightReading}</b>
           </button>
-          <button type="button" className={stage === "guitar" ? "is-active" : ""} onClick={() => setStage("guitar")} aria-label={shell.instruments} aria-current={stage === "guitar" ? "page" : undefined}>
+          <button type="button" className={["instruments", "guitar"].includes(stage) ? "is-active" : ""} onClick={() => setStage("instruments")} aria-label={shell.instruments} aria-current={["instruments", "guitar"].includes(stage) ? "page" : undefined}>
             <span aria-hidden="true">02</span><b>{shell.instruments}</b>
           </button>
         </nav>
@@ -926,7 +992,7 @@ export default function Home() {
         <button type="button" className={["setup", "quiz", "done"].includes(stage) ? "is-active" : ""} onClick={() => setStage("setup")} aria-current={["setup", "quiz", "done"].includes(stage) ? "page" : undefined}>
           <span aria-hidden="true">01</span>{shell.sightReading}
         </button>
-        <button type="button" className={stage === "guitar" ? "is-active" : ""} onClick={() => setStage("guitar")} aria-current={stage === "guitar" ? "page" : undefined}>
+        <button type="button" className={["instruments", "guitar"].includes(stage) ? "is-active" : ""} onClick={() => setStage("instruments")} aria-current={["instruments", "guitar"].includes(stage) ? "page" : undefined}>
           <span aria-hidden="true">02</span>{shell.instruments}
         </button>
       </nav>
@@ -968,7 +1034,7 @@ export default function Home() {
               </section>
               <section className="module-category" aria-labelledby="instrument-category">
                 <p className="module-category-label" id="instrument-category">{landing.instrumentsCategory}</p>
-                <button className="module-card module-card--guitar" type="button" onClick={() => setStage("guitar")}>
+                <button className="module-card module-card--guitar" type="button" onClick={() => setStage("instruments")}>
                   <span className="module-number">02</span>
                   <span className="module-guitar-visual" aria-hidden="true"><b>C</b><b>E</b><b>G</b></span>
                   <strong>{landing.guitarTitle}</strong>
@@ -980,6 +1046,10 @@ export default function Home() {
             </div>
           </div>
         </section>
+      )}
+
+      {stage === "instruments" && (
+        <InstrumentHub locale={locale} onOpenGuitar={() => setStage("guitar")} />
       )}
 
       {stage === "guitar" && (

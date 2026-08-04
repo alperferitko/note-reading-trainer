@@ -3604,3 +3604,244 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
   .community-header-actions button { max-width: 72px; padding-inline: 7px; }
   .language-switch { min-width: 66px; }
 }
+
+/* Guitar study map and touch-first practice refinements. */
+.fretboard-experience {
+  min-width: 0;
+}
+
+.fretboard-orientation-hint {
+  display: none;
+}
+
+.guitar-study-tools {
+  margin: 0 0 16px;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  border-radius: 14px;
+  background: var(--background-deep);
+  box-shadow: inset 0 0 0 1px rgba(213, 202, 186, .62);
+}
+
+.guitar-study-tools .kicker {
+  margin: 0 0 5px;
+}
+
+.guitar-study-tools > div:first-child > span {
+  color: var(--foreground-muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.guitar-study-note-choices {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.guitar-study-note-choices button {
+  min-width: 44px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-elevated);
+  color: var(--foreground);
+  box-shadow: inset 0 0 0 1px var(--border);
+  font-family: var(--serif);
+  font-weight: 750;
+  transition: background-color .24s ease, color .24s ease, box-shadow .24s ease, transform .24s ease;
+}
+
+.guitar-study-note-choices button[aria-pressed="true"] {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 5px 14px rgba(88, 33, 41, .2);
+}
+
+.fret-note {
+  transition: opacity .24s ease, transform .24s ease, background-color .24s ease, color .24s ease, box-shadow .24s ease;
+}
+
+.fret-note.is-study-muted {
+  opacity: .18;
+  transform: scale(.78);
+}
+
+.fret-note.is-study-focus {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 0 0 4px rgba(255, 250, 243, .52), 0 6px 15px rgba(65, 38, 15, .3);
+  transform: scale(1.08);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .guitar-study-note-choices button:hover {
+    background: var(--danger-soft);
+    transform: translateY(-1px);
+  }
+
+  .guitar-study-note-choices button[aria-pressed="true"]:hover {
+    background: var(--primary);
+  }
+}
+
+@media (max-width: 720px) {
+  .guitar-study-tools {
+    grid-template-columns: 1fr;
+  }
+
+  .guitar-study-note-choices {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 620px) and (orientation: portrait) {
+  .fretboard-orientation-hint {
+    margin: 0 0 8px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    border-radius: 11px;
+    background: var(--danger-soft);
+    color: var(--foreground);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.45;
+  }
+
+  .fretboard-orientation-hint span {
+    width: 26px;
+    height: 20px;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(139, 47, 60, .4);
+    border-radius: 5px;
+    color: var(--primary);
+    font-size: 14px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 560px) and (max-width: 1000px) {
+  .guitar-shell.guitar-quiz {
+    width: calc(100% - 12px);
+    margin: 6px auto 14px;
+    padding: 8px;
+  }
+
+  .guitar-quiz-top {
+    margin-bottom: 6px;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .guitar-exit-button {
+    width: auto;
+    min-height: 34px;
+    padding: 6px 10px;
+  }
+
+  .guitar-question-card {
+    padding: 10px 8px 9px;
+  }
+
+  .guitar-target-location {
+    margin: 0 0 5px;
+    padding: 5px 9px;
+    display: inline-grid;
+  }
+
+  .guitar-target-location strong {
+    font-size: 15px;
+  }
+
+  .guitar-question-card h1 {
+    margin: 0 0 6px;
+    font-size: 25px;
+    line-height: 1;
+  }
+
+  .guitar-staff-frame {
+    height: 100px;
+    margin-bottom: 4px;
+  }
+
+  .guitar-staff-note {
+    flex: 0 0 480px;
+    transform: scale(.55);
+  }
+
+  .fretboard-scroll {
+    padding: 2px 0 4px;
+  }
+
+  .fretboard--range-3 {
+    min-width: 100% !important;
+  }
+
+  .fretboard {
+    padding-top: 18px;
+  }
+
+  .fretboard-fret-numbers {
+    inset: 2px 0 auto;
+  }
+
+  .fretboard-string > .fret-cell {
+    min-height: 27px;
+  }
+
+  .fret-note,
+  .fret-note.is-active,
+  .fret-note--choice,
+  .fret-note--choice.is-correct {
+    width: 23px;
+    height: 23px;
+    font-size: 10px;
+  }
+
+  .fretboard-inlays {
+    inset: 18px 0 0;
+  }
+
+  .guitar-answer {
+    margin-top: 5px;
+    padding: 6px;
+    gap: 5px;
+  }
+
+  .guitar-answer label {
+    display: none;
+  }
+
+  .guitar-answer input,
+  .guitar-answer > div:first-of-type > button {
+    min-height: 34px;
+  }
+
+  .guitar-note-choices {
+    gap: 4px;
+  }
+
+  .guitar-note-choices button {
+    min-height: 32px;
+  }
+
+  .guitar-position-instruction {
+    margin-top: 5px;
+    padding: 6px 10px;
+  }
+
+  .guitar-feedback {
+    margin-top: 5px;
+    padding: 7px 9px;
+    gap: 8px;
+  }
+}

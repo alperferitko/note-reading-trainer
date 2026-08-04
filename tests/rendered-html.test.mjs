@@ -122,6 +122,15 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(guitar, /practiceMode === "staff-to-fretboard" \? answerPosition : undefined/);
   assert.match(guitar, /Porteyi gör, gitarda bul/);
   assert.match(guitar, /See the staff, find it on guitar/);
+  assert.match(guitar, /Notaları önce incele/);
+  assert.match(guitar, /Study the notes first/);
+  assert.match(guitar, /const \[studyLetter, setStudyLetter\] = useState<Letter \| null>\(null\)/);
+  assert.match(guitar, /studyLetter=\{studyLetter\}/);
+  assert.match(guitar, /window\.matchMedia\("\(hover: hover\) and \(pointer: fine\)"\)\.matches/);
+  assert.match(guitar, /if \(hasDesktopPointer\) inputRef\.current\?\.focus/);
+  assert.match(styles, /@media \(max-width: 620px\) and \(orientation: portrait\)[\s\S]*\.fretboard-orientation-hint/);
+  assert.match(styles, /@media \(orientation: landscape\) and \(max-height: 560px\) and \(max-width: 1000px\)[\s\S]*\.fretboard--range-3/);
+  assert.match(styles, /\.fret-note\.is-study-focus/);
   assert.match(styles, /\.fret-note--choice\.is-correct/);
   assert.match(page, /<CommunityResult/);
   assert.match(community, /nota-nota-pending-score/);

@@ -56,6 +56,11 @@ const COPY = {
     terminologyCopy: "Metal bölmeler perde olarak adlandırılır. Pozisyon ise elinin klavye üzerindeki yeridir; çoğunlukla işaret parmağının bulunduğu perdeyle adlandırılır.",
     map: "Doğal nota haritası",
     mapCount: (count: number) => `${count} doğal nota konumu`,
+    studyTitle: "Notaları önce incele",
+    studyCopy: "Bir nota seç ve bu aralıktaki bütün tel ve perde konumlarını birlikte gör.",
+    studyAll: "Tümü",
+    studyChoices: "İncelenecek nota",
+    orientationHint: "Klavye haritasını daha rahat görmek için telefonunu yan çevirebilirsin.",
     selectedRange: "Seçili çalışma alanı",
     mode: "Nasıl çalışmak istiyorsun?",
     nameMode: "Konumu gör, notayı bul",
@@ -104,6 +109,11 @@ const COPY = {
     terminologyCopy: "The metal divisions are frets. A position describes where your fretting hand sits, usually named for the fret under your first finger.",
     map: "Natural-note map",
     mapCount: (count: number) => `${count} natural-note locations`,
+    studyTitle: "Study the notes first",
+    studyCopy: "Choose a note to highlight every matching string and fret in this range.",
+    studyAll: "All",
+    studyChoices: "Note to study",
+    orientationHint: "Turn your phone sideways for a clearer view of the fretboard.",
     selectedRange: "Selected practice range",
     mode: "How do you want to practise?",
     nameMode: "See a position, name the note",
@@ -248,6 +258,8 @@ function Fretboard({
   onSelect,
   selectedPosition,
   selectionFeedback,
+  studyLetter = null,
+  orientationHint,
 }: {
   maxFret: number;
   locale: Locale;
@@ -256,6 +268,8 @@ function Fretboard({
   onSelect?: (position: GuitarQuestion) => void;
   selectedPosition?: GuitarQuestion | null;
   selectionFeedback?: "correct" | "wrong" | null;
+  studyLetter?: Letter | null;
+  orientationHint?: string;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const firstChoiceRef = useRef<HTMLButtonElement>(null);
@@ -273,17 +287,19 @@ function Fretboard({
   }, [active?.id, interactive, selectionFeedback]);
 
   return (
-    <div
-      className="fretboard-scroll"
-      ref={scrollRef}
-      role="region"
-      tabIndex={0}
-      aria-label={interactive
-        ? locale === "tr" ? "Portedeki notanın gitar klavyesindeki konumunu seç" : "Choose the written note's position on the fretboard"
-        : active
-        ? locale === "tr" ? `${active.stringNumber}. tel, ${active.fret === 0 ? "açık tel" : `${active.fret}. perde`} işaretli` : `String ${active.stringNumber}, ${active.fret === 0 ? "open string" : `fret ${active.fret}`} highlighted`
-        : locale === "tr" ? `Açık tellerden ${maxFret}. perdeye doğal nota haritası` : `Natural-note map from open strings to fret ${maxFret}`}
-    >
+    <div className="fretboard-experience">
+      {orientationHint && <p className="fretboard-orientation-hint"><span aria-hidden="true">↻</span>{orientationHint}</p>}
+      <div
+        className="fretboard-scroll"
+        ref={scrollRef}
+        role="region"
+        tabIndex={0}
+        aria-label={interactive
+          ? locale === "tr" ? "Portedeki notanın gitar klavyesindeki konumunu seç" : "Choose the written note's position on the fretboard"
+          : active
+          ? locale === "tr" ? `${active.stringNumber}. tel, ${active.fret === 0 ? "açık tel" : `${active.fret}. perde`} işaretli` : `String ${active.stringNumber}, ${active.fret === 0 ? "open string" : `fret ${active.fret}`} highlighted`
+          : locale === "tr" ? `Açık tellerden ${maxFret}. perdeye doğal nota haritası` : `Natural-note map from open strings to fret ${maxFret}`}
+      >
       {reveal && (
         <ul className="sr-only">
           {DISPLAY_STRINGS.flatMap((string) => displayedFrets.map((fret) => {
@@ -299,7 +315,7 @@ function Fretboard({
           }))}
         </ul>
       )}
-      <div className={`fretboard ${interactive ? "fretboard--interactive" : ""}`} aria-hidden={interactive ? undefined : true} style={{ minWidth: `${Math.max(650, 120 + (maxFret + 1) * 64)}px` }}>
+      <div className={`fretboard fretboard--range-${maxFret} ${interactive ? "fretboard--interactive" : ""}`} aria-hidden={interactive ? undefined : true} style={{ minWidth: `${Math.max(650, 120 + (maxFret + 1) * 64)}px` }}>
         <div className="fretboard-fret-numbers" style={{ gridTemplateColumns: columns }}>
           <span />
           {displayedFrets.map((fret) => <span className={fret === 0 ? "is-open" : ""} key={fret}>{fret === 0 ? (locale === "tr" ? "Açık tel" : "Open") : locale === "tr" ? `${fret}. perde` : `Fret ${fret}`}</span>)}
@@ -338,7 +354,7 @@ function Fretboard({
                       {correct ? noteName(position.letter, locale) : selectionFeedback === "wrong" && selected ? "×" : ""}
                     </button>
                   ) : (highlighted || (reveal && natural)) && (
-                    <i className={`fret-note ${highlighted ? "is-active" : ""}`}>
+                    <i className={`fret-note ${highlighted ? "is-active" : ""} ${reveal && studyLetter === letter ? "is-study-focus" : ""} ${reveal && studyLetter && studyLetter !== letter ? "is-study-muted" : ""}`}>
                       {reveal ? noteName(letter as Letter, locale) : "?"}
                     </i>
                   )}
@@ -351,6 +367,7 @@ function Fretboard({
         <div className="fretboard-inlays" aria-hidden="true">
           {[3, 5, 7, 9, 12].filter((fret) => fret <= maxFret).map((fret) => <i key={fret} style={{ left: `calc(46px + ${(maxFret - fret + .5) / (maxFret + 1)} * (100% - 92px))` }} />)}
         </div>
+      </div>
       </div>
     </div>
   );
@@ -366,6 +383,7 @@ export function GuitarTrainer({
   const [stage, setStage] = useState<GuitarStage>("setup");
   const [maxFret, setMaxFret] = useState(3);
   const [practiceMode, setPracticeMode] = useState<GuitarMode>("name-note");
+  const [studyLetter, setStudyLetter] = useState<Letter | null>(null);
   const [queue, setQueue] = useState<GuitarQuestion[]>([]);
   const [answer, setAnswer] = useState("");
   const [selectedPosition, setSelectedPosition] = useState<GuitarQuestion | null>(null);
@@ -398,7 +416,8 @@ export function GuitarTrainer({
     if (stage === "quiz" && feedback) {
       feedbackButtonRef.current?.focus({ preventScroll: true });
     } else if (stage === "quiz" && practiceMode === "name-note") {
-      inputRef.current?.focus({ preventScroll: true });
+      const hasDesktopPointer = typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+      if (hasDesktopPointer) inputRef.current?.focus({ preventScroll: true });
     } else if (stage === "done") {
       resultsHeadingRef.current?.focus({ preventScroll: true });
     }
@@ -528,7 +547,16 @@ export function GuitarTrainer({
               <b>{text.mapCount(previewQuestions.length)}</b>
             </aside>
           </div>
-          <Fretboard maxFret={maxFret} locale={locale} reveal />
+          <div className="guitar-study-tools">
+            <div><p className="kicker">{text.studyTitle}</p><span>{text.studyCopy}</span></div>
+            <div className="guitar-study-note-choices" role="group" aria-label={text.studyChoices}>
+              <button type="button" aria-pressed={studyLetter === null} onClick={() => setStudyLetter(null)}>{text.studyAll}</button>
+              {(Object.keys(SOLFEGE) as Letter[]).map((letter) => (
+                <button type="button" key={letter} aria-pressed={studyLetter === letter} onClick={() => setStudyLetter(letter)}>{noteName(letter, locale)}</button>
+              ))}
+            </div>
+          </div>
+          <Fretboard maxFret={maxFret} locale={locale} reveal studyLetter={studyLetter} orientationHint={text.orientationHint} />
         </div>
         <div className="guitar-start-panel">
           <div><p className="kicker">04</p><strong>{practiceMode === "name-note" ? text.nameMode : text.positionMode}</strong><span>{selectedRange.title}. {text.startReady}</span></div>
@@ -583,6 +611,7 @@ export function GuitarTrainer({
             onSelect={practiceMode === "staff-to-fretboard" ? answerPosition : undefined}
             selectedPosition={selectedPosition}
             selectionFeedback={feedback}
+            orientationHint={text.orientationHint}
           />
         )}
         {!feedback && practiceMode === "name-note" ? (

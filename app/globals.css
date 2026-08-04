@@ -3336,10 +3336,10 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
 }
 
 .brand-name {
-  margin-left: -10px;
-  padding: 3px 5px 3px 1px;
-  background: rgba(251, 248, 241, .94);
-  line-height: .94;
+  margin-left: 3px;
+  padding: 0;
+  background: transparent;
+  line-height: 1;
   text-shadow: none;
 }
 
@@ -3355,10 +3355,206 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
 .guitar-feedback { background: var(--background-deep); color: var(--foreground); }
 .guitar-feedback > div > span { color: var(--foreground-muted); }
 
+.guitar-mode-section {
+  margin-top: 54px;
+}
+
+.guitar-mode-section .guitar-range-heading {
+  margin: 0 0 20px;
+}
+
+.guitar-mode-grid .mode-card {
+  min-height: 112px;
+  padding: 18px;
+  grid-template-columns: 62px minmax(0, 1fr) 18px;
+  border-color: transparent;
+  background: var(--surface-elevated);
+  box-shadow: var(--surface-shadow-soft);
+}
+
+.guitar-mode-grid .mode-card.is-selected {
+  border-color: transparent;
+  background: var(--surface-elevated);
+  box-shadow: var(--surface-shadow), inset 0 0 0 1px rgba(139, 47, 60, .22);
+}
+
+.guitar-mode-icon {
+  position: relative;
+  width: 62px;
+  height: 62px;
+  display: block;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--background-deep);
+  color: var(--primary);
+}
+
+.guitar-mode-icon--position::before {
+  position: absolute;
+  inset: 13px 9px;
+  content: "";
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 7px, rgba(45, 58, 49, .52) 7px 8px),
+    repeating-linear-gradient(to right, transparent 0 13px, rgba(45, 58, 49, .34) 13px 14px);
+}
+
+.guitar-mode-icon--position b {
+  position: absolute;
+  z-index: 1;
+  top: 23px;
+  left: 28px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 11px;
+}
+
+.guitar-mode-icon--staff {
+  padding: 17px 8px;
+  display: grid;
+  align-content: center;
+  gap: 4px;
+}
+
+.guitar-mode-icon--staff i {
+  height: 1px;
+  display: block;
+  background: var(--foreground);
+  opacity: .64;
+}
+
+.guitar-mode-icon--staff b {
+  position: absolute;
+  top: 25px;
+  left: 31px;
+  width: 12px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--primary);
+  transform: rotate(-14deg);
+}
+
+.guitar-mode-icon--staff b::after {
+  position: absolute;
+  right: 0;
+  bottom: 3px;
+  width: 2px;
+  height: 20px;
+  content: "";
+  background: var(--primary);
+  transform: rotate(14deg);
+  transform-origin: bottom;
+}
+
+.guitar-staff-frame {
+  width: min(600px, 100%);
+  margin: 0 auto 12px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--background-deep);
+  box-shadow: inset 0 0 0 1px rgba(213, 202, 186, .72);
+}
+
+.guitar-staff-note {
+  width: 480px;
+  height: 218px;
+  margin: 0;
+}
+
+.guitar-clef-eight {
+  position: absolute;
+  z-index: 3;
+  top: 120px;
+  left: 83px;
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.fretboard--interactive .fret-cell {
+  z-index: 2;
+}
+
+.fret-note--choice {
+  padding: 0;
+  border: 1px solid rgba(139, 47, 60, .36);
+  background: rgba(255, 250, 243, .84);
+  color: var(--foreground);
+  cursor: pointer;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  transition: background-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+
+.fret-note--choice::after {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(139, 47, 60, .62);
+  content: "";
+}
+
+.fret-note--choice.is-selected,
+.fret-note--choice.is-wrong {
+  background: var(--danger-soft);
+  box-shadow: 0 0 0 4px rgba(255, 250, 243, .58), 0 5px 14px rgba(65, 38, 15, .28);
+}
+
+.fret-note--choice.is-selected::after,
+.fret-note--choice.is-wrong::after,
+.fret-note--choice.is-correct::after {
+  display: none;
+}
+
+.fret-note--choice.is-correct {
+  width: 34px;
+  height: 34px;
+  background: var(--success);
+  color: white;
+  box-shadow: 0 0 0 5px rgba(255, 250, 243, .58), 0 5px 14px rgba(65, 38, 15, .3);
+}
+
+.fret-note--choice:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.guitar-position-instruction {
+  width: fit-content;
+  margin: 16px auto 0;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: var(--background-deep);
+  color: var(--foreground-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fret-note--choice:not(:disabled):hover {
+    background: var(--primary);
+    box-shadow: 0 0 0 4px rgba(255, 250, 243, .5);
+    transform: translateY(-1px);
+  }
+  .fret-note--choice:not(:disabled):hover::after { background: white; }
+}
+
 @media (max-width: 620px) {
   .brand .brand-mark { width: 37px; }
   .brand .brand-mark img { width: 43px; height: 43px; }
   .brand-name { margin-left: 2px; }
+  .guitar-mode-grid { grid-template-columns: 1fr; }
+  .guitar-mode-grid .mode-card { min-height: 104px; }
+  .guitar-staff-frame { height: 170px; }
+  .guitar-staff-note { flex: 0 0 480px; transform: scale(.74); }
 }
 
 @media (max-width: 420px) {

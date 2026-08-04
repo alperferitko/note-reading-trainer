@@ -115,6 +115,14 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(guitar, /frets: 5/);
   assert.match(guitar, /frets: 12/);
   assert.match(guitar, /NATURAL\.has/);
+  assert.match(guitar, /type GuitarMode = "name-note" \| "staff-to-fretboard"/);
+  assert.match(guitar, /function buildPitchQuestions/);
+  assert.match(guitar, /function GuitarStaffNote/);
+  assert.match(guitar, /position\.midi === current\.midi/);
+  assert.match(guitar, /practiceMode === "staff-to-fretboard" \? answerPosition : undefined/);
+  assert.match(guitar, /Porteyi gör, gitarda bul/);
+  assert.match(guitar, /See the staff, find it on guitar/);
+  assert.match(styles, /\.fret-note--choice\.is-correct/);
   assert.match(page, /<CommunityResult/);
   assert.match(community, /nota-nota-pending-score/);
   assert.match(community, /rememberPendingScore\(score\)/);
@@ -199,7 +207,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.brand \.brand-mark \{[\s\S]*border: 0;[\s\S]*background: transparent;/);
   assert.match(styles, /\.brand-mark img \{[\s\S]*object-fit: contain;/);
   assert.match(styles, /\.brand::before \{[\s\S]*repeating-linear-gradient\([\s\S]*rgba\(32, 35, 31, \.42\)/);
-  assert.match(styles, /\.brand-name \{[\s\S]*margin-left: -10px;[\s\S]*text-shadow: none;/);
+  assert.match(styles, /\.brand-name \{[\s\S]*margin-left: 3px;[\s\S]*background: transparent;[\s\S]*text-shadow: none;/);
   assert.match(styles, /\.result-flourish \{[\s\S]*border-radius: 0;[\s\S]*background: transparent;/);
   assert.match(magicLink, /https:\/\/notanota\.online\/notanota-monogram\.png/);
   assert.match(magicLink, /background:#E9E2D5/);

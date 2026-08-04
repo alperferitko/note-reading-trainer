@@ -3355,6 +3355,45 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
 .guitar-feedback { background: var(--background-deep); color: var(--foreground); }
 .guitar-feedback > div > span { color: var(--foreground-muted); }
 
+.quiz-shell {
+  scroll-margin-top: 12px;
+}
+
+.quiz-session-actions {
+  width: min(520px, 100%);
+  margin: 14px auto 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.quiz-session-actions button {
+  min-height: 46px;
+  padding: 10px 15px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 780;
+  transition: background-color .2s ease, color .2s ease, box-shadow .2s ease;
+}
+
+.restart-session-button {
+  border: 0;
+  background: var(--surface-elevated);
+  color: var(--primary);
+  box-shadow: var(--surface-shadow-soft), inset 0 0 0 1px rgba(139, 47, 60, .24);
+}
+
+.end-session-button {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--foreground-muted);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .restart-session-button:hover { background: var(--danger-soft); }
+  .end-session-button:hover { background: var(--background-deep); color: var(--foreground); }
+}
+
 .guitar-mode-section {
   margin-top: 54px;
 }
@@ -3555,6 +3594,7 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
   .guitar-mode-grid .mode-card { min-height: 104px; }
   .guitar-staff-frame { height: 170px; }
   .guitar-staff-note { flex: 0 0 480px; transform: scale(.74); }
+  .quiz-shell { scroll-margin-top: 6px; }
 }
 
 @media (max-width: 420px) {

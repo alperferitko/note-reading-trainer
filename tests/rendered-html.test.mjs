@@ -158,6 +158,10 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /range-preview--extended/);
   assert.match(page, /level === "genis" \? 84 - position \* 4 : 50 - position \* 4/);
   assert.match(page, /const activeQuestionNumber = sessionType === "standard"/);
+  assert.match(page, /quizShellRef\.current\?\.scrollIntoView\(\{ behavior: "auto", block: "start" \}\)/);
+  assert.match(page, /className="restart-session-button"[\s\S]*onClick=\{startSession\}/);
+  assert.match(page, /Oturumu yeniden başlat/);
+  assert.match(page, /Restart session/);
   assert.match(page, /className="quiz-stat-context"/);
   assert.match(page, /aria-label=\{shell\.currentSession\} aria-live="polite"/);
   assert.match(page, /const GuitarTrainer = lazy/);

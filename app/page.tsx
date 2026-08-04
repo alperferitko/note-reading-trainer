@@ -86,6 +86,7 @@ type Copy = {
   next: string;
   results: string;
   endSession: string;
+  restartSession: string;
   sessionComplete: string;
   sessionSummary: string;
   greatWork: string;
@@ -148,6 +149,7 @@ const COPY: Record<Locale, Copy> = {
     next: "Sonraki",
     results: "Sonuçlar",
     endSession: "Oturumu bitir",
+    restartSession: "Oturumu yeniden başlat",
     sessionComplete: "Oturum tamamlandı",
     sessionSummary: "Oturum özeti",
     greatWork: "Harika iş!",
@@ -208,6 +210,7 @@ const COPY: Record<Locale, Copy> = {
     next: "Next",
     results: "Results",
     endSession: "End session",
+    restartSession: "Restart session",
     sessionComplete: "Session complete",
     sessionSummary: "Session summary",
     greatWork: "Nicely done!",
@@ -673,6 +676,7 @@ export default function Home() {
   const inputRef = useRef<HTMLInputElement>(null);
   const feedbackButtonRef = useRef<HTMLButtonElement>(null);
   const resultsHeadingRef = useRef<HTMLHeadingElement>(null);
+  const quizShellRef = useRef<HTMLElement>(null);
   const audioSettingsRef = useRef<HTMLDivElement>(null);
   const audioSettingsButtonRef = useRef<HTMLButtonElement>(null);
   const questionKey = useRef(0);
@@ -759,6 +763,14 @@ export default function Home() {
     const hasDesktopPointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
     if (hasDesktopPointer) inputRef.current?.focus({ preventScroll: true });
   }, [stage, feedback, currentItem?.key]);
+
+  useEffect(() => {
+    if (stage !== "quiz") return;
+    const frame = window.requestAnimationFrame(() => {
+      quizShellRef.current?.scrollIntoView({ behavior: "auto", block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [stage, sessionStartedAt]);
 
   useEffect(() => {
     if (stage !== "quiz" || !feedback) return;
@@ -1149,7 +1161,7 @@ export default function Home() {
       )}
 
       {stage === "quiz" && displayedNote && (
-        <section className="quiz-shell">
+        <section className="quiz-shell" ref={quizShellRef}>
           <div className="progress-row">
             <div>
               <span className="progress-label">{sessionType === "standard" ? copy.progress : extra.endlessProgress}</span>
@@ -1234,7 +1246,10 @@ export default function Home() {
             )}
           </div>
 
-          <button className="text-button" type="button" onClick={endSession}>{copy.endSession}</button>
+          <div className="quiz-session-actions">
+            <button className="restart-session-button" type="button" onClick={startSession}>{copy.restartSession}</button>
+            <button className="end-session-button" type="button" onClick={endSession}>{copy.endSession}</button>
+          </div>
           </div>
           <aside className="quiz-stat-panel" aria-label={shell.currentSession} aria-live="polite">
             <p className="kicker">{shell.currentSession}</p>

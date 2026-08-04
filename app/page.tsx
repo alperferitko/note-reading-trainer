@@ -927,7 +927,7 @@ export default function Home() {
           <span className="brand-mark" aria-hidden="true">
             <img src="./notanota-monogram.png" alt="" />
           </span>
-          <span className="brand-name">otaNota</span>
+          <span className="brand-name">NotaNota</span>
         </button>
         <span className="brand-ornament" aria-hidden="true"><i /><b>◇</b><i /></span>
         <nav className="app-navigation" aria-label={shell.navigation}>

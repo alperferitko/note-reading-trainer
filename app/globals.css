@@ -1208,10 +1208,10 @@ body,
 }
 
 .brand-name {
-  margin-left: -10px;
-  padding: 3px 5px 3px 1px;
-  background: rgba(251, 248, 241, .94);
-  line-height: .94;
+  margin-left: 3px;
+  padding: 0;
+  background: transparent;
+  line-height: 1;
   text-shadow: none;
 }
 
@@ -3358,7 +3358,7 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
 @media (max-width: 620px) {
   .brand .brand-mark { width: 37px; }
   .brand .brand-mark img { width: 43px; height: 43px; }
-  .brand-name { margin-left: -9px; }
+  .brand-name { margin-left: 2px; }
 }
 
 @media (max-width: 420px) {

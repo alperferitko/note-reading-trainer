@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element -- Relative public assets must work on both the custom domain and GitHub Pages subpath. */
 
-import { FormEvent, lazy, MouseEvent, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, lazy, MouseEvent, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CommunityHeader,
   CommunityLeaderboardButton,
@@ -33,12 +33,12 @@ type Locale = "tr" | "en";
 type ReadingProfileId = "new" | "growing" | "confident";
 
 const STAGE_ROUTES: Record<Stage, string> = {
-  landing: "#/",
-  setup: "#/nota-oku",
-  quiz: "#/nota-oku/oturum",
-  done: "#/nota-oku/sonuc",
-  instruments: "#/muzik-aletleri",
-  guitar: "#/muzik-aletleri/gitar",
+  landing: "?",
+  setup: "?sayfa=nota-oku",
+  quiz: "?sayfa=nota-oku&gorunum=oturum",
+  done: "?sayfa=nota-oku&gorunum=sonuc",
+  instruments: "?sayfa=muzik-aletleri",
+  guitar: "?sayfa=muzik-aletleri&enstruman=gitar",
 };
 
 const READING_PRESETS: Record<ReadingProfileId, { level: LevelId; mode: ModeId; sessionType: SessionType }> = {
@@ -47,11 +47,12 @@ const READING_PRESETS: Record<ReadingProfileId, { level: LevelId; mode: ModeId; 
   confident: { level: "genis", mode: "porte", sessionType: "standard" },
 };
 
-function stageFromHash(hash: string): Stage {
-  const route = hash || "#/";
-  const match = (Object.entries(STAGE_ROUTES) as [Stage, string][]).find(([, value]) => value === route);
-  if (match?.[0] === "quiz" || match?.[0] === "done") return "setup";
-  return match?.[0] ?? "landing";
+function stageFromSearch(search: string): Stage {
+  const params = new URLSearchParams(search);
+  if (params.get("sayfa") === "nota-oku") return "setup";
+  if (params.get("sayfa") === "muzik-aletleri" && params.get("enstruman") === "gitar") return "guitar";
+  if (params.get("sayfa") === "muzik-aletleri") return "instruments";
+  return "landing";
 }
 
 const GuitarTrainer = lazy(() => import("./guitar-trainer").then((module) => ({
@@ -371,30 +372,44 @@ const SHELL_COPY = {
 
 const READING_PROFILE_COPY = {
   tr: {
+    eyebrow: "İlk çalışma ayarın",
     firstTitle: "Sana uygun bir başlangıç seçelim.",
-    firstCopy: "Müzikte şu an kendini nerede görüyorsun? Seçimine göre çalışma alanını hazırlayacağız.",
-    returningTitle: "Hazır ayarla hemen başla.",
-    returningCopy: "İstersen aşağıdaki ayrıntılı ayarlardan seçimini değiştirebilirsin.",
+    firstCopy: "Kendine en yakın seçeneği işaretle. Sana dengeli bir ayar önereceğiz; kaydetmeden önce her ayrıntıyı değiştirebilirsin.",
     choices: "Müzik deneyimi",
     new: { title: "Daha yeni başlıyorum", copy: "Temel porte, görsel nota okuma ve normal oturum" },
     growing: { title: "Temelleri biliyorum", copy: "Yakın ek çizgilerle daha geniş bir çalışma" },
     confident: { title: "Bu işte oldukça iyiyim", copy: "Geniş portenin bütün doğal notaları" },
-    selected: "Hazır ayar seçildi",
-    start: "Bu ayarla oturumu başlat",
-    details: "Ayrıntılı ayarlar",
+    recommendation: "Önerilen çalışma ayarı",
+    recommendationCopy: "Bu öneriyi olduğu gibi kaydedebilir veya sana daha uygun hale getirebilirsin.",
+    level: "Çalışma alanı",
+    mode: "Soru biçimi",
+    session: "Oturum türü",
+    save: "Ayarı kaydet",
+    later: "Şimdilik kapat",
+    summaryEyebrow: "Seçili oturum",
+    summaryTitle: "Çalışma ayarın hazır.",
+    start: "Oturumu başlat",
+    details: "Ayarları değiştir",
   },
   en: {
+    eyebrow: "Your first practice setup",
     firstTitle: "Let’s choose a good starting point.",
-    firstCopy: "Where are you in your musical journey? We’ll prepare a sensible practice setup for you.",
-    returningTitle: "Start with a ready-made setup.",
-    returningCopy: "You can still fine-tune every option below whenever you like.",
+    firstCopy: "Choose the option that feels closest to you. We’ll suggest a balanced setup, and you can adjust every detail before saving.",
     choices: "Music experience",
     new: { title: "I’m just getting started", copy: "Core staff, visual note reading and a standard session" },
     growing: { title: "I know the basics", copy: "A wider range with nearby ledger lines" },
     confident: { title: "I’m already confident", copy: "The full extended natural-note range" },
-    selected: "Ready setup selected",
-    start: "Start with this setup",
-    details: "Detailed settings",
+    recommendation: "Recommended practice setup",
+    recommendationCopy: "Save this recommendation as it is, or tune it to suit you better.",
+    level: "Practice range",
+    mode: "Question style",
+    session: "Session type",
+    save: "Save setup",
+    later: "Close for now",
+    summaryEyebrow: "Selected session",
+    summaryTitle: "Your practice setup is ready.",
+    start: "Start session",
+    details: "Change settings",
   },
 } as const;
 
@@ -711,6 +726,13 @@ export default function Home() {
   const [sessionType, setSessionType] = useState<SessionType>("standard");
   const [readingProfile, setReadingProfile] = useState<ReadingProfileId | null>(null);
   const [readingOnboardingComplete, setReadingOnboardingComplete] = useState(false);
+  const [readingPreferenceReady, setReadingPreferenceReady] = useState(false);
+  const [readingSetupModalOpen, setReadingSetupModalOpen] = useState(false);
+  const [communityUserId, setCommunityUserId] = useState<string | null>(null);
+  const [communityIdentityReady, setCommunityIdentityReady] = useState(false);
+  const [draftLevel, setDraftLevel] = useState<LevelId>("temel");
+  const [draftMode, setDraftMode] = useState<ModeId>("porte");
+  const [draftSessionType, setDraftSessionType] = useState<SessionType>("standard");
   const [guitarSessionActive, setGuitarSessionActive] = useState(false);
   const [queue, setQueue] = useState<QueuedQuestion[]>([]);
   const [answer, setAnswer] = useState("");
@@ -734,6 +756,8 @@ export default function Home() {
   const quizShellRef = useRef<HTMLElement>(null);
   const audioSettingsRef = useRef<HTMLDivElement>(null);
   const audioSettingsButtonRef = useRef<HTMLButtonElement>(null);
+  const readingSetupCloseRef = useRef<HTMLButtonElement>(null);
+  const readingSetupReturnFocusRef = useRef<HTMLElement | null>(null);
   const questionKey = useRef(0);
   const copy = COPY[locale];
   const extra = EXTRA_COPY[locale];
@@ -749,6 +773,8 @@ export default function Home() {
   const displayedNote = feedback?.note ?? current;
   const answeredCorrectly = sessionType === "standard" ? uniqueCount - queue.length : correctCount;
   const selectedLevel = levels.find((item) => item.id === level)!;
+  const selectedModeTitle = copy.modes[mode].title;
+  const selectedSessionTitle = sessionType === "standard" ? extra.standard.title : extra.endless.title;
   const answerChoices = locale === "tr" ? ["Do", "Re", "Mi", "Fa", "Sol", "La", "Si"] : ["C", "D", "E", "F", "G", "A", "B"];
 
   const hardestNotes = useMemo(() => {
@@ -772,13 +798,33 @@ export default function Home() {
     return { ...dominant, expected, guessed: noteClassFromLetter(guessedLetter) };
   }, [confusionByPair, totalWrong]);
 
+  const handleCommunityIdentityChange = useCallback((userId: string | null) => {
+    setCommunityUserId(userId);
+    setCommunityIdentityReady(true);
+  }, []);
+
   useEffect(() => {
-    const syncStageFromLocation = () => setStage(stageFromHash(window.location.hash));
+    const syncStageFromLocation = () => {
+      const legacyStage = (Object.entries({
+        "#/": "landing",
+        "#/nota-oku": "setup",
+        "#/nota-oku/oturum": "setup",
+        "#/nota-oku/sonuc": "setup",
+        "#/muzik-aletleri": "instruments",
+        "#/muzik-aletleri/gitar": "guitar",
+      }) as [string, Stage][]).find(([route]) => route === window.location.hash)?.[1];
+
+      if (legacyStage) {
+        const route = STAGE_ROUTES[legacyStage];
+        window.history.replaceState(null, "", `${window.location.pathname}${route}`);
+        setStage(legacyStage);
+        return;
+      }
+      setStage(stageFromSearch(window.location.search));
+    };
     syncStageFromLocation();
-    window.addEventListener("hashchange", syncStageFromLocation);
     window.addEventListener("popstate", syncStageFromLocation);
     return () => {
-      window.removeEventListener("hashchange", syncStageFromLocation);
       window.removeEventListener("popstate", syncStageFromLocation);
     };
   }, []);
@@ -803,22 +849,85 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const savedProfile = window.localStorage.getItem("nota-nota-reading-profile");
-    if (savedProfile === "custom") {
-      const timer = window.setTimeout(() => setReadingOnboardingComplete(true), 0);
-      return () => window.clearTimeout(timer);
+    if (!communityIdentityReady) return;
+    const storageKey = `nota-nota-reading-setup:${communityUserId ?? "guest"}`;
+    const savedSetup = window.localStorage.getItem(storageKey);
+    const legacyProfile = communityUserId ? null : window.localStorage.getItem("nota-nota-reading-profile");
+    let saved: { level: LevelId; mode: ModeId; sessionType: SessionType } | null = null;
+
+    try {
+      if (savedSetup) saved = JSON.parse(savedSetup) as typeof saved;
+    } catch {
+      window.localStorage.removeItem(storageKey);
     }
-    if (savedProfile !== "new" && savedProfile !== "growing" && savedProfile !== "confident") return;
-    const preset = READING_PRESETS[savedProfile];
+
+    if (!saved && (legacyProfile === "new" || legacyProfile === "growing" || legacyProfile === "confident")) {
+      saved = READING_PRESETS[legacyProfile];
+      window.localStorage.setItem(storageKey, JSON.stringify(saved));
+    }
+
+    const valid = saved
+      && ["temel", "yakin", "tam", "genis"].includes(saved.level)
+      && ["porte", "konum"].includes(saved.mode)
+      && ["standard", "endless"].includes(saved.sessionType);
+
     const timer = window.setTimeout(() => {
-      setReadingProfile(savedProfile);
-      setReadingOnboardingComplete(true);
-      setLevel(preset.level);
-      setMode(preset.mode);
-      setSessionType(preset.sessionType);
+      if (valid && saved) {
+        setLevel(saved.level);
+        setMode(saved.mode);
+        setSessionType(saved.sessionType);
+        setDraftLevel(saved.level);
+        setDraftMode(saved.mode);
+        setDraftSessionType(saved.sessionType);
+        setReadingOnboardingComplete(true);
+      } else {
+        setReadingProfile(null);
+        setReadingOnboardingComplete(false);
+      }
+      setReadingPreferenceReady(true);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [communityIdentityReady, communityUserId]);
+
+  useEffect(() => {
+    if (stage !== "setup" || !readingPreferenceReady || readingOnboardingComplete) return;
+    const timer = window.setTimeout(() => setReadingSetupModalOpen(true), 0);
+    return () => window.clearTimeout(timer);
+  }, [stage, readingPreferenceReady, readingOnboardingComplete]);
+
+  useEffect(() => {
+    if (!readingSetupModalOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    readingSetupReturnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    document.body.style.overflow = "hidden";
+    const frame = window.requestAnimationFrame(() => readingSetupCloseRef.current?.focus({ preventScroll: true }));
+    const handleDialogKeyboard = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setReadingSetupModalOpen(false);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const dialog = readingSetupCloseRef.current?.closest<HTMLElement>(".reading-setup-dialog");
+      const focusable = dialog ? [...dialog.querySelectorAll<HTMLElement>('button:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])')] : [];
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable.at(-1)!;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", handleDialogKeyboard);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleDialogKeyboard);
+      readingSetupReturnFocusRef.current?.focus({ preventScroll: true });
+    };
+  }, [readingSetupModalOpen]);
 
   useEffect(() => {
     if (!audioSettingsOpen) return;
@@ -879,24 +988,43 @@ export default function Home() {
 
   function navigateTo(nextStage: Stage) {
     const nextRoute = STAGE_ROUTES[nextStage];
-    if (window.location.hash !== nextRoute) window.history.pushState(null, "", nextRoute);
+    const params = new URLSearchParams(nextRoute.slice(1));
+    const currentLanguage = new URLSearchParams(window.location.search).get("lang");
+    if (currentLanguage === "tr" || currentLanguage === "en") params.set("lang", currentLanguage);
+    const search = params.toString();
+    const nextUrl = `${window.location.pathname}${search ? `?${search}` : ""}`;
+    if (`${window.location.pathname}${window.location.search}` !== nextUrl) window.history.pushState(null, "", nextUrl);
     setStage(nextStage);
   }
 
-  function applyReadingPreset(profile: ReadingProfileId) {
+  function previewReadingPreset(profile: ReadingProfileId) {
     const preset = READING_PRESETS[profile];
     setReadingProfile(profile);
-    setReadingOnboardingComplete(true);
-    setLevel(preset.level);
-    setMode(preset.mode);
-    setSessionType(preset.sessionType);
-    window.localStorage.setItem("nota-nota-reading-profile", profile);
+    setDraftLevel(preset.level);
+    setDraftMode(preset.mode);
+    setDraftSessionType(preset.sessionType);
   }
 
-  function markCustomReadingSettings() {
-    setReadingProfile(null);
+  function saveReadingSetup() {
+    if (!readingProfile) return;
+    setLevel(draftLevel);
+    setMode(draftMode);
+    setSessionType(draftSessionType);
     setReadingOnboardingComplete(true);
-    window.localStorage.setItem("nota-nota-reading-profile", "custom");
+    setReadingSetupModalOpen(false);
+    const storageKey = `nota-nota-reading-setup:${communityUserId ?? "guest"}`;
+    window.localStorage.setItem(storageKey, JSON.stringify({ level: draftLevel, mode: draftMode, sessionType: draftSessionType }));
+  }
+
+  function persistReadingSettings(next: { level?: LevelId; mode?: ModeId; sessionType?: SessionType }) {
+    const saved = {
+      level: next.level ?? level,
+      mode: next.mode ?? mode,
+      sessionType: next.sessionType ?? sessionType,
+    };
+    setReadingOnboardingComplete(true);
+    const storageKey = `nota-nota-reading-setup:${communityUserId ?? "guest"}`;
+    window.localStorage.setItem(storageKey, JSON.stringify(saved));
   }
 
   function toggleNoteSound() {
@@ -1040,7 +1168,7 @@ export default function Home() {
   const immersiveSession = stage === "quiz" || guitarSessionActive;
 
   return (
-    <CommunityProvider locale={locale}>
+    <CommunityProvider locale={locale} onIdentityChange={handleCommunityIdentityChange}>
     <main className={`app-shell ${immersiveSession ? "app-shell--session" : ""}`}>
       {!immersiveSession && <header className="site-header">
         <a className="brand" href={STAGE_ROUTES.landing} onClick={(event) => { event.preventDefault(); navigateTo("landing"); }} aria-label={copy.homeLabel}>
@@ -1178,25 +1306,18 @@ export default function Home() {
 
       {stage === "setup" && (
         <section className="setup-shell">
-          <section className={`reading-quick-start ${!readingOnboardingComplete ? "is-first-visit" : ""}`} aria-labelledby="reading-quick-start-title">
-            <div className="reading-quick-start-copy">
-              <p className="kicker">{readingOnboardingComplete ? readingProfileCopy.selected : copy.rangeEyebrow}</p>
-              <h2 id="reading-quick-start-title">{readingOnboardingComplete ? readingProfileCopy.returningTitle : readingProfileCopy.firstTitle}</h2>
-              <p>{readingOnboardingComplete ? readingProfileCopy.returningCopy : readingProfileCopy.firstCopy}</p>
+          <section className="reading-session-summary" aria-labelledby="reading-session-summary-title">
+            <div>
+              <p className="kicker">{readingProfileCopy.summaryEyebrow}</p>
+              <h2 id="reading-session-summary-title">{readingProfileCopy.summaryTitle}</h2>
+              <div className="reading-session-chips" aria-label={readingProfileCopy.summaryEyebrow}>
+                <span>{selectedLevel.title}</span>
+                <span>{selectedModeTitle}</span>
+                <span>{selectedSessionTitle}</span>
+              </div>
             </div>
-            <div className="reading-profile-grid" role="group" aria-label={readingProfileCopy.choices}>
-              {(["new", "growing", "confident"] as ReadingProfileId[]).map((profile) => (
-                <button key={profile} type="button" className={readingProfile === profile ? "is-selected" : ""} onClick={() => applyReadingPreset(profile)} aria-pressed={readingProfile === profile}>
-                  <span aria-hidden="true">⚬</span>
-                  <strong>{readingProfileCopy[profile].title}</strong>
-                  <small>{readingProfileCopy[profile].copy}</small>
-                </button>
-              ))}
-            </div>
-            <div className="reading-quick-start-actions">
-              <button className="primary-button" type="button" onClick={startSession} disabled={!readingOnboardingComplete && !readingProfile}>
-                {readingProfileCopy.start} <span aria-hidden="true">→</span>
-              </button>
+            <div className="reading-session-summary-actions">
+              <button className="primary-button" type="button" onClick={startSession}>{readingProfileCopy.start} <span aria-hidden="true">→</span></button>
               <button type="button" onClick={() => document.getElementById("reading-detailed-settings")?.scrollIntoView({ behavior: "smooth", block: "start" })}>{readingProfileCopy.details}</button>
             </div>
           </section>
@@ -1231,7 +1352,7 @@ export default function Home() {
                   key={item.id}
                   type="button"
                   className={`level-card ${level === item.id ? "is-selected" : ""}`}
-                  onClick={() => { setLevel(item.id); markCustomReadingSettings(); }}
+                  onClick={() => { setLevel(item.id); persistReadingSettings({ level: item.id }); }}
                   aria-pressed={level === item.id}
                 >
                   <RangePreview level={item.id} />
@@ -1248,12 +1369,12 @@ export default function Home() {
               <div><p>{copy.questionStyle}</p><h2>{copy.chooseMode}</h2></div>
             </div>
             <div className="mode-grid">
-              <button type="button" className={`mode-card ${mode === "porte" ? "is-selected" : ""}`} onClick={() => { setMode("porte"); markCustomReadingSettings(); }} aria-pressed={mode === "porte"}>
+              <button type="button" className={`mode-card ${mode === "porte" ? "is-selected" : ""}`} onClick={() => { setMode("porte"); persistReadingSettings({ mode: "porte" }); }} aria-pressed={mode === "porte"}>
                 <span className="mode-icon mode-icon--clef" aria-hidden="true">𝄞</span>
                 <span><strong>{copy.modes.porte.title}</strong><small>{copy.modes.porte.description}</small></span>
                 <i className="selection-indicator" aria-hidden="true" />
               </button>
-              <button type="button" className={`mode-card ${mode === "konum" ? "is-selected" : ""}`} onClick={() => { setMode("konum"); markCustomReadingSettings(); }} aria-pressed={mode === "konum"}>
+              <button type="button" className={`mode-card ${mode === "konum" ? "is-selected" : ""}`} onClick={() => { setMode("konum"); persistReadingSettings({ mode: "konum" }); }} aria-pressed={mode === "konum"}>
                 <span className="mode-icon mode-icon--text" aria-hidden="true">1.</span>
                 <span><strong>{copy.modes.konum.title}</strong><small>{copy.modes.konum.description}</small></span>
                 <i className="selection-indicator" aria-hidden="true" />
@@ -1266,12 +1387,12 @@ export default function Home() {
               <div><p>{extra.sessionEyebrow}</p><h2>{extra.chooseSession}</h2></div>
             </div>
             <div className="mode-grid session-type-grid">
-              <button type="button" className={`mode-card ${sessionType === "standard" ? "is-selected" : ""}`} onClick={() => { setSessionType("standard"); markCustomReadingSettings(); }} aria-pressed={sessionType === "standard"}>
+              <button type="button" className={`mode-card ${sessionType === "standard" ? "is-selected" : ""}`} onClick={() => { setSessionType("standard"); persistReadingSettings({ sessionType: "standard" }); }} aria-pressed={sessionType === "standard"}>
                 <span className="mode-icon mode-icon--check" aria-hidden="true"><UiIcon name="check" /></span>
                 <span><strong>{extra.standard.title}</strong><small>{extra.standard.description}</small></span>
                 <i className="selection-indicator" aria-hidden="true" />
               </button>
-              <button type="button" className={`mode-card ${sessionType === "endless" ? "is-selected" : ""}`} onClick={() => { setSessionType("endless"); markCustomReadingSettings(); }} aria-pressed={sessionType === "endless"}>
+              <button type="button" className={`mode-card ${sessionType === "endless" ? "is-selected" : ""}`} onClick={() => { setSessionType("endless"); persistReadingSettings({ sessionType: "endless" }); }} aria-pressed={sessionType === "endless"}>
                 <span className="mode-icon mode-icon--infinity" aria-hidden="true">∞</span>
                 <span><strong>{extra.endless.title}</strong><small>{extra.endless.description}</small></span>
                 <i className="selection-indicator" aria-hidden="true" />
@@ -1495,6 +1616,64 @@ export default function Home() {
             <CommunityLeaderboardButton label={shell.leaderboard} />
           </div>
         </section>
+      )}
+
+      {readingSetupModalOpen && (
+        <div
+          className="reading-setup-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setReadingSetupModalOpen(false);
+          }}
+        >
+          <section className="reading-setup-dialog" role="dialog" aria-modal="true" aria-labelledby="reading-setup-title" aria-describedby="reading-setup-description">
+            <button ref={readingSetupCloseRef} className="reading-setup-close" type="button" onClick={() => setReadingSetupModalOpen(false)} aria-label={readingProfileCopy.later}>×</button>
+            <header>
+              <p className="kicker">{readingProfileCopy.eyebrow}</p>
+              <h2 id="reading-setup-title">{readingProfileCopy.firstTitle}</h2>
+              <p id="reading-setup-description">{readingProfileCopy.firstCopy}</p>
+            </header>
+            <div className="reading-profile-grid" role="group" aria-label={readingProfileCopy.choices}>
+              {(["new", "growing", "confident"] as ReadingProfileId[]).map((profile) => (
+                <button key={profile} type="button" className={readingProfile === profile ? "is-selected" : ""} onClick={() => previewReadingPreset(profile)} aria-pressed={readingProfile === profile}>
+                  <span className="profile-choice-mark" aria-hidden="true" />
+                  <strong>{readingProfileCopy[profile].title}</strong>
+                  <small>{readingProfileCopy[profile].copy}</small>
+                </button>
+              ))}
+            </div>
+            <div className={`reading-recommendation ${readingProfile ? "is-ready" : ""}`} aria-live="polite">
+              <div>
+                <p className="kicker">{readingProfileCopy.recommendation}</p>
+                <span>{readingProfileCopy.recommendationCopy}</span>
+              </div>
+              <label>
+                <span>{readingProfileCopy.level}</span>
+                <select value={draftLevel} onChange={(event) => setDraftLevel(event.target.value as LevelId)} disabled={!readingProfile}>
+                  {levels.map((item) => <option value={item.id} key={item.id}>{item.title}</option>)}
+                </select>
+              </label>
+              <label>
+                <span>{readingProfileCopy.mode}</span>
+                <select value={draftMode} onChange={(event) => setDraftMode(event.target.value as ModeId)} disabled={!readingProfile}>
+                  <option value="porte">{copy.modes.porte.title}</option>
+                  <option value="konum">{copy.modes.konum.title}</option>
+                </select>
+              </label>
+              <label>
+                <span>{readingProfileCopy.session}</span>
+                <select value={draftSessionType} onChange={(event) => setDraftSessionType(event.target.value as SessionType)} disabled={!readingProfile}>
+                  <option value="standard">{extra.standard.title}</option>
+                  <option value="endless">{extra.endless.title}</option>
+                </select>
+              </label>
+            </div>
+            <div className="reading-setup-actions">
+              <button className="primary-button" type="button" onClick={saveReadingSetup} disabled={!readingProfile}>{readingProfileCopy.save} <span aria-hidden="true">→</span></button>
+              <button type="button" onClick={() => setReadingSetupModalOpen(false)}>{readingProfileCopy.later}</button>
+            </div>
+          </section>
+        </div>
       )}
 
       {!immersiveSession && <footer><span>NotaNota</span><p>{copy.footer}</p><CommunityLegalLink /><span className="brand-mark brand-mark--footer" aria-hidden="true"><img src="./notanota-monogram.png" alt="" /></span></footer>}

@@ -228,7 +228,15 @@ function useCommunity() {
   return value;
 }
 
-export function CommunityProvider({ locale, children }: { locale: Locale; children: ReactNode }) {
+export function CommunityProvider({
+  locale,
+  children,
+  onIdentityChange,
+}: {
+  locale: Locale;
+  children: ReactNode;
+  onIdentityChange?: (userId: string | null) => void;
+}) {
   const [panel, setPanel] = useState<Panel>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -246,7 +254,12 @@ export function CommunityProvider({ locale, children }: { locale: Locale; childr
   const pendingScoreInFlight = useRef(false);
   const streakRequestId = useRef(0);
   const deletionNoticeRef = useRef<HTMLDivElement>(null);
+  const onIdentityChangeRef = useRef(onIdentityChange);
   const text = TEXT[locale];
+
+  useEffect(() => {
+    onIdentityChangeRef.current = onIdentityChange;
+  }, [onIdentityChange]);
 
   const refreshPracticeStreak = useCallback(async () => {
     const requestId = ++streakRequestId.current;
@@ -293,10 +306,14 @@ export function CommunityProvider({ locale, children }: { locale: Locale; childr
   }, []);
 
   useEffect(() => {
-    if (!supabase) return;
+    if (!supabase) {
+      onIdentityChangeRef.current?.(null);
+      return;
+    }
 
     async function synchronize(nextUser: User | null) {
       setUser(nextUser);
+      onIdentityChangeRef.current?.(nextUser?.id ?? null);
       if (!nextUser) {
         streakRequestId.current += 1;
         setProfile(null);
@@ -378,6 +395,7 @@ export function CommunityProvider({ locale, children }: { locale: Locale; childr
     setDeletionBusy(false);
     setAuthReady(true);
     setAccountDeleted(true);
+    onIdentityChangeRef.current?.(null);
   }, []);
 
   async function confirmEmail() {

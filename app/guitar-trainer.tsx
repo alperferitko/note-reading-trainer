@@ -376,9 +376,11 @@ function Fretboard({
 export function GuitarTrainer({
   locale,
   noteSoundEnabled,
+  onSessionActiveChange,
 }: {
   locale: Locale;
   noteSoundEnabled: boolean;
+  onSessionActiveChange?: (active: boolean) => void;
 }) {
   const [stage, setStage] = useState<GuitarStage>("setup");
   const [maxFret, setMaxFret] = useState(3);
@@ -411,6 +413,11 @@ export function GuitarTrainer({
     : "";
 
   const previewQuestions = useMemo(() => buildQuestions(maxFret), [maxFret]);
+
+  useEffect(() => {
+    onSessionActiveChange?.(stage === "quiz");
+    return () => onSessionActiveChange?.(false);
+  }, [onSessionActiveChange, stage]);
 
   useEffect(() => {
     if (stage === "quiz" && feedback) {
@@ -508,7 +515,7 @@ export function GuitarTrainer({
         </div>
 
         <div className="guitar-range-heading">
-          <div><p className="kicker">01</p><h2>{text.range}</h2></div>
+          <div><p className="kicker" aria-hidden="true">⚬</p><h2>{text.range}</h2></div>
           <aside><strong>{text.terminology}</strong><span>{text.terminologyCopy}</span></aside>
         </div>
         <div className="guitar-range-grid">
@@ -521,7 +528,7 @@ export function GuitarTrainer({
 
         <div className="guitar-mode-section">
           <div className="guitar-range-heading">
-            <div><p className="kicker">02</p><h2>{text.mode}</h2></div>
+            <div><p className="kicker" aria-hidden="true">⚬</p><h2>{text.mode}</h2></div>
           </div>
           <div className="mode-grid guitar-mode-grid" role="group" aria-label={text.modeChoices}>
             <button className={`mode-card ${practiceMode === "name-note" ? "is-selected" : ""}`} type="button" onClick={() => setPracticeMode("name-note")} aria-pressed={practiceMode === "name-note"}>
@@ -539,7 +546,7 @@ export function GuitarTrainer({
 
         <div className="fretboard-card">
           <div className="fretboard-card-heading">
-            <div><p className="kicker">03</p><h2>{text.map}</h2></div>
+            <div><p className="kicker" aria-hidden="true">⚬</p><h2>{text.map}</h2></div>
             <aside>
               <small>{text.selectedRange}</small>
               <strong>{selectedRange.title}</strong>
@@ -559,7 +566,7 @@ export function GuitarTrainer({
           <Fretboard maxFret={maxFret} locale={locale} reveal studyLetter={studyLetter} orientationHint={text.orientationHint} />
         </div>
         <div className="guitar-start-panel">
-          <div><p className="kicker">04</p><strong>{practiceMode === "name-note" ? text.nameMode : text.positionMode}</strong><span>{selectedRange.title}. {text.startReady}</span></div>
+          <div><p className="kicker" aria-hidden="true">⚬</p><strong>{practiceMode === "name-note" ? text.nameMode : text.positionMode}</strong><span>{selectedRange.title}. {text.startReady}</span></div>
           <button className="primary-button" type="button" onClick={start}>{text.start} <span aria-hidden="true">→</span></button>
         </div>
       </section>

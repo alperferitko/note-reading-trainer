@@ -30,6 +30,29 @@ type LevelId = "temel" | "yakin" | "tam" | "genis";
 type ModeId = "porte" | "konum";
 type Stage = "landing" | "setup" | "quiz" | "done" | "instruments" | "guitar";
 type Locale = "tr" | "en";
+type ReadingProfileId = "new" | "growing" | "confident";
+
+const STAGE_ROUTES: Record<Stage, string> = {
+  landing: "#/",
+  setup: "#/nota-oku",
+  quiz: "#/nota-oku/oturum",
+  done: "#/nota-oku/sonuc",
+  instruments: "#/muzik-aletleri",
+  guitar: "#/muzik-aletleri/gitar",
+};
+
+const READING_PRESETS: Record<ReadingProfileId, { level: LevelId; mode: ModeId; sessionType: SessionType }> = {
+  new: { level: "temel", mode: "porte", sessionType: "standard" },
+  growing: { level: "yakin", mode: "porte", sessionType: "standard" },
+  confident: { level: "genis", mode: "porte", sessionType: "standard" },
+};
+
+function stageFromHash(hash: string): Stage {
+  const route = hash || "#/";
+  const match = (Object.entries(STAGE_ROUTES) as [Stage, string][]).find(([, value]) => value === route);
+  if (match?.[0] === "quiz" || match?.[0] === "done") return "setup";
+  return match?.[0] ?? "landing";
+}
 
 const GuitarTrainer = lazy(() => import("./guitar-trainer").then((module) => ({
   default: module.GuitarTrainer,
@@ -346,6 +369,35 @@ const SHELL_COPY = {
   },
 } as const;
 
+const READING_PROFILE_COPY = {
+  tr: {
+    firstTitle: "Sana uygun bir başlangıç seçelim.",
+    firstCopy: "Müzikte şu an kendini nerede görüyorsun? Seçimine göre çalışma alanını hazırlayacağız.",
+    returningTitle: "Hazır ayarla hemen başla.",
+    returningCopy: "İstersen aşağıdaki ayrıntılı ayarlardan seçimini değiştirebilirsin.",
+    choices: "Müzik deneyimi",
+    new: { title: "Daha yeni başlıyorum", copy: "Temel porte, görsel nota okuma ve normal oturum" },
+    growing: { title: "Temelleri biliyorum", copy: "Yakın ek çizgilerle daha geniş bir çalışma" },
+    confident: { title: "Bu işte oldukça iyiyim", copy: "Geniş portenin bütün doğal notaları" },
+    selected: "Hazır ayar seçildi",
+    start: "Bu ayarla oturumu başlat",
+    details: "Ayrıntılı ayarlar",
+  },
+  en: {
+    firstTitle: "Let’s choose a good starting point.",
+    firstCopy: "Where are you in your musical journey? We’ll prepare a sensible practice setup for you.",
+    returningTitle: "Start with a ready-made setup.",
+    returningCopy: "You can still fine-tune every option below whenever you like.",
+    choices: "Music experience",
+    new: { title: "I’m just getting started", copy: "Core staff, visual note reading and a standard session" },
+    growing: { title: "I know the basics", copy: "A wider range with nearby ledger lines" },
+    confident: { title: "I’m already confident", copy: "The full extended natural-note range" },
+    selected: "Ready setup selected",
+    start: "Start with this setup",
+    details: "Detailed settings",
+  },
+} as const;
+
 const INSTRUMENT_COPY = {
   tr: {
     eyebrow: "Müzik aletleri",
@@ -657,6 +709,9 @@ export default function Home() {
   const [level, setLevel] = useState<LevelId>("temel");
   const [mode, setMode] = useState<ModeId>("porte");
   const [sessionType, setSessionType] = useState<SessionType>("standard");
+  const [readingProfile, setReadingProfile] = useState<ReadingProfileId | null>(null);
+  const [readingOnboardingComplete, setReadingOnboardingComplete] = useState(false);
+  const [guitarSessionActive, setGuitarSessionActive] = useState(false);
   const [queue, setQueue] = useState<QueuedQuestion[]>([]);
   const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState<AnswerFeedback | null>(null);
@@ -684,6 +739,7 @@ export default function Home() {
   const extra = EXTRA_COPY[locale];
   const landing = LANDING_COPY[locale];
   const shell = SHELL_COPY[locale];
+  const readingProfileCopy = READING_PROFILE_COPY[locale];
   const noteSoundCopy = NOTE_SOUND_COPY[locale];
   const levels = LEVELS[locale];
 
@@ -717,6 +773,17 @@ export default function Home() {
   }, [confusionByPair, totalWrong]);
 
   useEffect(() => {
+    const syncStageFromLocation = () => setStage(stageFromHash(window.location.hash));
+    syncStageFromLocation();
+    window.addEventListener("hashchange", syncStageFromLocation);
+    window.addEventListener("popstate", syncStageFromLocation);
+    return () => {
+      window.removeEventListener("hashchange", syncStageFromLocation);
+      window.removeEventListener("popstate", syncStageFromLocation);
+    };
+  }, []);
+
+  useEffect(() => {
     const requestedLocale = new URLSearchParams(window.location.search).get("lang");
     const savedLocale = window.localStorage.getItem("nota-nota-locale");
     const nextLocale = requestedLocale === "tr" || requestedLocale === "en" ? requestedLocale : savedLocale;
@@ -732,6 +799,24 @@ export default function Home() {
 
   useEffect(() => {
     const timer = window.setTimeout(() => setNoteSoundEnabled(readNoteSoundPreference()), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const savedProfile = window.localStorage.getItem("nota-nota-reading-profile");
+    if (savedProfile === "custom") {
+      const timer = window.setTimeout(() => setReadingOnboardingComplete(true), 0);
+      return () => window.clearTimeout(timer);
+    }
+    if (savedProfile !== "new" && savedProfile !== "growing" && savedProfile !== "confident") return;
+    const preset = READING_PRESETS[savedProfile];
+    const timer = window.setTimeout(() => {
+      setReadingProfile(savedProfile);
+      setReadingOnboardingComplete(true);
+      setLevel(preset.level);
+      setMode(preset.mode);
+      setSessionType(preset.sessionType);
+    }, 0);
     return () => window.clearTimeout(timer);
   }, []);
 
@@ -792,6 +877,28 @@ export default function Home() {
     setAnswer("");
   }
 
+  function navigateTo(nextStage: Stage) {
+    const nextRoute = STAGE_ROUTES[nextStage];
+    if (window.location.hash !== nextRoute) window.history.pushState(null, "", nextRoute);
+    setStage(nextStage);
+  }
+
+  function applyReadingPreset(profile: ReadingProfileId) {
+    const preset = READING_PRESETS[profile];
+    setReadingProfile(profile);
+    setReadingOnboardingComplete(true);
+    setLevel(preset.level);
+    setMode(preset.mode);
+    setSessionType(preset.sessionType);
+    window.localStorage.setItem("nota-nota-reading-profile", profile);
+  }
+
+  function markCustomReadingSettings() {
+    setReadingProfile(null);
+    setReadingOnboardingComplete(true);
+    window.localStorage.setItem("nota-nota-reading-profile", "custom");
+  }
+
   function toggleNoteSound() {
     setNoteSoundEnabled((enabled) => {
       const next = !enabled;
@@ -821,7 +928,7 @@ export default function Home() {
     setQuestionStartedAt(startedAt);
     setSessionStartedAt(startedAt);
     setClockNow(startedAt);
-    setStage("quiz");
+    navigateTo("quiz");
   }
 
   function submitAnswer(event: FormEvent) {
@@ -869,7 +976,7 @@ export default function Home() {
       setCurrentStreak(0);
       if (sessionType === "endless") {
         setFeedback(null);
-        setStage("done");
+        navigateTo("done");
         return;
       }
       setFeedback({ correct: false, note: current, guessed });
@@ -880,7 +987,7 @@ export default function Home() {
   function nextQuestion() {
     if (!feedback) return;
     if (queue.length === 0) {
-      setStage("done");
+      navigateTo("done");
     } else {
       setFeedback(null);
       setAnswer("");
@@ -891,7 +998,7 @@ export default function Home() {
   function endSession() {
     setEndedEarly(true);
     setFeedback(null);
-    setStage("done");
+    navigateTo("done");
   }
 
   const totalResponseTimeMs = answerTimes.reduce((sum, value) => sum + value, 0);
@@ -930,28 +1037,29 @@ export default function Home() {
     wrongCount: totalWrong,
     totalResponseTimeMs,
   };
+  const immersiveSession = stage === "quiz" || guitarSessionActive;
 
   return (
     <CommunityProvider locale={locale}>
-    <main className="app-shell">
-      <header className="site-header">
-        <button className="brand" type="button" onClick={() => setStage("landing")} aria-label={copy.homeLabel}>
+    <main className={`app-shell ${immersiveSession ? "app-shell--session" : ""}`}>
+      {!immersiveSession && <header className="site-header">
+        <a className="brand" href={STAGE_ROUTES.landing} onClick={(event) => { event.preventDefault(); navigateTo("landing"); }} aria-label={copy.homeLabel}>
           <span className="brand-mark" aria-hidden="true">
             <img src="./notanota-monogram.png" alt="" />
           </span>
           <span className="brand-name">NotaNota</span>
-        </button>
+        </a>
         <span className="brand-ornament" aria-hidden="true"><i /><b>◇</b><i /></span>
         <nav className="app-navigation" aria-label={shell.navigation}>
-          <button type="button" className={stage === "landing" ? "is-active" : ""} onClick={() => setStage("landing")} aria-label={shell.studio} aria-current={stage === "landing" ? "page" : undefined}>
-            <span aria-hidden="true">00</span><b>{shell.studio}</b>
-          </button>
-          <button type="button" className={["setup", "quiz", "done"].includes(stage) ? "is-active" : ""} onClick={() => setStage("setup")} aria-label={shell.sightReading} aria-current={["setup", "quiz", "done"].includes(stage) ? "page" : undefined}>
-            <span aria-hidden="true">01</span><b>{shell.sightReading}</b>
-          </button>
-          <button type="button" className={["instruments", "guitar"].includes(stage) ? "is-active" : ""} onClick={() => setStage("instruments")} aria-label={shell.instruments} aria-current={["instruments", "guitar"].includes(stage) ? "page" : undefined}>
-            <span aria-hidden="true">02</span><b>{shell.instruments}</b>
-          </button>
+          <a href={STAGE_ROUTES.landing} className={stage === "landing" ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("landing"); }} aria-label={shell.studio} aria-current={stage === "landing" ? "page" : undefined}>
+            <span aria-hidden="true">⚬</span><b>{shell.studio}</b>
+          </a>
+          <a href={STAGE_ROUTES.setup} className={["setup", "quiz", "done"].includes(stage) ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("setup"); }} aria-label={shell.sightReading} aria-current={["setup", "quiz", "done"].includes(stage) ? "page" : undefined}>
+            <span aria-hidden="true">⚬</span><b>{shell.sightReading}</b>
+          </a>
+          <a href={STAGE_ROUTES.instruments} className={["instruments", "guitar"].includes(stage) ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("instruments"); }} aria-label={shell.instruments} aria-current={["instruments", "guitar"].includes(stage) ? "page" : undefined}>
+            <span aria-hidden="true">⚬</span><b>{shell.instruments}</b>
+          </a>
         </nav>
         <div className="header-actions">
           {stage === "quiz" && (
@@ -994,20 +1102,19 @@ export default function Home() {
             <button type="button" className={locale === "en" ? "is-active" : ""} onClick={() => changeLocale("en")} aria-pressed={locale === "en"}>EN</button>
           </div>
         </div>
-        <p className="rail-motto">{copy.footer}</p>
-      </header>
+      </header>}
 
-      <nav className="mobile-module-navigation" aria-label={shell.navigation}>
-        <button type="button" className={stage === "landing" ? "is-active" : ""} onClick={() => setStage("landing")} aria-current={stage === "landing" ? "page" : undefined}>
-          <span aria-hidden="true">00</span>{shell.studio}
-        </button>
-        <button type="button" className={["setup", "quiz", "done"].includes(stage) ? "is-active" : ""} onClick={() => setStage("setup")} aria-current={["setup", "quiz", "done"].includes(stage) ? "page" : undefined}>
-          <span aria-hidden="true">01</span>{shell.sightReading}
-        </button>
-        <button type="button" className={["instruments", "guitar"].includes(stage) ? "is-active" : ""} onClick={() => setStage("instruments")} aria-current={["instruments", "guitar"].includes(stage) ? "page" : undefined}>
-          <span aria-hidden="true">02</span>{shell.instruments}
-        </button>
-      </nav>
+      {!immersiveSession && <nav className="mobile-module-navigation" aria-label={shell.navigation}>
+        <a href={STAGE_ROUTES.landing} className={stage === "landing" ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("landing"); }} aria-current={stage === "landing" ? "page" : undefined}>
+          <span aria-hidden="true">⚬</span>{shell.studio}
+        </a>
+        <a href={STAGE_ROUTES.setup} className={["setup", "quiz", "done"].includes(stage) ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("setup"); }} aria-current={["setup", "quiz", "done"].includes(stage) ? "page" : undefined}>
+          <span aria-hidden="true">⚬</span>{shell.sightReading}
+        </a>
+        <a href={STAGE_ROUTES.instruments} className={["instruments", "guitar"].includes(stage) ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("instruments"); }} aria-current={["instruments", "guitar"].includes(stage) ? "page" : undefined}>
+          <span aria-hidden="true">⚬</span>{shell.instruments}
+        </a>
+      </nav>}
 
       {stage === "landing" && (
         <section className="landing-shell">
@@ -1017,10 +1124,7 @@ export default function Home() {
               <h1>{landing.title}<br /><em>{landing.titleAccent}</em></h1>
               <p>{landing.lead}</p>
               <div className="landing-actions">
-                <button className="primary-button" type="button" onClick={() => setStage("setup")}>{landing.primary} <span aria-hidden="true">→</span></button>
-              </div>
-              <div className="landing-proof" aria-label={locale === "tr" ? "Özellikler" : "Features"}>
-                <span>{landing.proofOne}</span><span>{landing.proofTwo}</span><span>{landing.proofThree}</span>
+                <a className="primary-button" href={STAGE_ROUTES.setup} onClick={(event) => { event.preventDefault(); navigateTo("setup"); }}>{landing.primary} <span aria-hidden="true">→</span></a>
               </div>
             </div>
             <div className="landing-art" aria-hidden="true">
@@ -1035,25 +1139,23 @@ export default function Home() {
             <div className="module-grid">
               <section className="module-category" aria-labelledby="note-reading-category">
                 <p className="module-category-label" id="note-reading-category">{landing.readingCategory}</p>
-                <button className="module-card module-card--staff" type="button" onClick={() => setStage("setup")}>
-                  <span className="module-number">01</span>
+                <a className="module-card module-card--staff" href={STAGE_ROUTES.setup} onClick={(event) => { event.preventDefault(); navigateTo("setup"); }}>
                   <span className="module-visual"><RangePreview level="tam" /></span>
                   <strong>{landing.readingTitle}</strong>
                   <span>{landing.readingCopy}</span>
                   <small>{landing.readingMeta}</small>
                   <b>{landing.openReading} →</b>
-                </button>
+                </a>
               </section>
               <section className="module-category" aria-labelledby="instrument-category">
                 <p className="module-category-label" id="instrument-category">{landing.instrumentsCategory}</p>
-                <button className="module-card module-card--guitar" type="button" onClick={() => setStage("instruments")}>
-                  <span className="module-number">02</span>
+                <a className="module-card module-card--guitar" href={STAGE_ROUTES.instruments} onClick={(event) => { event.preventDefault(); navigateTo("instruments"); }}>
                   <span className="module-guitar-visual" aria-hidden="true"><b>C</b><b>E</b><b>G</b></span>
                   <strong>{landing.guitarTitle}</strong>
                   <span>{landing.guitarCopy}</span>
                   <small>{landing.guitarMeta}</small>
                   <b>{landing.openGuitar} →</b>
-                </button>
+                </a>
               </section>
             </div>
           </div>
@@ -1061,7 +1163,7 @@ export default function Home() {
       )}
 
       {stage === "instruments" && (
-        <InstrumentHub locale={locale} onOpenGuitar={() => setStage("guitar")} />
+        <InstrumentHub locale={locale} onOpenGuitar={() => navigateTo("guitar")} />
       )}
 
       {stage === "guitar" && (
@@ -1069,12 +1171,36 @@ export default function Home() {
           <GuitarTrainer
             locale={locale}
             noteSoundEnabled={noteSoundEnabled}
+            onSessionActiveChange={setGuitarSessionActive}
           />
         </Suspense>
       )}
 
       {stage === "setup" && (
         <section className="setup-shell">
+          <section className={`reading-quick-start ${!readingOnboardingComplete ? "is-first-visit" : ""}`} aria-labelledby="reading-quick-start-title">
+            <div className="reading-quick-start-copy">
+              <p className="kicker">{readingOnboardingComplete ? readingProfileCopy.selected : copy.rangeEyebrow}</p>
+              <h2 id="reading-quick-start-title">{readingOnboardingComplete ? readingProfileCopy.returningTitle : readingProfileCopy.firstTitle}</h2>
+              <p>{readingOnboardingComplete ? readingProfileCopy.returningCopy : readingProfileCopy.firstCopy}</p>
+            </div>
+            <div className="reading-profile-grid" role="group" aria-label={readingProfileCopy.choices}>
+              {(["new", "growing", "confident"] as ReadingProfileId[]).map((profile) => (
+                <button key={profile} type="button" className={readingProfile === profile ? "is-selected" : ""} onClick={() => applyReadingPreset(profile)} aria-pressed={readingProfile === profile}>
+                  <span aria-hidden="true">⚬</span>
+                  <strong>{readingProfileCopy[profile].title}</strong>
+                  <small>{readingProfileCopy[profile].copy}</small>
+                </button>
+              ))}
+            </div>
+            <div className="reading-quick-start-actions">
+              <button className="primary-button" type="button" onClick={startSession} disabled={!readingOnboardingComplete && !readingProfile}>
+                {readingProfileCopy.start} <span aria-hidden="true">→</span>
+              </button>
+              <button type="button" onClick={() => document.getElementById("reading-detailed-settings")?.scrollIntoView({ behavior: "smooth", block: "start" })}>{readingProfileCopy.details}</button>
+            </div>
+          </section>
+
           <div className="hero-copy">
             <p className="kicker">{copy.kicker}</p>
             <h1>{copy.heroLine1}<br /><em>{copy.heroLine2}</em></h1>
@@ -1094,9 +1220,9 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="setup-panel">
+          <div className="setup-panel" id="reading-detailed-settings">
             <div className="step-heading">
-              <span>01</span>
+              <span aria-hidden="true">⚬</span>
               <div><p>{copy.rangeEyebrow}</p><h2>{copy.chooseRange}</h2></div>
             </div>
             <div className="level-grid">
@@ -1105,7 +1231,7 @@ export default function Home() {
                   key={item.id}
                   type="button"
                   className={`level-card ${level === item.id ? "is-selected" : ""}`}
-                  onClick={() => setLevel(item.id)}
+                  onClick={() => { setLevel(item.id); markCustomReadingSettings(); }}
                   aria-pressed={level === item.id}
                 >
                   <RangePreview level={item.id} />
@@ -1118,16 +1244,16 @@ export default function Home() {
 
             <div className="divider" />
             <div className="step-heading compact-heading">
-              <span>02</span>
+              <span aria-hidden="true">⚬</span>
               <div><p>{copy.questionStyle}</p><h2>{copy.chooseMode}</h2></div>
             </div>
             <div className="mode-grid">
-              <button type="button" className={`mode-card ${mode === "porte" ? "is-selected" : ""}`} onClick={() => setMode("porte")} aria-pressed={mode === "porte"}>
+              <button type="button" className={`mode-card ${mode === "porte" ? "is-selected" : ""}`} onClick={() => { setMode("porte"); markCustomReadingSettings(); }} aria-pressed={mode === "porte"}>
                 <span className="mode-icon mode-icon--clef" aria-hidden="true">𝄞</span>
                 <span><strong>{copy.modes.porte.title}</strong><small>{copy.modes.porte.description}</small></span>
                 <i className="selection-indicator" aria-hidden="true" />
               </button>
-              <button type="button" className={`mode-card ${mode === "konum" ? "is-selected" : ""}`} onClick={() => setMode("konum")} aria-pressed={mode === "konum"}>
+              <button type="button" className={`mode-card ${mode === "konum" ? "is-selected" : ""}`} onClick={() => { setMode("konum"); markCustomReadingSettings(); }} aria-pressed={mode === "konum"}>
                 <span className="mode-icon mode-icon--text" aria-hidden="true">1.</span>
                 <span><strong>{copy.modes.konum.title}</strong><small>{copy.modes.konum.description}</small></span>
                 <i className="selection-indicator" aria-hidden="true" />
@@ -1136,16 +1262,16 @@ export default function Home() {
 
             <div className="divider" />
             <div className="step-heading compact-heading">
-              <span>03</span>
+              <span aria-hidden="true">⚬</span>
               <div><p>{extra.sessionEyebrow}</p><h2>{extra.chooseSession}</h2></div>
             </div>
             <div className="mode-grid session-type-grid">
-              <button type="button" className={`mode-card ${sessionType === "standard" ? "is-selected" : ""}`} onClick={() => setSessionType("standard")} aria-pressed={sessionType === "standard"}>
+              <button type="button" className={`mode-card ${sessionType === "standard" ? "is-selected" : ""}`} onClick={() => { setSessionType("standard"); markCustomReadingSettings(); }} aria-pressed={sessionType === "standard"}>
                 <span className="mode-icon mode-icon--check" aria-hidden="true"><UiIcon name="check" /></span>
                 <span><strong>{extra.standard.title}</strong><small>{extra.standard.description}</small></span>
                 <i className="selection-indicator" aria-hidden="true" />
               </button>
-              <button type="button" className={`mode-card ${sessionType === "endless" ? "is-selected" : ""}`} onClick={() => setSessionType("endless")} aria-pressed={sessionType === "endless"}>
+              <button type="button" className={`mode-card ${sessionType === "endless" ? "is-selected" : ""}`} onClick={() => { setSessionType("endless"); markCustomReadingSettings(); }} aria-pressed={sessionType === "endless"}>
                 <span className="mode-icon mode-icon--infinity" aria-hidden="true">∞</span>
                 <span><strong>{extra.endless.title}</strong><small>{extra.endless.description}</small></span>
                 <i className="selection-indicator" aria-hidden="true" />
@@ -1365,13 +1491,13 @@ export default function Home() {
 
           <div className="result-actions">
             <button className="primary-button" type="button" onClick={startSession}>{copy.repeat} <span>↻</span></button>
-            <button className="secondary-button" type="button" onClick={() => setStage("setup")}>{copy.changeLevel}</button>
+            <button className="secondary-button" type="button" onClick={() => navigateTo("setup")}>{copy.changeLevel}</button>
             <CommunityLeaderboardButton label={shell.leaderboard} />
           </div>
         </section>
       )}
 
-      <footer><span>NotaNota</span><p>{copy.footer}</p><CommunityLegalLink /><span className="brand-mark brand-mark--footer" aria-hidden="true"><img src="./notanota-monogram.png" alt="" /></span></footer>
+      {!immersiveSession && <footer><span>NotaNota</span><p>{copy.footer}</p><CommunityLegalLink /><span className="brand-mark brand-mark--footer" aria-hidden="true"><img src="./notanota-monogram.png" alt="" /></span></footer>}
     </main>
     </CommunityProvider>
   );

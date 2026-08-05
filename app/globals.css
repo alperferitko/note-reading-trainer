@@ -4578,3 +4578,57 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
     margin-top: 5px;
   }
 }
+
+/* Navigation override must remain last so tablet rules cannot collapse labels. */
+.app-navigation {
+  width: 100%;
+  margin-inline: 0;
+  gap: 8px;
+}
+
+.app-navigation a {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 58px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.app-navigation a > span { display: none; }
+
+.app-navigation a > b {
+  width: auto;
+  display: block;
+  text-align: center;
+}
+
+@media (max-width: 1100px) and (min-width: 821px) {
+  .app-navigation {
+    width: calc(100% + 26px);
+    margin-inline: -13px;
+    padding-inline: 8px;
+  }
+
+  .app-navigation a {
+    min-height: 56px;
+    padding-inline: 8px;
+  }
+
+  .app-navigation a > b {
+    display: block;
+    font-size: 10px;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 820px) {
+  .mobile-module-navigation a {
+    gap: 0;
+    text-align: center;
+  }
+}

@@ -199,12 +199,14 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /!immersiveSession && <header className="site-header">/);
   assert.doesNotMatch(page, /className="landing-proof"/);
   assert.doesNotMatch(page, />00<|>01<|>02<|>03<|>04</);
+  assert.doesNotMatch(page, /<span aria-hidden="true">⚬<\/span><b>/);
   assert.doesNotMatch(page, /className="rail-motto"/);
   assert.match(styles, /\.reading-session-summary \{/);
   assert.match(styles, /\.reading-setup-backdrop \{/);
   assert.match(styles, /\.reading-setup-dialog \{/);
   assert.match(styles, /\.app-shell--session \{/);
   assert.match(styles, /\.app-navigation a\.is-active \{[\s\S]*linear-gradient\(135deg, #8b2f3c, #a83a49\)/);
+  assert.match(styles, /Navigation override must remain last[\s\S]*\.app-navigation a \{[\s\S]*width: 100%;[\s\S]*justify-content: center/);
   assert.match(page, /const LANDING_DEMO_NOTES = \["d5", "g4", "e5", "b4", "f4", "c5", "e4", "f5", "a4"\]/);
   assert.match(page, /window\.setInterval\(\(\) => \{[\s\S]*setNoteIndex\(\(current\) => \(current \+ 1\) % LANDING_DEMO_NOTES\.length\);[\s\S]*\}, 2800\)/);
   assert.match(page, /<Staff note=\{note\} locale=\{locale\} compact animated \/>/);

@@ -1180,13 +1180,13 @@ export default function Home() {
         <span className="brand-ornament" aria-hidden="true"><i /><b>◇</b><i /></span>
         <nav className="app-navigation" aria-label={shell.navigation}>
           <a href={STAGE_ROUTES.landing} className={stage === "landing" ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("landing"); }} aria-label={shell.studio} aria-current={stage === "landing" ? "page" : undefined}>
-            <span aria-hidden="true">⚬</span><b>{shell.studio}</b>
+            <b>{shell.studio}</b>
           </a>
           <a href={STAGE_ROUTES.setup} className={["setup", "quiz", "done"].includes(stage) ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("setup"); }} aria-label={shell.sightReading} aria-current={["setup", "quiz", "done"].includes(stage) ? "page" : undefined}>
-            <span aria-hidden="true">⚬</span><b>{shell.sightReading}</b>
+            <b>{shell.sightReading}</b>
           </a>
           <a href={STAGE_ROUTES.instruments} className={["instruments", "guitar"].includes(stage) ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("instruments"); }} aria-label={shell.instruments} aria-current={["instruments", "guitar"].includes(stage) ? "page" : undefined}>
-            <span aria-hidden="true">⚬</span><b>{shell.instruments}</b>
+            <b>{shell.instruments}</b>
           </a>
         </nav>
         <div className="header-actions">
@@ -1234,13 +1234,13 @@ export default function Home() {
 
       {!immersiveSession && <nav className="mobile-module-navigation" aria-label={shell.navigation}>
         <a href={STAGE_ROUTES.landing} className={stage === "landing" ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("landing"); }} aria-current={stage === "landing" ? "page" : undefined}>
-          <span aria-hidden="true">⚬</span>{shell.studio}
+          {shell.studio}
         </a>
         <a href={STAGE_ROUTES.setup} className={["setup", "quiz", "done"].includes(stage) ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("setup"); }} aria-current={["setup", "quiz", "done"].includes(stage) ? "page" : undefined}>
-          <span aria-hidden="true">⚬</span>{shell.sightReading}
+          {shell.sightReading}
         </a>
         <a href={STAGE_ROUTES.instruments} className={["instruments", "guitar"].includes(stage) ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("instruments"); }} aria-current={["instruments", "guitar"].includes(stage) ? "page" : undefined}>
-          <span aria-hidden="true">⚬</span>{shell.instruments}
+          {shell.instruments}
         </a>
       </nav>}
 

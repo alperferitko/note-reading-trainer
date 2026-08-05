@@ -219,8 +219,9 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.site-header \{[\s\S]*grid-row: 1 \/ span 2/);
   assert.doesNotMatch(styles, /\.module-card::after/);
   assert.match(styles, /\.module-card--guitar \{[\s\S]*linear-gradient/);
-  assert.match(styles, /@keyframes staff-note-wander-a/);
-  assert.match(styles, /@keyframes fret-note-wander-a/);
+  assert.match(styles, /@keyframes module-note-reveal/);
+  assert.match(styles, /\.module-card--staff:hover \.range-preview-mark,[\s\S]*animation: module-note-reveal/);
+  assert.doesNotMatch(styles, /staff-note-wander|fret-note-wander/);
   assert.match(styles, /\.instrument-illustration--violin::before \{[\s\S]*linear-gradient\(90deg, #a56a34/);
   assert.match(styles, /\.community-result-card--ineligible \{[\s\S]*text-align: center/);
   assert.match(community, /ineligibleEncouragement/);

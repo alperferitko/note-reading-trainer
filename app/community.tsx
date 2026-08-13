@@ -24,7 +24,7 @@ import {
   SessionType,
   submitBestScore,
 } from "@/lib/leaderboard";
-import { communityConfigured, supabase } from "@/lib/supabase";
+import { communityConfigured, googleAuthConfigured, supabase } from "@/lib/supabase";
 import {
   getMyPracticeStreak,
   PracticeStreak,
@@ -91,6 +91,10 @@ const TEXT = {
     account: "Hesabım",
     close: "Kapat",
     emailTitle: "E-postayla giriş yap",
+    googleSignIn: "Google ile devam et",
+    googleSigningIn: "Google'a yönlendiriliyor…",
+    googleSignInError: "Google ile giriş şu anda başlatılamadı. E-postayla giriş yapabilir veya biraz sonra tekrar deneyebilirsin.",
+    signInDivider: "veya e-postayla devam et",
     emailCopy: "Sana tek kullanımlık bir doğrulama bağlantısı göndereceğiz. Şifre gerekmiyor.",
     email: "E-posta adresi",
     sendLink: "Doğrulama bağlantısı gönder",
@@ -137,7 +141,7 @@ const TEXT = {
     notBetter: "Bu sonuç mevcut kişisel rekorunu geçmedi.",
     pendingIneligible: "Bekleyen skor sıralama koşullarını karşılamadı.",
     ineligibleStandard: "Normal sıralamaya yalnızca hiç yanlış yapılmadan tamamlanan oturumlar girer.",
-    ineligibleEndless: "Sonsuz sıralamaya yalnızca hiç yanlış yapılmayan oturumlar girer.",
+    ineligibleEndless: "Sonsuz sıralamaya ilk yanlışta sona eren ve en az bir doğru içeren oturumlar girer. Oturumu elle bitirmek skor oluşturmaz.",
     ineligibleEncouragement: "Bir sonraki turda tamamını doğru okuyacağına inanıyorum. Sakin kal, başarabilirsin.",
     confirmTitle: "Bu e-posta adresini doğruluyor musun?",
     confirmCopy: "Giriş bağlantısını tamamlamak için aşağıdaki düğmeye bas.",
@@ -151,6 +155,10 @@ const TEXT = {
     account: "Account",
     close: "Close",
     emailTitle: "Sign in by email",
+    googleSignIn: "Continue with Google",
+    googleSigningIn: "Redirecting to Google…",
+    googleSignInError: "Google sign-in could not be started right now. You can sign in by email or try again shortly.",
+    signInDivider: "or continue by email",
     emailCopy: "We will send you a one-time verification link. No password is required.",
     email: "Email address",
     sendLink: "Send verification link",
@@ -197,7 +205,7 @@ const TEXT = {
     notBetter: "This result did not beat your personal best.",
     pendingIneligible: "The pending score did not meet the leaderboard requirements.",
     ineligibleStandard: "Only standard sessions completed without a mistake qualify for the leaderboard.",
-    ineligibleEndless: "Only endless sessions with no mistakes qualify for the leaderboard.",
+    ineligibleEndless: "Endless sessions qualify when they end on the first mistake after at least one correct answer. Manually ending a session does not create a score.",
     ineligibleEncouragement: "I’m sure you can read every note correctly next time. Stay calm, you’ve got this.",
     confirmTitle: "Do you confirm this email address?",
     confirmCopy: "Press the button below to complete the sign-in link.",
@@ -568,6 +576,7 @@ function AuthPanel({ locale, notice }: { locale: Locale; notice: string }) {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [oauthBusy, setOauthBusy] = useState(false);
   const { openPanel } = useCommunity();
   const text = TEXT[locale];
   const normalizedEmail = normalizeValidEmail(email);
@@ -600,9 +609,39 @@ function AuthPanel({ locale, notice }: { locale: Locale; notice: string }) {
     setMessage(error ? text.emailSendError : text.linkSent);
   }
 
+  async function signInWithGoogle() {
+    if (!supabase || busy || oauthBusy) return;
+    setOauthBusy(true);
+    setFailed(false);
+    setMessage("");
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) {
+      setOauthBusy(false);
+      setFailed(true);
+      setMessage(text.googleSignInError);
+    }
+  }
+
   return (
     <form className="community-form" onSubmit={requestLink}>
       {notice && <p className="community-auth-notice" role="status">{notice}</p>}
+      {googleAuthConfigured && (
+        <>
+          <button className="google-sign-in-button" type="button" onClick={() => void signInWithGoogle()} disabled={busy || oauthBusy} aria-busy={oauthBusy}>
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.92h5.38a4.6 4.6 0 0 1-2 3.02v2.54h3.24c1.9-1.75 2.98-4.33 2.98-7.41Z" />
+              <path fill="#34A853" d="M12 22c2.7 0 4.98-.9 6.63-2.36l-3.24-2.54c-.9.6-2.05.96-3.39.96-2.61 0-4.82-1.76-5.61-4.13H3.04v2.62A10 10 0 0 0 12 22Z" />
+              <path fill="#FBBC05" d="M6.39 13.93A6.02 6.02 0 0 1 6.08 12c0-.67.11-1.32.31-1.93V7.45H3.04A10 10 0 0 0 2 12c0 1.61.39 3.13 1.04 4.55l3.35-2.62Z" />
+              <path fill="#EA4335" d="M12 5.94c1.47 0 2.79.5 3.82 1.5l2.88-2.88A9.65 9.65 0 0 0 12 2a10 10 0 0 0-8.96 5.45l3.35 2.62C7.18 7.7 9.39 5.94 12 5.94Z" />
+            </svg>
+            <span>{oauthBusy ? text.googleSigningIn : text.googleSignIn}</span>
+          </button>
+          <div className="community-auth-divider"><span>{text.signInDivider}</span></div>
+        </>
+      )}
       <p id="community-email-help">{text.emailCopy}</p>
       <label htmlFor="community-email">{text.email}</label>
       <input id="community-email" type="email" inputMode="email" maxLength={EMAIL_MAX_LENGTH} value={email} onChange={(event) => { setEmail(event.target.value); if (failed) { setFailed(false); setMessage(""); } }} required autoComplete="email" disabled={busy} aria-describedby="community-email-help community-email-status" aria-invalid={failed} />
@@ -798,7 +837,7 @@ function LeaderboardPanel({ locale }: { locale: Locale }) {
       genis: "Geniş porte",
     },
     standardRule: "Bütün notaları hatasız tamamlayanlarda en hızlı süre kazanır",
-    endlessRule: "Hatasız en uzun seri kazanır; eşitlikte daha hızlı tempo öne geçer",
+    endlessRule: "İlk hataya kadar en uzun doğru seri kazanır; eşitlikte daha hızlı tempo öne geçer",
   } : {
     session: "Session",
     range: "Practice range",
@@ -813,7 +852,7 @@ function LeaderboardPanel({ locale }: { locale: Locale }) {
       genis: "Extended ledger range",
     },
     standardRule: "Among perfect completed runs, the fastest time wins",
-    endlessRule: "The longest perfect streak wins; speed breaks a tie",
+    endlessRule: "The longest correct streak before the first mistake wins; speed breaks a tie",
   };
 
   useEffect(() => {

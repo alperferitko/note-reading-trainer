@@ -74,6 +74,10 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
     new URL("../supabase/migrations/202607210001_add_extended_ledger_level.sql", import.meta.url),
     "utf8",
   );
+  const endlessEligibilityMigration = await readFile(
+    new URL("../supabase/migrations/202608130001_fix_endless_score_eligibility.sql", import.meta.url),
+    "utf8",
+  );
 
   assert.match(page, /shuffledWithoutRuns/);
   assert.match(page, /Math\.abs\(item\.position - previous\.position\) !== 1/);
@@ -137,6 +141,10 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(community, /nota-nota-pending-score/);
   assert.match(community, /rememberPendingScore\(score\)/);
   assert.match(community, /openPanel\("auth", text\.scoreSignInWarning\)/);
+  assert.match(community, /signInWithOAuth\(\{[\s\S]*provider: "google"[\s\S]*redirectTo: window\.location\.origin/);
+  assert.match(community, /googleAuthConfigured &&/);
+  assert.match(community, /Google ile devam et/);
+  assert.match(community, /Continue with Google/);
   assert.match(community, /community-result-note/);
   assert.match(community, /community-auth-notice/);
   assert.doesNotMatch(community, /<select/);
@@ -345,6 +353,12 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.doesNotMatch(page, /window\.visualViewport|window\.scrollBy|quiz-keyboard-open/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
   assert.match(migration, /p_wrong_count <> 0/i);
+  assert.match(page, /sessionType === "standard"[\s\S]*totalWrong === 0 && correctCount === uniqueCount[\s\S]*totalWrong === 1 && correctCount > 0/);
+  assert.match(page, /const leaderboardEligible = !endedEarly/);
+  assert.match(endlessEligibilityMigration, /p_session_type = 'endless' and p_wrong_count <> 1/i);
+  assert.match(endlessEligibilityMigration, /p_session_type = 'standard' and \(p_wrong_count <> 0 or p_correct_count <> v_expected_count\)/i);
+  assert.match(community, /İlk hataya kadar en uzun doğru seri kazanır/);
+  assert.match(community, /The longest correct streak before the first mistake wins/);
   assert.match(migration, /'temel', 'yakin', 'tam', 'genis'/i);
   assert.match(extendedLevelMigration, /best_scores_level_check/i);
   assert.match(extendedLevelMigration, /when 'tam' then 15[\s\S]*else 25/i);

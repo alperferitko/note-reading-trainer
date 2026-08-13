@@ -1156,7 +1156,11 @@ export default function Home() {
     correctCount,
     averageResponseMs,
   });
-  const leaderboardEligible = totalWrong === 0 && correctCount > 0 && (sessionType === "endless" || correctCount === uniqueCount);
+  const leaderboardEligible = !endedEarly && (
+    sessionType === "standard"
+      ? totalWrong === 0 && correctCount === uniqueCount
+      : totalWrong === 1 && correctCount > 0
+  );
   const scoreSubmission: ScoreSubmission = {
     sessionType,
     level,

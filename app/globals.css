@@ -835,6 +835,32 @@ textarea:focus-visible {
 .modal-card > header h2 { margin: 0; font-family: var(--serif); font-size: clamp(27px, 5vw, 40px); letter-spacing: -.045em; }
 .modal-card > header button { width: 44px; height: 44px; flex: 0 0 auto; padding: 12px; display: inline-grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: transparent; color: var(--ink); line-height: 1; transition: border-color .26s ease, background-color .26s ease; }
 .community-form { display: grid; gap: 10px; }
+.google-sign-in-button {
+  width: 100%;
+  min-height: 52px;
+  padding: 11px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: white;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 750;
+  box-shadow: 0 7px 18px rgba(18, 52, 45, .07);
+  transition: background-color .25s ease, box-shadow .25s ease, transform .25s ease;
+}
+.google-sign-in-button svg { width: 20px; height: 20px; flex: 0 0 auto; }
+.google-sign-in-button:disabled { cursor: default; opacity: .58; }
+.community-auth-divider { margin: 7px 0; display: flex; align-items: center; gap: 12px; color: var(--ink-soft); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; }
+.community-auth-divider::before,
+.community-auth-divider::after { content: ""; height: 1px; flex: 1; background: var(--line); }
+.community-auth-divider span { white-space: nowrap; }
+@media (hover: hover) and (pointer: fine) {
+  .google-sign-in-button:not(:disabled):hover { background: var(--paper-light); box-shadow: 0 10px 22px rgba(18, 52, 45, .11); }
+}
 .community-form > p:first-child { margin: 0 0 8px; color: var(--ink-soft); line-height: 1.6; }
 .community-auth-notice { margin: 0 0 10px !important; padding: 12px 14px; border: 0; border-radius: 10px; background: var(--coral-soft); color: var(--ink) !important; font-size: 12px; line-height: 1.5 !important; }
 .community-form label { color: var(--ink-soft); font-size: 9px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }

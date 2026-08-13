@@ -4,6 +4,8 @@ const url = import.meta.env.VITE_SUPABASE_URL?.trim();
 const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
 
 export const communityConfigured = Boolean(url && publishableKey);
+export const googleAuthConfigured = communityConfigured
+  && import.meta.env.VITE_GOOGLE_AUTH_ENABLED?.trim().toLowerCase() === "true";
 
 export const supabase = communityConfigured
   ? createClient(url!, publishableKey!, {

@@ -90,7 +90,8 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /type LevelId = "temel" \| "yakin" \| "tam" \| "genis"/);
   assert.match(page, /id: "d3"[\s\S]*position: -8/);
   assert.match(page, /id: "g6"[\s\S]*position: 16/);
-  assert.match(page, /id: "d6"[\s\S]*shortLocation: \{ tr: "7\. çizginin üstü"/);
+  assert.match(page, /id: "d6"[\s\S]*shortLocation: \{ tr: "Üstten 7\. çizginin üstü"/);
+  assert.match(page, /id: "g6"[\s\S]*shortLocation: \{ tr: "Üstten 9\. çizgi"/);
   assert.match(page, /id: "f3"[\s\S]*shortLocation: \{ tr: "Alttan 8\. çizginin üstü"/);
   assert.match(page, /id: "d6"[\s\S]*location: \{ tr: "üstteki 2\. ve 3\. ek çizgilerin arasındaki aralıkta"/);
   assert.match(page, /id: "genis"[\s\S]*count: 25/);

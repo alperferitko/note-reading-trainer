@@ -37,6 +37,7 @@ test("NotaNota çalışma ekranını sunar", async () => {
   assert.match(html, /Porte okuma/);
   assert.match(html, /Müzik aletleri/);
   assert.match(html, /Gitar klavyesi/);
+  assert.match(html, /Eser okuma/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
 });
 
@@ -59,6 +60,8 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   const community = await readFile(new URL("../app/community.tsx", import.meta.url), "utf8");
   const guitar = await readFile(new URL("../app/guitar-trainer.tsx", import.meta.url), "utf8");
+  const scoreReading = await readFile(new URL("../app/score-reading-trainer.tsx", import.meta.url), "utf8");
+  const scoreReadingLogic = await readFile(new URL("../lib/score-reading.mjs", import.meta.url), "utf8");
   const insights = await readFile(new URL("../lib/session-insights.mjs", import.meta.url), "utf8");
   const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
   const magicLink = await readFile(
@@ -97,7 +100,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /id: "genis"[\s\S]*count: 25/);
   assert.match(page, /id: "temel"[\s\S]*count: 9/);
   assert.match(page, /id: "yakin"[\s\S]*count: 13/);
-  assert.match(page, /id: "tam"[\s\S]*count: 15/);
+  assert.match(page, /id: "tam"[\s\S]*count: 17/);
   assert.match(page, /ledgerPositionsFor/);
   assert.match(page, /\[-8, -6, -4, -2, 10, 12, 14, 16\]/);
   assert.match(page, /if \(sessionType === "endless"\) \{[\s\S]*setFeedback\(null\);[\s\S]*navigateTo\("done"\);[\s\S]*return;/);
@@ -107,6 +110,20 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /questionKey\.current\+\+/);
   assert.match(page, /useState<Stage>\("landing"\)/);
   assert.match(page, /const GuitarTrainer = lazy/);
+  assert.match(page, /const ScoreReadingTrainer = lazy/);
+  assert.match(page, /pieces: "\?sayfa=eser-okuma"/);
+  assert.match(page, /navigateTo\("pieces"\)/);
+  assert.match(page, /Eser okuma/);
+  assert.match(page, /Score reading/);
+  assert.match(scoreReading, /type ReadingMode = "flow" \| "rhythm"/);
+  assert.match(scoreReading, /Neşeye Övgü/);
+  assert.match(scoreReading, /Frère Jacques/);
+  assert.match(scoreReading, /beatDurationMs\(current\.rhythm\.beats, bpm\)/);
+  assert.match(scoreReading, /timedOut: true/);
+  assert.match(scoreReading, /nextPieceHistory\(recent, nextPiece\.id\)/);
+  assert.match(scoreReadingLogic, /const RHYTHM_VALUES = \[/);
+  assert.match(scoreReadingLogic, /id: "sixteenth", beats: 0\.25/);
+  assert.match(scoreReadingLogic, /chooseUnrecentPiece/);
   assert.match(page, /navigateTo\("guitar"\)/);
   assert.match(page, /function InstrumentHub/);
   assert.match(page, /navigateTo\("instruments"\)/);
@@ -139,6 +156,9 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(guitar, /if \(hasDesktopPointer\) inputRef\.current\?\.focus/);
   assert.match(styles, /@media \(max-width: 620px\) and \(orientation: portrait\)[\s\S]*\.fretboard-orientation-hint/);
   assert.match(styles, /@media \(orientation: landscape\) and \(max-height: 560px\) and \(max-width: 1000px\)[\s\S]*\.fretboard--range-3/);
+  assert.match(guitar, /guitar-question-card--staff-position/);
+  assert.match(styles, /guitar-question-card--staff-position[\s\S]*grid-template-areas: "target target" "title title" "staff board"/);
+  assert.match(styles, /@media \(max-width: 420px\)[\s\S]*\.brand-name \{ display: inline-block/);
   assert.match(styles, /\.fret-note\.is-study-focus/);
   assert.match(styles, /\.fret-note--choice\.is-correct/);
   assert.match(page, /<CommunityResult/);
@@ -278,7 +298,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.brand-name \{[\s\S]*margin-left: -7px;[\s\S]*transform: translate\(-3px, -2px\);/);
   assert.doesNotMatch(styles, /inset 0 4px var\(--coral\)/);
   assert.match(page, /Treble clef, natural notes/);
-  assert.match(page, /Staff \+ ledger lines/);
+  assert.match(page, /First ledger lines/);
   assert.match(page, /letter: "C"/);
   assert.match(page, /nota-nota-locale/);
   assert.match(page, /\(hover: hover\) and \(pointer: fine\)/);

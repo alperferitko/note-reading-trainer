@@ -601,7 +601,7 @@ export function GuitarTrainer({
         <button className="guitar-exit-button" type="button" onClick={() => setStage("setup")}><span aria-hidden="true">←</span> {text.exit}</button>
         <div role="progressbar" aria-label={text.progress} aria-valuemin={0} aria-valuemax={initialCount} aria-valuenow={completed}><span>{text.progress}</span><strong>{completed} / {initialCount}</strong></div>
       </div>
-      <div className="guitar-question-card">
+      <div className={`guitar-question-card ${practiceMode === "staff-to-fretboard" ? "guitar-question-card--staff-position" : ""}`}>
         {displayed && (
           <div className="guitar-target-location">
             <span>{practiceMode === "name-note" ? text.target : text.staffTarget}</span>

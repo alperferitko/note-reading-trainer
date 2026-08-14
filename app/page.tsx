@@ -28,7 +28,7 @@ import {
 
 type LevelId = "temel" | "yakin" | "tam" | "genis";
 type ModeId = "porte" | "konum";
-type Stage = "landing" | "setup" | "quiz" | "done" | "instruments" | "guitar";
+type Stage = "landing" | "setup" | "quiz" | "done" | "pieces" | "instruments" | "guitar";
 type Locale = "tr" | "en";
 type ReadingProfileId = "new" | "growing" | "confident";
 
@@ -37,6 +37,7 @@ const STAGE_ROUTES: Record<Stage, string> = {
   setup: "?sayfa=nota-oku",
   quiz: "?sayfa=nota-oku&gorunum=oturum",
   done: "?sayfa=nota-oku&gorunum=sonuc",
+  pieces: "?sayfa=eser-okuma",
   instruments: "?sayfa=muzik-aletleri",
   guitar: "?sayfa=muzik-aletleri&enstruman=gitar",
 };
@@ -50,6 +51,7 @@ const READING_PRESETS: Record<ReadingProfileId, { level: LevelId; mode: ModeId; 
 function stageFromSearch(search: string): Stage {
   const params = new URLSearchParams(search);
   if (params.get("sayfa") === "nota-oku") return "setup";
+  if (params.get("sayfa") === "eser-okuma") return "pieces";
   if (params.get("sayfa") === "muzik-aletleri" && params.get("enstruman") === "gitar") return "guitar";
   if (params.get("sayfa") === "muzik-aletleri") return "instruments";
   return "landing";
@@ -57,6 +59,10 @@ function stageFromSearch(search: string): Stage {
 
 const GuitarTrainer = lazy(() => import("./guitar-trainer").then((module) => ({
   default: module.GuitarTrainer,
+})));
+
+const ScoreReadingTrainer = lazy(() => import("./score-reading-trainer").then((module) => ({
+  default: module.ScoreReadingTrainer,
 })));
 
 type NoteQuestion = {
@@ -309,11 +315,16 @@ const LANDING_COPY = {
     readingCopy: "Sol anahtarındaki doğal notaları çizgi, aralık ve ek çizgiler üzerinde tanı.",
     readingMeta: "4 seviye, 2 soru biçimi",
     instrumentsCategory: "Müzik aletleri",
+    scoreCategory: "Akıcı okuma",
+    scoreTitle: "Eser okuma",
+    scoreCopy: "Bir porte satırını soldan sağa, nota değerlerini izleyerek kendi hızında veya kesintisiz ritimle oku.",
+    scoreMeta: "Birlikten on altılığa, 2 okuma biçimi",
     guitarTitle: "Gitar klavyesi",
     guitarCopy: "Standart akortta doğal notaların tel ve perde üzerindeki yerlerini öğren.",
     guitarMeta: "0–3 / 0–5 / 0–12 perde",
     openReading: "Nota çalışmasına başla",
     openGuitar: "Müzik aletlerini keşfet",
+    openScore: "Porte satırı okumaya başla",
   },
   en: {
     eyebrow: "NotaNota music literacy",
@@ -331,11 +342,16 @@ const LANDING_COPY = {
     readingCopy: "Recognise natural notes on the treble staff, from the core range to extended ledger lines.",
     readingMeta: "4 ranges, 2 question styles",
     instrumentsCategory: "Musical instruments",
+    scoreCategory: "Fluent reading",
+    scoreTitle: "Score reading",
+    scoreCopy: "Read a complete staff line from left to right, at your own pace or against a continuous pulse.",
+    scoreMeta: "Whole notes to sixteenths, 2 reading styles",
     guitarTitle: "Guitar fretboard",
     guitarCopy: "Learn where natural notes sit across the strings and frets in standard tuning.",
     guitarMeta: "Frets 0–3 / 0–5 / 0–12",
     openReading: "Start note practice",
     openGuitar: "Explore instruments",
+    openScore: "Start reading score lines",
   },
 } as const;
 
@@ -344,6 +360,7 @@ const SHELL_COPY = {
     navigation: "Çalışma bölümleri",
     studio: "Stüdyo",
     sightReading: "Nota oku",
+    scoreReading: "Eser okuma",
     instruments: "Müzik aletleri",
     currentSession: "Etkin oturum",
     question: "Soru",
@@ -358,6 +375,7 @@ const SHELL_COPY = {
     navigation: "Practice sections",
     studio: "Studio",
     sightReading: "Sight-reading",
+    scoreReading: "Score reading",
     instruments: "Instruments",
     currentSession: "Current session",
     question: "Question",
@@ -527,14 +545,14 @@ const ALL_NOTES: NoteQuestion[] = [
 const LEVELS: Record<Locale, { id: LevelId; eyebrow: string; title: string; description: string; count: number }[]> = {
   tr: [
     { id: "temel", eyebrow: "Seviye 1", title: "Temel porte", description: "Beş çizgi ve dört aralıktaki notalar", count: 9 },
-    { id: "yakin", eyebrow: "Seviye 2", title: "Yakın çevre", description: "Temel porte, komşu aralıklar ve yakın ek çizgiler", count: 13 },
-    { id: "tam", eyebrow: "Seviye 3", title: "Tam doğal sesler", description: "Alt Do’dan üst Do’ya bütün doğal notalar", count: 15 },
+    { id: "yakin", eyebrow: "Seviye 2", title: "İlk ek çizgiler", description: "Portenin altında ve üstünde birer ek çizgi ve komşu aralıklar", count: 13 },
+    { id: "tam", eyebrow: "Seviye 3", title: "İki ek çizgi", description: "Portenin altında ve üstünde ikişer ek çizgiye kadar", count: 17 },
     { id: "genis", eyebrow: "Seviye 4", title: "Geniş porte", description: "Alt ve üstte dörder ek çizgiye kadar bütün doğal notalar", count: 25 },
   ],
   en: [
     { id: "temel", eyebrow: "Level 1", title: "Notes on the staff", description: "The nine notes on the five lines and four spaces", count: 9 },
-    { id: "yakin", eyebrow: "Level 2", title: "Staff + ledger lines", description: "The staff, adjacent spaces, and the nearest ledger lines", count: 13 },
-    { id: "tam", eyebrow: "Level 3", title: "Full natural range", description: "Every natural note from middle C to high C", count: 15 },
+    { id: "yakin", eyebrow: "Level 2", title: "First ledger lines", description: "One ledger line above and below, including the adjacent spaces", count: 13 },
+    { id: "tam", eyebrow: "Level 3", title: "Two ledger lines", description: "Natural notes through two ledger lines above and below", count: 17 },
     { id: "genis", eyebrow: "Level 4", title: "Extended ledger range", description: "Every natural note through four ledger lines above and below", count: 25 },
   ],
 };
@@ -542,7 +560,7 @@ const LEVELS: Record<Locale, { id: LevelId; eyebrow: string; title: string; desc
 function questionsFor(level: LevelId) {
   if (level === "temel") return ALL_NOTES.filter((note) => note.position >= 0 && note.position <= 8);
   if (level === "yakin") return ALL_NOTES.filter((note) => note.position >= -2 && note.position <= 10);
-  if (level === "tam") return ALL_NOTES.filter((note) => note.position >= -2 && note.position <= 12);
+  if (level === "tam") return ALL_NOTES.filter((note) => note.position >= -4 && note.position <= 12);
   return ALL_NOTES;
 }
 
@@ -597,7 +615,7 @@ function UiIcon({ name }: { name: "check" | "close" }) {
 const RANGE_PREVIEW_POSITIONS: Record<LevelId, number[]> = {
   temel: [0, 2, 4, 6, 8],
   yakin: [-2, 1, 4, 7, 10],
-  tam: [-2, 1, 5, 8, 12],
+  tam: [-4, 0, 4, 8, 12],
   genis: [-8, -4, 4, 10, 16],
 };
 
@@ -734,6 +752,7 @@ export default function Home() {
   const [draftMode, setDraftMode] = useState<ModeId>("porte");
   const [draftSessionType, setDraftSessionType] = useState<SessionType>("standard");
   const [guitarSessionActive, setGuitarSessionActive] = useState(false);
+  const [scoreReadingSessionActive, setScoreReadingSessionActive] = useState(false);
   const [queue, setQueue] = useState<QueuedQuestion[]>([]);
   const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState<AnswerFeedback | null>(null);
@@ -810,6 +829,7 @@ export default function Home() {
         "#/nota-oku": "setup",
         "#/nota-oku/oturum": "setup",
         "#/nota-oku/sonuc": "setup",
+        "#/eser-okuma": "pieces",
         "#/muzik-aletleri": "instruments",
         "#/muzik-aletleri/gitar": "guitar",
       }) as [string, Stage][]).find(([route]) => route === window.location.hash)?.[1];
@@ -1169,7 +1189,7 @@ export default function Home() {
     wrongCount: totalWrong,
     totalResponseTimeMs,
   };
-  const immersiveSession = stage === "quiz" || guitarSessionActive;
+  const immersiveSession = stage === "quiz" || guitarSessionActive || scoreReadingSessionActive;
 
   return (
     <CommunityProvider locale={locale} onIdentityChange={handleCommunityIdentityChange}>
@@ -1189,18 +1209,14 @@ export default function Home() {
           <a href={STAGE_ROUTES.setup} className={["setup", "quiz", "done"].includes(stage) ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("setup"); }} aria-label={shell.sightReading} aria-current={["setup", "quiz", "done"].includes(stage) ? "page" : undefined}>
             <b>{shell.sightReading}</b>
           </a>
+          <a href={STAGE_ROUTES.pieces} className={stage === "pieces" ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("pieces"); }} aria-label={shell.scoreReading} aria-current={stage === "pieces" ? "page" : undefined}>
+            <b>{shell.scoreReading}</b>
+          </a>
           <a href={STAGE_ROUTES.instruments} className={["instruments", "guitar"].includes(stage) ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("instruments"); }} aria-label={shell.instruments} aria-current={["instruments", "guitar"].includes(stage) ? "page" : undefined}>
             <b>{shell.instruments}</b>
           </a>
         </nav>
         <div className="header-actions">
-          {stage === "quiz" && (
-            <div className="session-meta">
-              <span>{selectedLevel.title}</span>
-              <span>{copy.modes[mode].title}</span>
-              <span>{sessionType === "standard" ? extra.standard.title : extra.endless.title}</span>
-            </div>
-          )}
           <CommunityHeader />
           <div className="audio-settings" ref={audioSettingsRef}>
             <button
@@ -1242,6 +1258,9 @@ export default function Home() {
         </a>
         <a href={STAGE_ROUTES.setup} className={["setup", "quiz", "done"].includes(stage) ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("setup"); }} aria-current={["setup", "quiz", "done"].includes(stage) ? "page" : undefined}>
           {shell.sightReading}
+        </a>
+        <a href={STAGE_ROUTES.pieces} className={stage === "pieces" ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("pieces"); }} aria-current={stage === "pieces" ? "page" : undefined}>
+          {shell.scoreReading}
         </a>
         <a href={STAGE_ROUTES.instruments} className={["instruments", "guitar"].includes(stage) ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("instruments"); }} aria-current={["instruments", "guitar"].includes(stage) ? "page" : undefined}>
           {shell.instruments}
@@ -1289,6 +1308,16 @@ export default function Home() {
                   <b>{landing.openGuitar} →</b>
                 </a>
               </section>
+              <section className="module-category module-category--score" aria-labelledby="score-reading-category">
+                <p className="module-category-label" id="score-reading-category">{landing.scoreCategory}</p>
+                <a className="module-card module-card--score" href={STAGE_ROUTES.pieces} onClick={(event) => { event.preventDefault(); navigateTo("pieces"); }}>
+                  <span className="module-score-visual" aria-hidden="true"><i>𝄞</i><b /><b /><b /><b /><b /><em /><em /><em /><em /><em /></span>
+                  <strong>{landing.scoreTitle}</strong>
+                  <span>{landing.scoreCopy}</span>
+                  <small>{landing.scoreMeta}</small>
+                  <b>{landing.openScore} →</b>
+                </a>
+              </section>
             </div>
           </div>
         </section>
@@ -1304,6 +1333,16 @@ export default function Home() {
             locale={locale}
             noteSoundEnabled={noteSoundEnabled}
             onSessionActiveChange={setGuitarSessionActive}
+          />
+        </Suspense>
+      )}
+
+      {stage === "pieces" && (
+        <Suspense fallback={<section className="score-reading-shell score-reading-shell--loading" aria-busy="true" />}>
+          <ScoreReadingTrainer
+            locale={locale}
+            noteSoundEnabled={noteSoundEnabled}
+            onSessionActiveChange={setScoreReadingSessionActive}
           />
         </Suspense>
       )}

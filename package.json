@@ -11,7 +11,7 @@
     "build:pages": "vite build --config vite.pages.config.ts",
     "start": "vinext start",
     "preview:pages": "vite preview --config vite.pages.config.ts",
-    "test": "npm run build && node --test tests/rendered-html.test.mjs tests/account-deletion-audit.test.mjs tests/audio-system.test.mjs",
+    "test": "npm run build && node --test tests/rendered-html.test.mjs tests/account-deletion-audit.test.mjs tests/audio-system.test.mjs tests/score-reading.test.mjs",
     "test:pages": "node --test tests/pages-build.test.mjs",
     "lint": "eslint .",
     "db:generate": "drizzle-kit generate"

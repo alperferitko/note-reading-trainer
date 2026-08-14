@@ -11,14 +11,14 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: "NotaNota | Note Reading Trainer",
-    description: "Build fluent recognition of natural notes on the treble clef with focused bilingual practice. Sol anahtarındaki doğal notaları Türkçe veya İngilizce çalış.",
+    description: "Build fluent recognition of natural notes and read complete treble-clef lines with mixed rhythms in focused bilingual practice.",
     icons: {
       icon: [{ url: icon, type: "image/svg+xml" }],
       shortcut: icon,
     },
     openGraph: {
       title: "NotaNota | Note Reading Trainer",
-      description: "See the note. Name it. Notayı gör. Adını söyle.",
+      description: "See the note, name it, then read complete staff lines with a steady pulse. Türkçe ve English.",
       type: "website",
       siteName: "NotaNota",
       locale: "tr_TR",
@@ -34,7 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: {
       card: "summary_large_image",
       title: "NotaNota | Note Reading Trainer",
-      description: "See the note. Name it. Notayı gör. Adını söyle.",
+      description: "See the note, name it, then read complete staff lines with a steady pulse. Türkçe ve English.",
       images: [image],
     },
   };

@@ -81,6 +81,10 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
     new URL("../supabase/migrations/202608130001_fix_endless_score_eligibility.sql", import.meta.url),
     "utf8",
   );
+  const noteRangeCountMigration = await readFile(
+    new URL("../supabase/migrations/202608150001_update_note_range_score_counts.sql", import.meta.url),
+    "utf8",
+  );
 
   assert.match(page, /shuffledWithoutRuns/);
   assert.match(page, /Math\.abs\(item\.position - previous\.position\) !== 1/);
@@ -93,16 +97,17 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /type LevelId = "temel" \| "yakin" \| "tam" \| "genis"/);
   assert.match(page, /id: "d3"[\s\S]*position: -8/);
   assert.match(page, /id: "g6"[\s\S]*position: 16/);
+  assert.match(page, /id: "e7"[\s\S]*position: 21/);
   assert.match(page, /id: "d6"[\s\S]*shortLocation: \{ tr: "Üstten 7\. çizginin üstü"/);
   assert.match(page, /id: "g6"[\s\S]*shortLocation: \{ tr: "Üstten 9\. çizgi"/);
   assert.match(page, /id: "f3"[\s\S]*shortLocation: \{ tr: "Alttan 8\. çizginin üstü"/);
   assert.match(page, /id: "d6"[\s\S]*location: \{ tr: "üstteki 2\. ve 3\. ek çizgilerin arasındaki aralıkta"/);
-  assert.match(page, /id: "genis"[\s\S]*count: 25/);
+  assert.match(page, /id: "genis"[\s\S]*count: 29/);
   assert.match(page, /id: "temel"[\s\S]*count: 9/);
-  assert.match(page, /id: "yakin"[\s\S]*count: 13/);
-  assert.match(page, /id: "tam"[\s\S]*count: 17/);
+  assert.match(page, /id: "yakin"[\s\S]*count: 17/);
+  assert.match(page, /id: "tam"[\s\S]*count: 25/);
   assert.match(page, /ledgerPositionsFor/);
-  assert.match(page, /\[-8, -6, -4, -2, 10, 12, 14, 16\]/);
+  assert.match(page, /\[-8, -6, -4, -2, 10, 12, 14, 16, 18, 20\]/);
   assert.match(page, /if \(sessionType === "endless"\) \{[\s\S]*setFeedback\(null\);[\s\S]*navigateTo\("done"\);[\s\S]*return;/);
   assert.match(page, /sessionType === "endless" \? \([\s\S]*className="endless-results-card"/);
   assert.match(page, /extra\.endedSession\(correctCount, totalTime\)/);
@@ -120,9 +125,13 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(scoreReading, /Frère Jacques/);
   assert.match(scoreReading, /beatDurationMs\(current\.rhythm\.beats, bpm\)/);
   assert.match(scoreReading, /timedOut: true/);
-  assert.match(scoreReading, /nextPieceHistory\(recent, nextPiece\.id\)/);
+  assert.match(scoreReading, /nextPieceHistory\(recent, nextPiece\.id, PIECES\.length - 1\)/);
   assert.match(scoreReadingLogic, /const RHYTHM_VALUES = \[/);
   assert.match(scoreReadingLogic, /id: "sixteenth", beats: 0\.25/);
+  assert.match(scoreReadingLogic, /id: "triplet", beats: 1 \/ 3/);
+  assert.match(scoreReading, /useState<SourceMode>\("piece"\)/);
+  assert.doesNotMatch(scoreReading, /yakın zamanda gördüğün eser tekrar seçilmez/);
+  assert.match(scoreReading, /rhythm-symbol-triplet-note/);
   assert.match(scoreReadingLogic, /chooseUnrecentPiece/);
   assert.match(page, /navigateTo\("guitar"\)/);
   assert.match(page, /function InstrumentHub/);
@@ -157,7 +166,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /@media \(max-width: 620px\) and \(orientation: portrait\)[\s\S]*\.fretboard-orientation-hint/);
   assert.match(styles, /@media \(orientation: landscape\) and \(max-height: 560px\) and \(max-width: 1000px\)[\s\S]*\.fretboard--range-3/);
   assert.match(guitar, /guitar-question-card--staff-position/);
-  assert.match(styles, /guitar-question-card--staff-position[\s\S]*grid-template-areas: "target target" "title title" "staff board"/);
+  assert.match(styles, /guitar-question-card--staff-position[\s\S]*grid-template-areas: "staff board" "instruction instruction"/);
   assert.match(styles, /@media \(max-width: 420px\)[\s\S]*\.brand-name \{ display: inline-block/);
   assert.match(styles, /\.fret-note\.is-study-focus/);
   assert.match(styles, /\.fret-note--choice\.is-correct/);
@@ -198,7 +207,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.doesNotMatch(page, /—/);
   assert.doesNotMatch(guitar, /Modüllere dön|Back to modules|Nota okumaya dön|Switch to sight-reading/);
   assert.match(page, /range-preview--extended/);
-  assert.match(page, /level === "genis" \? 84 - position \* 4 : 50 - position \* 4/);
+  assert.match(page, /if \(level === "genis"\) return 88 - position \* 4;[\s\S]*level === "tam" \? 84 - position \* 4 : 50 - position \* 4/);
   assert.match(page, /const activeQuestionNumber = sessionType === "standard"/);
   assert.match(page, /quizShellRef\.current\?\.scrollIntoView\(\{ behavior: "auto", block: "start" \}\)/);
   assert.match(page, /className="restart-session-button"[\s\S]*onClick=\{startSession\}/);
@@ -298,7 +307,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.brand-name \{[\s\S]*margin-left: -7px;[\s\S]*transform: translate\(-3px, -2px\);/);
   assert.doesNotMatch(styles, /inset 0 4px var\(--coral\)/);
   assert.match(page, /Treble clef, natural notes/);
-  assert.match(page, /First ledger lines/);
+  assert.match(page, /Two ledger lines/);
   assert.match(page, /letter: "C"/);
   assert.match(page, /nota-nota-locale/);
   assert.match(page, /\(hover: hover\) and \(pointer: fine\)/);
@@ -381,6 +390,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /const leaderboardEligible = !endedEarly/);
   assert.match(endlessEligibilityMigration, /p_session_type = 'endless' and p_wrong_count <> 1/i);
   assert.match(endlessEligibilityMigration, /p_session_type = 'standard' and \(p_wrong_count <> 0 or p_correct_count <> v_expected_count\)/i);
+  assert.match(noteRangeCountMigration, /when 'yakin' then 17[\s\S]*when 'tam' then 25[\s\S]*else 29/i);
   assert.match(community, /İlk hataya kadar en uzun doğru seri kazanır/);
   assert.match(community, /The longest correct streak before the first mistake wins/);
   assert.match(migration, /'temel', 'yakin', 'tam', 'genis'/i);

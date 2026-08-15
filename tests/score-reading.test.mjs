@@ -7,6 +7,7 @@ test("ritim pencereleri BPM ve nota değeriyle kesintisiz hesaplanır", () => {
   assert.equal(beatDurationMs(1, 60), 1000);
   assert.equal(beatDurationMs(0.25, 60), 250);
   assert.equal(beatDurationMs(0.25, 120), 125);
+  assert.equal(beatDurationMs(1 / 3, 60), 333);
 });
 
 test("rastgele porte satırı ardışık aynı notayı üretmez ve bütün ritim değerlerini kullanabilir", () => {
@@ -28,4 +29,11 @@ test("yakın zamanda gösterilen eserler seçim havuzundan çıkarılır", () =>
   const selected = chooseUnrecentPiece(pieces, ["a", "b", "c"], () => 0);
   assert.equal(selected.id, "d");
   assert.deepEqual(nextPieceHistory(["a", "b", "c"], "d"), ["b", "c", "d"]);
+});
+
+test("üçlemeler tek başına değil üç notalık gruplar halinde üretilir", () => {
+  const notes = [{ id: "c4" }, { id: "d4" }];
+  const line = generateRandomScoreLine(notes, 6, () => 0.999);
+  assert.deepEqual(line.map((event) => event.rhythm.id), Array(6).fill("triplet"));
+  assert.deepEqual(line.map((event) => event.tripletIndex), [0, 1, 2, 0, 1, 2]);
 });

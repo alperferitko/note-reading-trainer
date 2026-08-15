@@ -11,10 +11,10 @@ type ReadingMode = "flow" | "rhythm";
 type Stage = "setup" | "playing" | "done";
 type Letter = "C" | "D" | "E" | "F" | "G" | "A" | "B";
 type Solfege = "Do" | "Re" | "Mi" | "Fa" | "Sol" | "La" | "Si";
-type RhythmId = "whole" | "half" | "quarter" | "eighth" | "sixteenth";
+type RhythmId = "whole" | "half" | "quarter" | "eighth" | "sixteenth" | "triplet";
 
 type ScoreNote = { id: string; letter: Letter; solfege: Solfege; position: number };
-type ScoreEvent = { key: string; note: ScoreNote; rhythm: { id: RhythmId; beats: number } };
+type ScoreEvent = { key: string; note: ScoreNote; rhythm: { id: RhythmId; beats: number }; tripletIndex?: number };
 type AnswerResult = { index: number; expected: ScoreNote; guessed: Letter | null; correct: boolean; timedOut: boolean };
 type Piece = { id: string; title: Record<Locale, string>; credit: Record<Locale, string>; notes: string[]; rhythms: RhythmId[] };
 
@@ -30,6 +30,7 @@ const SCORE_NOTES: ScoreNote[] = [
   { id: "d5", letter: "D", solfege: "Re", position: 6 },
   { id: "e5", letter: "E", solfege: "Mi", position: 7 },
   { id: "f5", letter: "F", solfege: "Fa", position: 8 },
+  { id: "g5", letter: "G", solfege: "Sol", position: 9 },
 ];
 
 const PIECES: Piece[] = [
@@ -38,20 +39,20 @@ const PIECES: Piece[] = [
     title: { tr: "Neşeye Övgü", en: "Ode to Joy" },
     credit: { tr: "Ludwig van Beethoven", en: "Ludwig van Beethoven" },
     notes: ["e4", "e4", "f4", "g4", "g4", "f4", "e4", "d4", "c4", "c4", "d4", "e4", "e4", "d4", "d4"],
-    rhythms: ["quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "half", "eighth", "half"],
+    rhythms: ["quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "half"],
   },
   {
     id: "frere-jacques",
     title: { tr: "Frère Jacques", en: "Frère Jacques" },
     credit: { tr: "Geleneksel Fransız ezgisi", en: "Traditional French melody" },
-    notes: ["c5", "d5", "e5", "c5", "c5", "d5", "e5", "c5", "e5", "f5", "g4", "e5", "f5", "g4"],
+    notes: ["c5", "d5", "e5", "c5", "c5", "d5", "e5", "c5", "e5", "f5", "g5", "e5", "f5", "g5"],
     rhythms: ["quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "half", "quarter", "quarter", "half"],
   },
   {
     id: "twinkle",
     title: { tr: "Parla Parla Küçük Yıldız", en: "Twinkle, Twinkle, Little Star" },
     credit: { tr: "Geleneksel ezgi", en: "Traditional melody" },
-    notes: ["c5", "c5", "g4", "g4", "a4", "a4", "g4", "f4", "f4", "e4", "e4", "d5", "d5", "c5"],
+    notes: ["c4", "c4", "g4", "g4", "a4", "a4", "g4", "f4", "f4", "e4", "e4", "d4", "d4", "c4"],
     rhythms: ["quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "half", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "half"],
   },
   {
@@ -60,6 +61,34 @@ const PIECES: Piece[] = [
     credit: { tr: "Geleneksel çocuk ezgisi", en: "Traditional children’s melody" },
     notes: ["e4", "d4", "c4", "d4", "e4", "e4", "e4", "d4", "d4", "d4", "e4", "g4", "g4"],
     rhythms: ["quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "half", "quarter", "quarter", "half", "quarter", "quarter", "half"],
+  },
+  {
+    id: "london-bridge",
+    title: { tr: "London Bridge", en: "London Bridge" },
+    credit: { tr: "Geleneksel İngiliz ezgisi", en: "Traditional English melody" },
+    notes: ["g4", "a4", "g4", "f4", "e4", "f4", "g4", "d4", "e4", "f4", "e4", "f4", "g4"],
+    rhythms: ["quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "half", "quarter", "quarter", "half", "quarter", "quarter", "half"],
+  },
+  {
+    id: "au-clair-de-la-lune",
+    title: { tr: "Au Clair de la Lune", en: "Au Clair de la Lune" },
+    credit: { tr: "Geleneksel Fransız ezgisi", en: "Traditional French melody" },
+    notes: ["c4", "c4", "c4", "d4", "e4", "d4", "c4", "e4", "d4", "d4", "c4"],
+    rhythms: ["quarter", "quarter", "quarter", "quarter", "half", "quarter", "quarter", "quarter", "quarter", "quarter", "half"],
+  },
+  {
+    id: "jingle-bells",
+    title: { tr: "Jingle Bells", en: "Jingle Bells" },
+    credit: { tr: "James Lord Pierpont", en: "James Lord Pierpont" },
+    notes: ["e4", "e4", "e4", "e4", "e4", "e4", "e4", "g4", "c4", "d4", "e4"],
+    rhythms: ["quarter", "quarter", "half", "quarter", "quarter", "half", "quarter", "quarter", "quarter", "quarter", "whole"],
+  },
+  {
+    id: "row-your-boat",
+    title: { tr: "Row, Row, Row Your Boat", en: "Row, Row, Row Your Boat" },
+    credit: { tr: "Geleneksel İngilizce çocuk ezgisi", en: "Traditional English-language nursery melody" },
+    notes: ["c4", "c4", "c4", "d4", "e4", "e4", "d4", "e4", "f4", "g4"],
+    rhythms: ["quarter", "quarter", "half", "eighth", "quarter", "quarter", "eighth", "quarter", "quarter", "whole"],
   },
 ];
 
@@ -75,7 +104,7 @@ const COPY = {
     random: "Rastgele satır",
     randomCopy: "Doğal notalar ve birlikten on altılığa kadar karışık değerler.",
     piece: "Bilinen ezgiler",
-    pieceCopy: "Tanıdık eserlerden kısa satırlar; yakın zamanda gördüğün eser tekrar seçilmez.",
+    pieceCopy: "Tanıdık eserlerden özenle hazırlanmış kısa porte satırları.",
     mode: "Okuma biçimi",
     flow: "Akıcı okuma",
     flowCopy: "Cevabını işaretle ve beklemeden sıradaki notaya geç.",
@@ -84,7 +113,7 @@ const COPY = {
     tempo: "Tempo",
     start: "Satırı okumaya başla",
     noteValues: "Nota değerleri",
-    valueNames: { whole: "Birlik", half: "İkilik", quarter: "Dörtlük", eighth: "Sekizlik", sixteenth: "On altılık" } as Record<RhythmId, string>,
+    valueNames: { whole: "Birlik", half: "İkilik", quarter: "Dörtlük", eighth: "Sekizlik", sixteenth: "On altılık", triplet: "Üçleme" } as Record<RhythmId, string>,
     progress: "Satır ilerlemesi",
     choose: "Bu nota hangisi?",
     rhythmHint: "Vuruş bitmeden notayı seç",
@@ -115,7 +144,7 @@ const COPY = {
     random: "Random line",
     randomCopy: "Natural notes with mixed values from whole notes through sixteenths.",
     piece: "Familiar melodies",
-    pieceCopy: "Short lines from familiar music; recently shown pieces stay out of rotation.",
+    pieceCopy: "Carefully prepared short staff lines from familiar music.",
     mode: "Reading style",
     flow: "Flow reading",
     flowCopy: "Choose an answer and move straight to the next note.",
@@ -124,7 +153,7 @@ const COPY = {
     tempo: "Tempo",
     start: "Start reading the line",
     noteValues: "Note values",
-    valueNames: { whole: "Whole", half: "Half", quarter: "Quarter", eighth: "Eighth", sixteenth: "Sixteenth" } as Record<RhythmId, string>,
+    valueNames: { whole: "Whole", half: "Half", quarter: "Quarter", eighth: "Eighth", sixteenth: "Sixteenth", triplet: "Triplet" } as Record<RhythmId, string>,
     progress: "Line progress",
     choose: "Which note is this?",
     rhythmHint: "Choose before the beat window closes",
@@ -163,13 +192,38 @@ function buildPieceLine(piece: Piece): ScoreEvent[] {
 
 function ScoreGlyph({ event, state }: { event: ScoreEvent; state: "future" | "active" | "correct" | "wrong" }) {
   const stemDown = event.note.position >= 4;
+  const flagged = event.rhythm.id === "eighth" || event.rhythm.id === "sixteenth" || event.rhythm.id === "triplet";
   return (
     <span className={`score-note score-note--${event.rhythm.id} is-${state}`} style={{ "--score-position": event.note.position } as CSSProperties}>
       {(event.note.position <= -2 || event.note.position >= 10) && <i className="score-note-ledger" />}
       <i className="score-note-head" />
       {event.rhythm.id !== "whole" && <i className={`score-note-stem ${stemDown ? "is-down" : ""}`} />}
-      {(event.rhythm.id === "eighth" || event.rhythm.id === "sixteenth") && <i className={`score-note-flag ${stemDown ? "is-down" : ""}`} />}
+      {flagged && <i className={`score-note-flag ${stemDown ? "is-down" : ""}`} />}
       {event.rhythm.id === "sixteenth" && <i className={`score-note-flag score-note-flag--second ${stemDown ? "is-down" : ""}`} />}
+      {event.rhythm.id === "triplet" && event.tripletIndex === 1 && <b className="score-note-triplet">3</b>}
+    </span>
+  );
+}
+
+function RhythmSymbol({ id }: { id: RhythmId }) {
+  if (id === "triplet") {
+    return (
+      <span className="rhythm-symbol rhythm-symbol--triplet" aria-hidden="true">
+        <i className="rhythm-symbol-beam" />
+        <i className="rhythm-symbol-triplet-note is-first" />
+        <i className="rhythm-symbol-triplet-note is-second" />
+        <i className="rhythm-symbol-triplet-note is-third" />
+        <b>3</b>
+      </span>
+    );
+  }
+
+  return (
+    <span className={`rhythm-symbol rhythm-symbol--${id}`} aria-hidden="true">
+      <i className="rhythm-symbol-head" />
+      {id !== "whole" && <i className="rhythm-symbol-stem" />}
+      {(id === "eighth" || id === "sixteenth") && <i className="rhythm-symbol-flag" />}
+      {id === "sixteenth" && <i className="rhythm-symbol-flag rhythm-symbol-flag--second" />}
     </span>
   );
 }
@@ -177,7 +231,7 @@ function ScoreGlyph({ event, state }: { event: ScoreEvent; state: "future" | "ac
 export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveChange }: { locale: Locale; noteSoundEnabled: boolean; onSessionActiveChange?: (active: boolean) => void }) {
   const text = COPY[locale];
   const [stage, setStage] = useState<Stage>("setup");
-  const [sourceMode, setSourceMode] = useState<SourceMode>("random");
+  const [sourceMode, setSourceMode] = useState<SourceMode>("piece");
   const [readingMode, setReadingMode] = useState<ReadingMode>("flow");
   const [bpm, setBpm] = useState(76);
   const [line, setLine] = useState<ScoreEvent[]>([]);
@@ -233,7 +287,7 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
       let recent: string[] = [];
       try { recent = JSON.parse(window.localStorage.getItem(PIECE_HISTORY_KEY) ?? "[]") as string[]; } catch { recent = []; }
       nextPiece = chooseUnrecentPiece(PIECES, recent) as Piece;
-      window.localStorage.setItem(PIECE_HISTORY_KEY, JSON.stringify(nextPieceHistory(recent, nextPiece.id)));
+      window.localStorage.setItem(PIECE_HISTORY_KEY, JSON.stringify(nextPieceHistory(recent, nextPiece.id, PIECES.length - 1)));
       nextLine = buildPieceLine(nextPiece);
     } else {
       nextLine = generateRandomScoreLine(SCORE_NOTES, 14) as ScoreEvent[];
@@ -287,8 +341,8 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
 
         <div className="score-reading-options">
           <section aria-labelledby="score-source-title"><p className="kicker">{text.source}</p><h2 id="score-source-title">{text.source}</h2><div className="score-option-grid">
-            <button type="button" className={sourceMode === "random" ? "is-selected" : ""} onClick={() => setSourceMode("random")} aria-pressed={sourceMode === "random"}><strong>{text.random}</strong><span>{text.randomCopy}</span><i /></button>
             <button type="button" className={sourceMode === "piece" ? "is-selected" : ""} onClick={() => setSourceMode("piece")} aria-pressed={sourceMode === "piece"}><strong>{text.piece}</strong><span>{text.pieceCopy}</span><i /></button>
+            <button type="button" className={sourceMode === "random" ? "is-selected" : ""} onClick={() => setSourceMode("random")} aria-pressed={sourceMode === "random"}><strong>{text.random}</strong><span>{text.randomCopy}</span><i /></button>
           </div></section>
           <section aria-labelledby="score-mode-title"><p className="kicker">{text.mode}</p><h2 id="score-mode-title">{text.mode}</h2><div className="score-option-grid">
             <button type="button" className={readingMode === "flow" ? "is-selected" : ""} onClick={() => setReadingMode("flow")} aria-pressed={readingMode === "flow"}><strong>{text.flow}</strong><span>{text.flowCopy}</span><i /></button>
@@ -297,7 +351,7 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
         </div>
 
         <div className="score-reading-start-card">
-          <div><p className="kicker">{text.noteValues}</p><div className="rhythm-legend">{RHYTHM_VALUES.map((rhythm) => <span key={rhythm.id}><i className={`rhythm-symbol rhythm-symbol--${rhythm.id}`} />{text.valueNames[rhythm.id as RhythmId]}</span>)}</div></div>
+          <div><p className="kicker">{text.noteValues}</p><div className="rhythm-legend">{RHYTHM_VALUES.map((rhythm) => <span key={rhythm.id}><RhythmSymbol id={rhythm.id as RhythmId} />{text.valueNames[rhythm.id as RhythmId]}</span>)}</div></div>
           {readingMode === "rhythm" && <label className="tempo-control"><span>{text.tempo}</span><strong>{bpm} BPM</strong><input type="range" min="60" max="112" step="4" value={bpm} onChange={(event) => setBpm(Number(event.target.value))} /></label>}
           <button className="primary-button" type="button" onClick={start}>{text.start} <span aria-hidden="true">→</span></button>
         </div>

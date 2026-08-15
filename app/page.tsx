@@ -318,7 +318,7 @@ const LANDING_COPY = {
     scoreCategory: "Akıcı okuma",
     scoreTitle: "Eser okuma",
     scoreCopy: "Bir porte satırını soldan sağa, nota değerlerini izleyerek kendi hızında veya kesintisiz ritimle oku.",
-    scoreMeta: "Birlikten on altılığa, 2 okuma biçimi",
+    scoreMeta: "Birlikten on altılığa ve üçlemelere, 2 okuma biçimi",
     guitarTitle: "Gitar klavyesi",
     guitarCopy: "Standart akortta doğal notaların tel ve perde üzerindeki yerlerini öğren.",
     guitarMeta: "0–3 / 0–5 / 0–12 perde",
@@ -345,7 +345,7 @@ const LANDING_COPY = {
     scoreCategory: "Fluent reading",
     scoreTitle: "Score reading",
     scoreCopy: "Read a complete staff line from left to right, at your own pace or against a continuous pulse.",
-    scoreMeta: "Whole notes to sixteenths, 2 reading styles",
+    scoreMeta: "Whole notes to sixteenths and triplets, 2 reading styles",
     guitarTitle: "Guitar fretboard",
     guitarCopy: "Learn where natural notes sit across the strings and frets in standard tuning.",
     guitarMeta: "Frets 0–3 / 0–5 / 0–12",
@@ -395,8 +395,8 @@ const READING_PROFILE_COPY = {
     firstCopy: "Kendine en yakın seçeneği işaretle. Sana dengeli bir ayar önereceğiz; kaydetmeden önce her ayrıntıyı değiştirebilirsin.",
     choices: "Müzik deneyimi",
     new: { title: "Daha yeni başlıyorum", copy: "Temel porte, görsel nota okuma ve normal oturum" },
-    growing: { title: "Temelleri biliyorum", copy: "Yakın ek çizgilerle daha geniş bir çalışma" },
-    confident: { title: "Bu işte oldukça iyiyim", copy: "Geniş portenin bütün doğal notaları" },
+    growing: { title: "Temelleri biliyorum", copy: "İkişer ek çizgiyle daha geniş bir çalışma" },
+    confident: { title: "Bu işte oldukça iyiyim", copy: "Gitar, keman ve flütün geniş yazılı aralıkları" },
     recommendation: "Önerilen çalışma ayarı",
     recommendationCopy: "Bu öneriyi olduğu gibi kaydedebilir veya sana daha uygun hale getirebilirsin.",
     level: "Çalışma alanı",
@@ -415,8 +415,8 @@ const READING_PROFILE_COPY = {
     firstCopy: "Choose the option that feels closest to you. We’ll suggest a balanced setup, and you can adjust every detail before saving.",
     choices: "Music experience",
     new: { title: "I’m just getting started", copy: "Core staff, visual note reading and a standard session" },
-    growing: { title: "I know the basics", copy: "A wider range with nearby ledger lines" },
-    confident: { title: "I’m already confident", copy: "The full extended natural-note range" },
+    growing: { title: "I know the basics", copy: "A wider range through two ledger lines" },
+    confident: { title: "I’m already confident", copy: "Extended written ranges for guitar, violin and flute" },
     recommendation: "Recommended practice setup",
     recommendationCopy: "Save this recommendation as it is, or tune it to suit you better.",
     level: "Practice range",
@@ -540,28 +540,33 @@ const ALL_NOTES: NoteQuestion[] = [
   { id: "e6", solfege: "Mi", letter: "E", position: 14, location: { tr: "portenin üstündeki 3. ek çizgi üzerinde", en: "on the third ledger line above the staff" }, shortLocation: { tr: "Üstten 8. çizgi", en: "3rd ledger line above" } },
   { id: "f6", solfege: "Fa", letter: "F", position: 15, location: { tr: "üstteki 3. ve 4. ek çizgilerin arasındaki aralıkta", en: "in the space between the third and fourth ledger lines above the staff" }, shortLocation: { tr: "Üstten 8. çizginin üstü", en: "Between 3rd–4th ledger lines above" } },
   { id: "g6", solfege: "Sol", letter: "G", position: 16, location: { tr: "portenin üstündeki 4. ek çizgi üzerinde", en: "on the fourth ledger line above the staff" }, shortLocation: { tr: "Üstten 9. çizgi", en: "4th ledger line above" } },
+  { id: "a6", solfege: "La", letter: "A", position: 17, location: { tr: "4. ek çizginin üstündeki aralıkta", en: "in the space above the fourth ledger line" }, shortLocation: { tr: "Üstten 9. çizginin üstü", en: "Above the 4th ledger line" } },
+  { id: "b6", solfege: "Si", letter: "B", position: 18, location: { tr: "portenin üstündeki 5. ek çizgi üzerinde", en: "on the fifth ledger line above the staff" }, shortLocation: { tr: "Üstten 10. çizgi", en: "5th ledger line above" } },
+  { id: "c7", solfege: "Do", letter: "C", position: 19, location: { tr: "5. ek çizginin üstündeki aralıkta", en: "in the space above the fifth ledger line" }, shortLocation: { tr: "Üstten 10. çizginin üstü", en: "Above the 5th ledger line" } },
+  { id: "d7", solfege: "Re", letter: "D", position: 20, location: { tr: "portenin üstündeki 6. ek çizgi üzerinde", en: "on the sixth ledger line above the staff" }, shortLocation: { tr: "Üstten 11. çizgi", en: "6th ledger line above" } },
+  { id: "e7", solfege: "Mi", letter: "E", position: 21, location: { tr: "6. ek çizginin üstündeki aralıkta", en: "in the space above the sixth ledger line" }, shortLocation: { tr: "Üstten 11. çizginin üstü", en: "Above the 6th ledger line" } },
 ];
 
-const LEVELS: Record<Locale, { id: LevelId; eyebrow: string; title: string; description: string; count: number }[]> = {
+const LEVELS: Record<Locale, { id: LevelId; eyebrow: string; title: string; description: string; instruments: string; count: number }[]> = {
   tr: [
-    { id: "temel", eyebrow: "Seviye 1", title: "Temel porte", description: "Beş çizgi ve dört aralıktaki notalar", count: 9 },
-    { id: "yakin", eyebrow: "Seviye 2", title: "İlk ek çizgiler", description: "Portenin altında ve üstünde birer ek çizgi ve komşu aralıklar", count: 13 },
-    { id: "tam", eyebrow: "Seviye 3", title: "İki ek çizgi", description: "Portenin altında ve üstünde ikişer ek çizgiye kadar", count: 17 },
-    { id: "genis", eyebrow: "Seviye 4", title: "Geniş porte", description: "Alt ve üstte dörder ek çizgiye kadar bütün doğal notalar", count: 25 },
+    { id: "temel", eyebrow: "Seviye 1", title: "Temel porte", description: "Yalnızca beş çizgi ve dört aralık", instruments: "Başlangıç ezgileri ve temel sağ el çalışmaları", count: 9 },
+    { id: "yakin", eyebrow: "Seviye 2", title: "İki ek çizgi", description: "Altta ve üstte ikişer ek çizgiye kadar", instruments: "Piyano sağ el, blok flüt ve başlangıç keman", count: 17 },
+    { id: "tam", eyebrow: "Seviye 3", title: "Dört ek çizgi", description: "Altta ve üstte dörder ek çizgiye kadar", instruments: "Gitarın yazılı aralığı, keman ve flüt pasajları", count: 25 },
+    { id: "genis", eyebrow: "Seviye 4", title: "Enstrüman uçları", description: "Gitarın alt Mi sesinden keman ve flütün ileri üst seslerine kadar", instruments: "Gitar, keman ve flütün geniş yazılı aralıkları", count: 29 },
   ],
   en: [
-    { id: "temel", eyebrow: "Level 1", title: "Notes on the staff", description: "The nine notes on the five lines and four spaces", count: 9 },
-    { id: "yakin", eyebrow: "Level 2", title: "First ledger lines", description: "One ledger line above and below, including the adjacent spaces", count: 13 },
-    { id: "tam", eyebrow: "Level 3", title: "Two ledger lines", description: "Natural notes through two ledger lines above and below", count: 17 },
-    { id: "genis", eyebrow: "Level 4", title: "Extended ledger range", description: "Every natural note through four ledger lines above and below", count: 25 },
+    { id: "temel", eyebrow: "Level 1", title: "Notes on the staff", description: "Only the five lines and four spaces", instruments: "Beginner melodies and basic right-hand reading", count: 9 },
+    { id: "yakin", eyebrow: "Level 2", title: "Two ledger lines", description: "Through two ledger lines above and below", instruments: "Piano right hand, recorder and early violin", count: 17 },
+    { id: "tam", eyebrow: "Level 3", title: "Four ledger lines", description: "Through four ledger lines above and below", instruments: "Written guitar range, violin and flute passages", count: 25 },
+    { id: "genis", eyebrow: "Level 4", title: "Instrument extremes", description: "From written low guitar E to advanced violin and flute upper notes", instruments: "Extended written ranges of guitar, violin and flute", count: 29 },
   ],
 };
 
 function questionsFor(level: LevelId) {
   if (level === "temel") return ALL_NOTES.filter((note) => note.position >= 0 && note.position <= 8);
-  if (level === "yakin") return ALL_NOTES.filter((note) => note.position >= -2 && note.position <= 10);
-  if (level === "tam") return ALL_NOTES.filter((note) => note.position >= -4 && note.position <= 12);
-  return ALL_NOTES;
+  if (level === "yakin") return ALL_NOTES.filter((note) => note.position >= -4 && note.position <= 12);
+  if (level === "tam") return ALL_NOTES.filter((note) => note.position >= -8 && note.position <= 16);
+  return ALL_NOTES.filter((note) => note.position >= -7 && note.position <= 21);
 }
 
 function shuffledWithoutRuns<T extends { position: number }>(items: T[]) {
@@ -614,24 +619,25 @@ function UiIcon({ name }: { name: "check" | "close" }) {
 
 const RANGE_PREVIEW_POSITIONS: Record<LevelId, number[]> = {
   temel: [0, 2, 4, 6, 8],
-  yakin: [-2, 1, 4, 7, 10],
-  tam: [-4, 0, 4, 8, 12],
-  genis: [-8, -4, 4, 10, 16],
+  yakin: [-4, 0, 4, 8, 12],
+  tam: [-8, -4, 4, 10, 16],
+  genis: [-7, -1, 8, 15, 21],
 };
 
 function ledgerPositionsFor(position: number) {
-  return [-8, -6, -4, -2, 10, 12, 14, 16].filter((ledger) => (
+  return [-8, -6, -4, -2, 10, 12, 14, 16, 18, 20].filter((ledger) => (
     ledger < 0 ? position <= ledger : position >= ledger
   ));
 }
 
 function rangePreviewTop(level: LevelId, position: number) {
-  return level === "genis" ? 84 - position * 4 : 50 - position * 4;
+  if (level === "genis") return 88 - position * 4;
+  return level === "tam" ? 84 - position * 4 : 50 - position * 4;
 }
 
 function RangePreview({ level }: { level: LevelId }) {
   return (
-    <span className={`range-preview ${level === "genis" ? "range-preview--extended" : ""}`} aria-hidden="true">
+    <span className={`range-preview ${level === "tam" || level === "genis" ? "range-preview--extended" : ""}`} aria-hidden="true">
       <span className="range-preview-clef">𝄞</span>
       <span className="range-preview-lines" />
       {RANGE_PREVIEW_POSITIONS[level].map((position, index) => {
@@ -1402,6 +1408,7 @@ export default function Home() {
                   <span className="level-top"><small>{item.eyebrow}</small><b>{item.count} {locale === "tr" ? "nota" : "notes"}</b></span>
                   <strong>{item.title}</strong>
                   <span>{item.description}</span>
+                  <small className="level-instruments">{item.instruments}</small>
                 </button>
               ))}
             </div>

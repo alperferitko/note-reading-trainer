@@ -1,12 +1,11 @@
 "use client";
 
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
-import { beatDurationMs, chooseUnrecentPiece, generateRandomScoreLine, nextPieceHistory, RHYTHM_VALUES } from "@/lib/score-reading.mjs";
+import { beatDurationMs, chooseUnrecentPiece, nextPieceHistory, RHYTHM_VALUES } from "@/lib/score-reading.mjs";
 import { noteIdToMidi, playPracticeNote } from "@/lib/practice-audio";
 import { CommunityPracticeRecorder, CommunityPracticeStreak } from "./community";
 
 type Locale = "tr" | "en";
-type SourceMode = "random" | "piece";
 type ReadingMode = "flow" | "rhythm";
 type Stage = "setup" | "playing" | "done";
 type Letter = "C" | "D" | "E" | "F" | "G" | "A" | "B";
@@ -100,11 +99,9 @@ const COPY = {
     kicker: "Satır okuma",
     title: "Porteyi soldan sağa akıcı oku.",
     lead: "Nota adlarını sırayla işaretle. Serbest akışta kendi hızında ilerle; ritimli akışta porte durmadan devam eder.",
-    source: "Satır kaynağı",
-    random: "Rastgele satır",
-    randomCopy: "Doğal notalar ve birlikten on altılığa kadar karışık değerler.",
-    piece: "Bilinen ezgiler",
-    pieceCopy: "Tanıdık eserlerden özenle hazırlanmış kısa porte satırları.",
+    repertoire: "Eser seçkisi",
+    repertoireTitle: "Her oturumda tanıdık bir ezgi",
+    repertoireCopy: "Kamu malı ve geleneksel eserlerden hazırlanmış kısa porte satırları sırayla karşına gelir.",
     mode: "Okuma biçimi",
     flow: "Akıcı okuma",
     flowCopy: "Cevabını işaretle ve beklemeden sıradaki notaya geç.",
@@ -121,7 +118,6 @@ const COPY = {
     exit: "Oturumu bitir",
     restart: "Satırı yeniden başlat",
     complete: "Satırı tamamladın.",
-    randomComplete: "Rastgele oluşturulan bu porte satırını baştan sona okudun.",
     pieceComplete: (title: string, credit: string) => `Tebrikler, ${title} eserinden bir satır okudun. Kaynak: ${credit}.`,
     correct: "Doğru",
     mistakes: "Hata",
@@ -140,11 +136,9 @@ const COPY = {
     kicker: "Score reading",
     title: "Read the staff fluently from left to right.",
     lead: "Name each note in sequence. Move at your own pace in flow mode, or keep up with a continuous pulse in rhythm mode.",
-    source: "Line source",
-    random: "Random line",
-    randomCopy: "Natural notes with mixed values from whole notes through sixteenths.",
-    piece: "Familiar melodies",
-    pieceCopy: "Carefully prepared short staff lines from familiar music.",
+    repertoire: "Repertoire",
+    repertoireTitle: "A familiar melody in every session",
+    repertoireCopy: "Short staff lines prepared from public-domain and traditional music rotate between sessions.",
     mode: "Reading style",
     flow: "Flow reading",
     flowCopy: "Choose an answer and move straight to the next note.",
@@ -161,7 +155,6 @@ const COPY = {
     exit: "End session",
     restart: "Restart this line",
     complete: "Line complete.",
-    randomComplete: "You read this generated staff line from beginning to end.",
     pieceComplete: (title: string, credit: string) => `Well done. You read a line from ${title}. Source: ${credit}.`,
     correct: "Correct",
     mistakes: "Mistakes",
@@ -206,14 +199,14 @@ function ScoreGlyph({ event, state }: { event: ScoreEvent; state: "future" | "ac
 }
 
 function RhythmSymbol({ id }: { id: RhythmId }) {
-  if (id === "triplet") {
+  if (id === "eighth" || id === "sixteenth" || id === "triplet") {
+    const count = id === "eighth" ? 2 : id === "sixteenth" ? 4 : 3;
     return (
-      <span className="rhythm-symbol rhythm-symbol--triplet" aria-hidden="true">
+      <span className={`rhythm-symbol rhythm-symbol--group rhythm-symbol--${id}`} aria-hidden="true">
         <i className="rhythm-symbol-beam" />
-        <i className="rhythm-symbol-triplet-note is-first" />
-        <i className="rhythm-symbol-triplet-note is-second" />
-        <i className="rhythm-symbol-triplet-note is-third" />
-        <b>3</b>
+        {id === "sixteenth" && <i className="rhythm-symbol-beam rhythm-symbol-beam--second" />}
+        {Array.from({ length: count }, (_, index) => <i className="rhythm-symbol-group-note" key={index} />)}
+        {id === "triplet" && <b>3</b>}
       </span>
     );
   }
@@ -222,8 +215,6 @@ function RhythmSymbol({ id }: { id: RhythmId }) {
     <span className={`rhythm-symbol rhythm-symbol--${id}`} aria-hidden="true">
       <i className="rhythm-symbol-head" />
       {id !== "whole" && <i className="rhythm-symbol-stem" />}
-      {(id === "eighth" || id === "sixteenth") && <i className="rhythm-symbol-flag" />}
-      {id === "sixteenth" && <i className="rhythm-symbol-flag rhythm-symbol-flag--second" />}
     </span>
   );
 }
@@ -231,7 +222,6 @@ function RhythmSymbol({ id }: { id: RhythmId }) {
 export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveChange }: { locale: Locale; noteSoundEnabled: boolean; onSessionActiveChange?: (active: boolean) => void }) {
   const text = COPY[locale];
   const [stage, setStage] = useState<Stage>("setup");
-  const [sourceMode, setSourceMode] = useState<SourceMode>("piece");
   const [readingMode, setReadingMode] = useState<ReadingMode>("flow");
   const [bpm, setBpm] = useState(76);
   const [line, setLine] = useState<ScoreEvent[]>([]);
@@ -281,17 +271,11 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
   }, [currentIndex, stage]);
 
   function start() {
-    let nextPiece: Piece | null = null;
-    let nextLine: ScoreEvent[];
-    if (sourceMode === "piece") {
-      let recent: string[] = [];
-      try { recent = JSON.parse(window.localStorage.getItem(PIECE_HISTORY_KEY) ?? "[]") as string[]; } catch { recent = []; }
-      nextPiece = chooseUnrecentPiece(PIECES, recent) as Piece;
-      window.localStorage.setItem(PIECE_HISTORY_KEY, JSON.stringify(nextPieceHistory(recent, nextPiece.id, PIECES.length - 1)));
-      nextLine = buildPieceLine(nextPiece);
-    } else {
-      nextLine = generateRandomScoreLine(SCORE_NOTES, 14) as ScoreEvent[];
-    }
+    let recent: string[] = [];
+    try { recent = JSON.parse(window.localStorage.getItem(PIECE_HISTORY_KEY) ?? "[]") as string[]; } catch { recent = []; }
+    const nextPiece = chooseUnrecentPiece(PIECES, recent) as Piece;
+    window.localStorage.setItem(PIECE_HISTORY_KEY, JSON.stringify(nextPieceHistory(recent, nextPiece.id, PIECES.length - 1)));
+    const nextLine = buildPieceLine(nextPiece);
     const key = Date.now();
     setLine(nextLine);
     setPiece(nextPiece);
@@ -335,15 +319,12 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
     return (
       <section className="score-reading-shell score-reading-setup">
         <header className="score-reading-hero">
-          <div><p className="kicker">{text.kicker}</p><h1>{text.title}</h1><p>{text.lead}</p></div>
-          <div className="score-reading-hero-staff" aria-hidden="true"><span>𝄞</span><i /><i /><i /><i /><i /><b /><b /><b /><b /><b /></div>
+          <div className="score-reading-hero-copy"><p className="kicker">{text.kicker}</p><h1>{text.title}</h1><p>{text.lead}</p></div>
+          <div className="score-reading-hero-visual" aria-hidden="true"><div className="score-reading-hero-staff"><span>𝄞</span><i /><i /><i /><i /><i /><b /><b /><b /><b /><b /></div></div>
         </header>
 
         <div className="score-reading-options">
-          <section aria-labelledby="score-source-title"><p className="kicker">{text.source}</p><h2 id="score-source-title">{text.source}</h2><div className="score-option-grid">
-            <button type="button" className={sourceMode === "piece" ? "is-selected" : ""} onClick={() => setSourceMode("piece")} aria-pressed={sourceMode === "piece"}><strong>{text.piece}</strong><span>{text.pieceCopy}</span><i /></button>
-            <button type="button" className={sourceMode === "random" ? "is-selected" : ""} onClick={() => setSourceMode("random")} aria-pressed={sourceMode === "random"}><strong>{text.random}</strong><span>{text.randomCopy}</span><i /></button>
-          </div></section>
+          <section className="score-repertoire-card" aria-labelledby="score-repertoire-title"><p className="kicker">{text.repertoire}</p><h2 id="score-repertoire-title">{text.repertoireTitle}</h2><p>{text.repertoireCopy}</p><div className="score-repertoire-notes" aria-hidden="true"><i /><i /><i /><i /><i /></div></section>
           <section aria-labelledby="score-mode-title"><p className="kicker">{text.mode}</p><h2 id="score-mode-title">{text.mode}</h2><div className="score-option-grid">
             <button type="button" className={readingMode === "flow" ? "is-selected" : ""} onClick={() => setReadingMode("flow")} aria-pressed={readingMode === "flow"}><strong>{text.flow}</strong><span>{text.flowCopy}</span><i /></button>
             <button type="button" className={readingMode === "rhythm" ? "is-selected" : ""} onClick={() => setReadingMode("rhythm")} aria-pressed={readingMode === "rhythm"}><strong>{text.rhythm}</strong><span>{text.rhythmCopy}</span><i /></button>
@@ -365,7 +346,7 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
         <CommunityPracticeRecorder active={results.length > 0} activityKey={`score-reading-${sessionKey}`} />
         <p className="kicker">{text.kicker}</p>
         <h1>{text.complete}</h1>
-        <p>{piece ? text.pieceComplete(piece.title[locale], piece.credit[locale]) : text.randomComplete}</p>
+        <p>{piece ? text.pieceComplete(piece.title[locale], piece.credit[locale]) : text.complete}</p>
         <dl className="score-reading-stats"><div><dt>{text.correct}</dt><dd>{correctCount} / {line.length}</dd></div><div><dt>{text.mistakes}</dt><dd>{mistakeCount}</dd></div><div><dt>{text.accuracy}</dt><dd>%{accuracy}</dd></div></dl>
         <section className="score-reading-review" aria-labelledby="score-review-title"><h2 id="score-review-title">{text.review}</h2>
           {mistakeCount === 0 ? <p>{text.noMistakes}</p> : <ol>{results.filter((result) => !result.correct).map((result) => <li key={result.index}><b>{result.index + 1}</b><span>{text.expected(noteName(result.expected, locale))}</span><small>{result.timedOut ? text.missed : text.answered(locale === "tr" ? SCORE_NOTES.find((note) => note.letter === result.guessed)?.solfege ?? "" : result.guessed ?? "")}</small></li>)}</ol>}
@@ -381,7 +362,7 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
     <section className="score-reading-shell score-reading-session">
       <div className="score-reading-session-top"><button type="button" onClick={finishLine}>← {text.exit}</button><div><span>{text.progress}</span><strong>{Math.min(currentIndex + 1, line.length)} / {line.length}</strong></div><button type="button" onClick={start}>{text.restart}</button></div>
       <div className="score-reading-card">
-        <div className="score-reading-context"><p className="kicker">{piece ? piece.title[locale] : text.random}</p><span>{piece?.credit[locale] ?? text.randomCopy}</span></div>
+        <div className="score-reading-context"><p className="kicker">{piece?.title[locale] ?? text.repertoire}</p><span>{piece?.credit[locale] ?? text.repertoireCopy}</span></div>
         <div className="score-line-scroll" role="region" aria-label={text.progress} tabIndex={0}>
           <div className="score-line"><span className="score-line-clef" aria-hidden="true">𝄞</span><div className="score-line-notes">
             {line.map((event, index) => {

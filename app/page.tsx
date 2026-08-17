@@ -1297,31 +1297,38 @@ export default function Home() {
               <section className="module-category" aria-labelledby="note-reading-category">
                 <p className="module-category-label" id="note-reading-category">{landing.readingCategory}</p>
                 <a className="module-card module-card--staff" href={STAGE_ROUTES.setup} onClick={(event) => { event.preventDefault(); navigateTo("setup"); }}>
-                  <span className="module-visual"><RangePreview level="tam" /></span>
+                  <i className="module-card-accent" aria-hidden="true" />
+                  <span className="module-visual module-visual-frame"><RangePreview level="tam" /></span>
                   <strong>{landing.readingTitle}</strong>
                   <span>{landing.readingCopy}</span>
                   <small>{landing.readingMeta}</small>
-                  <b>{landing.openReading} →</b>
+                  <b className="module-card-cta">{landing.openReading}<i aria-hidden="true">→</i></b>
                 </a>
               </section>
               <section className="module-category" aria-labelledby="instrument-category">
                 <p className="module-category-label" id="instrument-category">{landing.instrumentsCategory}</p>
                 <a className="module-card module-card--guitar" href={STAGE_ROUTES.instruments} onClick={(event) => { event.preventDefault(); navigateTo("instruments"); }}>
-                  <span className="module-guitar-visual" aria-hidden="true"><b>C</b><b>E</b><b>G</b></span>
+                  <i className="module-card-accent" aria-hidden="true" />
+                  <span className="module-guitar-visual module-visual-frame" aria-hidden="true"><b>C</b><b>E</b><b>G</b></span>
                   <strong>{landing.guitarTitle}</strong>
                   <span>{landing.guitarCopy}</span>
                   <small>{landing.guitarMeta}</small>
-                  <b>{landing.openGuitar} →</b>
+                  <b className="module-card-cta">{landing.openGuitar}<i aria-hidden="true">→</i></b>
                 </a>
               </section>
               <section className="module-category module-category--score" aria-labelledby="score-reading-category">
                 <p className="module-category-label" id="score-reading-category">{landing.scoreCategory}</p>
                 <a className="module-card module-card--score" href={STAGE_ROUTES.pieces} onClick={(event) => { event.preventDefault(); navigateTo("pieces"); }}>
-                  <span className="module-score-visual" aria-hidden="true"><i>𝄞</i><b /><b /><b /><b /><b /><em /><em /><em /><em /><em /></span>
-                  <strong>{landing.scoreTitle}</strong>
-                  <span>{landing.scoreCopy}</span>
-                  <small>{landing.scoreMeta}</small>
-                  <b>{landing.openScore} →</b>
+                  <i className="module-card-accent" aria-hidden="true" />
+                  <span className="module-score-copy"><strong>{landing.scoreTitle}</strong><span>{landing.scoreCopy}</span><small>{landing.scoreMeta}</small><b className="module-card-cta">{landing.openScore}<i aria-hidden="true">→</i></b></span>
+                  <span className="module-score-visual module-visual-frame" aria-hidden="true">
+                    <i>𝄞</i>
+                    <em className="module-score-note module-score-note--quarter" />
+                    <em className="module-score-note module-score-note--half" />
+                    <em className="module-score-note module-score-note--eighth-pair"><u /><u /></em>
+                    <em className="module-score-note module-score-note--sixteenth-group"><u /><u /><u /><u /></em>
+                    <em className="module-score-note module-score-note--triplet"><u /><u /><u /><b>3</b></em>
+                  </span>
                 </a>
               </section>
             </div>
@@ -1726,7 +1733,7 @@ export default function Home() {
         </div>
       )}
 
-      {!immersiveSession && <footer><span>NotaNota</span><p>{copy.footer}</p><CommunityLegalLink /><span className="brand-mark brand-mark--footer" aria-hidden="true"><img src="./notanota-monogram.png" alt="" /></span></footer>}
+      {!immersiveSession && <footer><span>NotaNota</span><p>{copy.footer}</p><CommunityLegalLink /><a className="brand-mark brand-mark--footer" href={STAGE_ROUTES.landing} onClick={(event) => { event.preventDefault(); navigateTo("landing"); }} aria-label={copy.homeLabel}><img src="./notanota-monogram.png" alt="" /></a></footer>}
     </main>
     </CommunityProvider>
   );

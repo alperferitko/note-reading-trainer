@@ -102,12 +102,12 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /id: "g6"[\s\S]*shortLocation: \{ tr: "Üstten 9\. çizgi"/);
   assert.match(page, /id: "f3"[\s\S]*shortLocation: \{ tr: "Alttan 8\. çizginin üstü"/);
   assert.match(page, /id: "d6"[\s\S]*location: \{ tr: "üstteki 2\. ve 3\. ek çizgilerin arasındaki aralıkta"/);
-  assert.match(page, /id: "genis"[\s\S]*count: 29/);
+  assert.match(page, /id: "genis"[\s\S]*beşer ek çizgiye kadar[\s\S]*count: 29/);
   assert.match(page, /id: "temel"[\s\S]*count: 9/);
   assert.match(page, /id: "yakin"[\s\S]*count: 17/);
   assert.match(page, /id: "tam"[\s\S]*count: 25/);
   assert.match(page, /ledgerPositionsFor/);
-  assert.match(page, /\[-8, -6, -4, -2, 10, 12, 14, 16, 18, 20\]/);
+  assert.match(page, /\[-10, -8, -6, -4, -2, 10, 12, 14, 16, 18\]/);
   assert.match(page, /if \(sessionType === "endless"\) \{[\s\S]*setFeedback\(null\);[\s\S]*navigateTo\("done"\);[\s\S]*return;/);
   assert.match(page, /sessionType === "endless" \? \([\s\S]*className="endless-results-card"/);
   assert.match(page, /extra\.endedSession\(correctCount, totalTime\)/);
@@ -209,7 +209,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.doesNotMatch(page, /—/);
   assert.doesNotMatch(guitar, /Modüllere dön|Back to modules|Nota okumaya dön|Switch to sight-reading/);
   assert.match(page, /range-preview--extended/);
-  assert.match(page, /if \(level === "genis"\) return 88 - position \* 4;[\s\S]*level === "tam" \? 84 - position \* 4 : 50 - position \* 4/);
+  assert.match(page, /level === "tam" \|\| level === "genis" \? 84 - position \* 4 : 50 - position \* 4/);
   assert.match(page, /const activeQuestionNumber = sessionType === "standard"/);
   assert.match(page, /quizShellRef\.current\?\.scrollIntoView\(\{ behavior: "auto", block: "start" \}\)/);
   assert.match(page, /className="restart-session-button"[\s\S]*onClick=\{startSession\}/);
@@ -272,7 +272,10 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.doesNotMatch(page, /module-card-accent/);
   assert.doesNotMatch(scoreReading, /score-repertoire-card|Her oturumda tanıdık bir ezgi/);
   assert.match(scoreReading, /Neşeye Övgü[\s\S]*Ludwig van Beethoven/);
-  assert.match(page, /title: "Geniş aralık"[\s\S]*Altta dört, üstte altı ek çizgiye kadar/);
+  assert.match(page, /title: "Geniş aralık"[\s\S]*Altta ve üstte beşer ek çizgiye kadar/);
+  assert.doesNotMatch(page, /module-score-note--triplet[\s\S]{0,80}<b>3<\/b>/);
+  assert.doesNotMatch(scoreReading, /id === "triplet" && <b>3<\/b>/);
+  assert.doesNotMatch(scoreReading, /score-note-triplet/);
   assert.match(styles, /\.module-guitar-visual \{[\s\S]*#e3c293[\s\S]*radial-gradient/);
   assert.match(styles, /\.module-card--staff \.module-visual \.range-preview \{[\s\S]*transform: none/);
   assert.match(page, /module-score-note--eighth-pair/);

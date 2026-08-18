@@ -187,7 +187,6 @@ function ScoreGlyph({ event, state }: { event: ScoreEvent; state: "future" | "ac
       {event.rhythm.id !== "whole" && <i className={`score-note-stem ${stemDown ? "is-down" : ""}`} />}
       {flagged && <i className={`score-note-flag ${stemDown ? "is-down" : ""}`} />}
       {event.rhythm.id === "sixteenth" && <i className={`score-note-flag score-note-flag--second ${stemDown ? "is-down" : ""}`} />}
-      {event.rhythm.id === "triplet" && event.tripletIndex === 1 && <b className="score-note-triplet">3</b>}
     </span>
   );
 }
@@ -195,12 +194,12 @@ function ScoreGlyph({ event, state }: { event: ScoreEvent; state: "future" | "ac
 function RhythmSymbol({ id }: { id: RhythmId }) {
   if (id === "eighth" || id === "sixteenth" || id === "triplet") {
     const count = id === "eighth" ? 2 : id === "sixteenth" ? 4 : 3;
+    const positions = id === "eighth" ? [5, 28] : id === "sixteenth" ? [4, 19, 34, 49] : [4, 22, 40];
     return (
       <span className={`rhythm-symbol rhythm-symbol--group rhythm-symbol--${id}`} aria-hidden="true">
         <i className="rhythm-symbol-beam" />
         {id === "sixteenth" && <i className="rhythm-symbol-beam rhythm-symbol-beam--second" />}
-        {Array.from({ length: count }, (_, index) => <i className="rhythm-symbol-group-note" key={index} />)}
-        {id === "triplet" && <b>3</b>}
+        {Array.from({ length: count }, (_, index) => <i className="rhythm-symbol-group-note" key={index} style={{ left: `${positions[index]}px` }} />)}
       </span>
     );
   }
@@ -315,7 +314,17 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
         <header className="score-reading-hero">
           <div className="score-reading-hero-copy"><p className="kicker">{text.kicker}</p><h1>{text.title}</h1><p>{text.lead}</p></div>
           <div className="score-reading-hero-visual">
-            <div className="score-reading-hero-staff" aria-hidden="true"><span>𝄞</span><b /><b /><b /><b /><b /><b /><b /><b /></div>
+            <div className="score-reading-hero-staff" aria-hidden="true">
+              <span>𝄞</span>
+              {[0, 0, 1, 2, 2, 1, 0, -1, -2, -2, -1, 0, 0, -1, -1].map((position, index) => (
+                <b
+                  className={index === 14 ? "is-half" : undefined}
+                  key={`${position}-${index}`}
+                  style={{ left: `${20 + index * 5.3}%`, "--hero-position": position } as CSSProperties}
+                />
+              ))}
+              {[3, 7, 11, 14].map((index) => <i key={index} style={{ left: `${22.8 + index * 5.3}%` }} />)}
+            </div>
             <p><strong>{locale === "tr" ? "Neşeye Övgü" : "Ode to Joy"}</strong><span>Ludwig van Beethoven</span></p>
           </div>
         </header>

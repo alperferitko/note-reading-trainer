@@ -515,6 +515,8 @@ const NOTE_SOUND_COPY = {
 } as const;
 
 const ALL_NOTES: NoteQuestion[] = [
+  { id: "b2", solfege: "Si", letter: "B", position: -10, location: { tr: "portenin altındaki 5. ek çizgi üzerinde", en: "on the fifth ledger line below the staff" }, shortLocation: { tr: "Alttan 10. çizgi", en: "5th ledger line below" } },
+  { id: "c3", solfege: "Do", letter: "C", position: -9, location: { tr: "alttaki 5. ve 4. ek çizgilerin arasındaki aralıkta", en: "in the space between the fifth and fourth ledger lines below the staff" }, shortLocation: { tr: "Alttan 10. çizginin üstü", en: "Between 5th–4th ledger lines below" } },
   { id: "d3", solfege: "Re", letter: "D", position: -8, location: { tr: "portenin altındaki 4. ek çizgi üzerinde", en: "on the fourth ledger line below the staff" }, shortLocation: { tr: "Alttan 9. çizgi", en: "4th ledger line below" } },
   { id: "e3", solfege: "Mi", letter: "E", position: -7, location: { tr: "alttaki 4. ve 3. ek çizgilerin arasındaki aralıkta", en: "in the space between the fourth and third ledger lines below the staff" }, shortLocation: { tr: "Alttan 9. çizginin üstü", en: "Between 4th–3rd ledger lines below" } },
   { id: "f3", solfege: "Fa", letter: "F", position: -6, location: { tr: "portenin altındaki 3. ek çizgi üzerinde", en: "on the third ledger line below the staff" }, shortLocation: { tr: "Alttan 8. çizginin üstü", en: "3rd ledger line below" } },
@@ -552,13 +554,13 @@ const LEVELS: Record<Locale, { id: LevelId; eyebrow: string; title: string; desc
     { id: "temel", eyebrow: "Seviye 1", title: "Temel porte", description: "Yalnızca beş çizgi ve dört aralık", instruments: "Başlangıç ezgileri ve temel sağ el çalışmaları", count: 9 },
     { id: "yakin", eyebrow: "Seviye 2", title: "İki ek çizgi", description: "Altta ve üstte ikişer ek çizgiye kadar", instruments: "Piyano sağ el, blok flüt ve başlangıç keman", count: 17 },
     { id: "tam", eyebrow: "Seviye 3", title: "Dört ek çizgi", description: "Altta ve üstte dörder ek çizgiye kadar", instruments: "Gitarın yazılı aralığı, keman ve flüt pasajları", count: 25 },
-    { id: "genis", eyebrow: "Seviye 4", title: "Geniş aralık", description: "Altta dört, üstte altı ek çizgiye kadar", instruments: "Gitar, keman ve flütün geniş yazılı aralıkları", count: 29 },
+    { id: "genis", eyebrow: "Seviye 4", title: "Geniş aralık", description: "Altta ve üstte beşer ek çizgiye kadar", instruments: "Beş ek çizgiye ulaşan geniş okuma çalışmaları", count: 29 },
   ],
   en: [
     { id: "temel", eyebrow: "Level 1", title: "Notes on the staff", description: "Only the five lines and four spaces", instruments: "Beginner melodies and basic right-hand reading", count: 9 },
     { id: "yakin", eyebrow: "Level 2", title: "Two ledger lines", description: "Through two ledger lines above and below", instruments: "Piano right hand, recorder and early violin", count: 17 },
     { id: "tam", eyebrow: "Level 3", title: "Four ledger lines", description: "Through four ledger lines above and below", instruments: "Written guitar range, violin and flute passages", count: 25 },
-    { id: "genis", eyebrow: "Level 4", title: "Extended range", description: "Through four ledger lines below and six above", instruments: "Extended written ranges of guitar, violin and flute", count: 29 },
+    { id: "genis", eyebrow: "Level 4", title: "Extended range", description: "Through five ledger lines above and below", instruments: "Extended reading through five ledger lines", count: 29 },
   ],
 };
 
@@ -566,7 +568,7 @@ function questionsFor(level: LevelId) {
   if (level === "temel") return ALL_NOTES.filter((note) => note.position >= 0 && note.position <= 8);
   if (level === "yakin") return ALL_NOTES.filter((note) => note.position >= -4 && note.position <= 12);
   if (level === "tam") return ALL_NOTES.filter((note) => note.position >= -8 && note.position <= 16);
-  return ALL_NOTES.filter((note) => note.position >= -7 && note.position <= 21);
+  return ALL_NOTES.filter((note) => note.position >= -10 && note.position <= 18);
 }
 
 function shuffledWithoutRuns<T extends { position: number }>(items: T[]) {
@@ -621,18 +623,17 @@ const RANGE_PREVIEW_POSITIONS: Record<LevelId, number[]> = {
   temel: [0, 2, 4, 6, 8],
   yakin: [-4, 0, 4, 8, 12],
   tam: [-8, -4, 4, 10, 16],
-  genis: [-7, -1, 8, 15, 21],
+  genis: [-10, -4, 4, 12, 18],
 };
 
 function ledgerPositionsFor(position: number) {
-  return [-8, -6, -4, -2, 10, 12, 14, 16, 18, 20].filter((ledger) => (
+  return [-10, -8, -6, -4, -2, 10, 12, 14, 16, 18].filter((ledger) => (
     ledger < 0 ? position <= ledger : position >= ledger
   ));
 }
 
 function rangePreviewTop(level: LevelId, position: number) {
-  if (level === "genis") return 88 - position * 4;
-  return level === "tam" ? 84 - position * 4 : 50 - position * 4;
+  return level === "tam" || level === "genis" ? 84 - position * 4 : 50 - position * 4;
 }
 
 function RangePreview({ level }: { level: LevelId }) {
@@ -1324,7 +1325,7 @@ export default function Home() {
                     <em className="module-score-note module-score-note--half" />
                     <em className="module-score-note module-score-note--eighth-pair"><u /><u /></em>
                     <em className="module-score-note module-score-note--sixteenth-group"><u /><u /><u /><u /></em>
-                    <em className="module-score-note module-score-note--triplet"><u /><u /><u /><b>3</b></em>
+                    <em className="module-score-note module-score-note--triplet"><u /><u /><u /></em>
                   </span>
                 </a>
               </section>

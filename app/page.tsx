@@ -552,13 +552,13 @@ const LEVELS: Record<Locale, { id: LevelId; eyebrow: string; title: string; desc
     { id: "temel", eyebrow: "Seviye 1", title: "Temel porte", description: "Yalnızca beş çizgi ve dört aralık", instruments: "Başlangıç ezgileri ve temel sağ el çalışmaları", count: 9 },
     { id: "yakin", eyebrow: "Seviye 2", title: "İki ek çizgi", description: "Altta ve üstte ikişer ek çizgiye kadar", instruments: "Piyano sağ el, blok flüt ve başlangıç keman", count: 17 },
     { id: "tam", eyebrow: "Seviye 3", title: "Dört ek çizgi", description: "Altta ve üstte dörder ek çizgiye kadar", instruments: "Gitarın yazılı aralığı, keman ve flüt pasajları", count: 25 },
-    { id: "genis", eyebrow: "Seviye 4", title: "Enstrüman uçları", description: "Gitarın alt Mi sesinden keman ve flütün ileri üst seslerine kadar", instruments: "Gitar, keman ve flütün geniş yazılı aralıkları", count: 29 },
+    { id: "genis", eyebrow: "Seviye 4", title: "Geniş aralık", description: "Altta dört, üstte altı ek çizgiye kadar", instruments: "Gitar, keman ve flütün geniş yazılı aralıkları", count: 29 },
   ],
   en: [
     { id: "temel", eyebrow: "Level 1", title: "Notes on the staff", description: "Only the five lines and four spaces", instruments: "Beginner melodies and basic right-hand reading", count: 9 },
     { id: "yakin", eyebrow: "Level 2", title: "Two ledger lines", description: "Through two ledger lines above and below", instruments: "Piano right hand, recorder and early violin", count: 17 },
     { id: "tam", eyebrow: "Level 3", title: "Four ledger lines", description: "Through four ledger lines above and below", instruments: "Written guitar range, violin and flute passages", count: 25 },
-    { id: "genis", eyebrow: "Level 4", title: "Instrument extremes", description: "From written low guitar E to advanced violin and flute upper notes", instruments: "Extended written ranges of guitar, violin and flute", count: 29 },
+    { id: "genis", eyebrow: "Level 4", title: "Extended range", description: "Through four ledger lines below and six above", instruments: "Extended written ranges of guitar, violin and flute", count: 29 },
   ],
 };
 
@@ -1297,7 +1297,6 @@ export default function Home() {
               <section className="module-category" aria-labelledby="note-reading-category">
                 <p className="module-category-label" id="note-reading-category">{landing.readingCategory}</p>
                 <a className="module-card module-card--staff" href={STAGE_ROUTES.setup} onClick={(event) => { event.preventDefault(); navigateTo("setup"); }}>
-                  <i className="module-card-accent" aria-hidden="true" />
                   <span className="module-visual module-visual-frame"><RangePreview level="tam" /></span>
                   <strong>{landing.readingTitle}</strong>
                   <span>{landing.readingCopy}</span>
@@ -1308,7 +1307,6 @@ export default function Home() {
               <section className="module-category" aria-labelledby="instrument-category">
                 <p className="module-category-label" id="instrument-category">{landing.instrumentsCategory}</p>
                 <a className="module-card module-card--guitar" href={STAGE_ROUTES.instruments} onClick={(event) => { event.preventDefault(); navigateTo("instruments"); }}>
-                  <i className="module-card-accent" aria-hidden="true" />
                   <span className="module-guitar-visual module-visual-frame" aria-hidden="true"><b>C</b><b>E</b><b>G</b></span>
                   <strong>{landing.guitarTitle}</strong>
                   <span>{landing.guitarCopy}</span>
@@ -1319,7 +1317,6 @@ export default function Home() {
               <section className="module-category module-category--score" aria-labelledby="score-reading-category">
                 <p className="module-category-label" id="score-reading-category">{landing.scoreCategory}</p>
                 <a className="module-card module-card--score" href={STAGE_ROUTES.pieces} onClick={(event) => { event.preventDefault(); navigateTo("pieces"); }}>
-                  <i className="module-card-accent" aria-hidden="true" />
                   <span className="module-score-copy"><strong>{landing.scoreTitle}</strong><span>{landing.scoreCopy}</span><small>{landing.scoreMeta}</small><b className="module-card-cta">{landing.openScore}<i aria-hidden="true">→</i></b></span>
                   <span className="module-score-visual module-visual-frame" aria-hidden="true">
                     <i>𝄞</i>

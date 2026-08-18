@@ -248,9 +248,8 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.reading-setup-backdrop \{/);
   assert.match(styles, /\.reading-setup-dialog \{/);
   assert.match(styles, /\.app-shell--session \{/);
-  assert.match(styles, /Solid navigation, clearer daily state[\s\S]*\.app-navigation a\.is-active \{[\s\S]*background: #983444/);
-  assert.match(styles, /Navigation override must remain last[\s\S]*\.app-navigation a \{[\s\S]*width: 100%;[\s\S]*justify-content: center/);
-  assert.match(styles, /Solid navigation, clearer daily state[\s\S]*\.app-navigation a \{[\s\S]*background: #f0e9dd;[\s\S]*box-shadow: 0 3px 9px/);
+  assert.match(styles, /These declarations intentionally close the cascade[\s\S]*\.app-navigation a \{[\s\S]*background: #e7ded1/);
+  assert.match(styles, /These declarations intentionally close the cascade[\s\S]*\.app-navigation a\.is-active \{[^}]*background: #a33347/);
   assert.match(styles, /\.community-header-actions button \{[\s\S]*justify-content: center;[\s\S]*text-align: center/);
   assert.match(styles, /li\[aria-current="date"\]:not\(\.is-complete\) \.practice-day-mark::after[\s\S]*inset: 5px;[\s\S]*background: var\(--primary\)/);
   assert.match(page, /const LANDING_DEMO_NOTES = \["d5", "g4", "e5", "b4", "f4", "c5", "e4", "f5", "a4"\]/);
@@ -270,6 +269,12 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /@keyframes module-note-reveal/);
   assert.match(styles, /\.module-card--staff:hover \.range-preview-mark,[\s\S]*animation: module-note-reveal/);
   assert.match(styles, /\.module-card--score:hover \.module-score-note[\s\S]*animation: module-note-reveal/);
+  assert.doesNotMatch(page, /module-card-accent/);
+  assert.doesNotMatch(scoreReading, /score-repertoire-card|Her oturumda tanıdık bir ezgi/);
+  assert.match(scoreReading, /Neşeye Övgü[\s\S]*Ludwig van Beethoven/);
+  assert.match(page, /title: "Geniş aralık"[\s\S]*Altta dört, üstte altı ek çizgiye kadar/);
+  assert.match(styles, /\.module-guitar-visual \{[\s\S]*#e3c293[\s\S]*radial-gradient/);
+  assert.match(styles, /\.module-card--staff \.module-visual \.range-preview \{[\s\S]*transform: none/);
   assert.match(page, /module-score-note--eighth-pair/);
   assert.match(page, /module-score-note--sixteenth-group/);
   assert.match(page, /module-score-note--triplet/);

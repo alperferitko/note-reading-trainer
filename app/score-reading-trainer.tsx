@@ -99,9 +99,6 @@ const COPY = {
     kicker: "Satır okuma",
     title: "Porteyi soldan sağa akıcı oku.",
     lead: "Nota adlarını sırayla işaretle. Serbest akışta kendi hızında ilerle; ritimli akışta porte durmadan devam eder.",
-    repertoire: "Eser seçkisi",
-    repertoireTitle: "Her oturumda tanıdık bir ezgi",
-    repertoireCopy: "Kamu malı ve geleneksel eserlerden hazırlanmış kısa porte satırları sırayla karşına gelir.",
     mode: "Okuma biçimi",
     flow: "Akıcı okuma",
     flowCopy: "Cevabını işaretle ve beklemeden sıradaki notaya geç.",
@@ -136,9 +133,6 @@ const COPY = {
     kicker: "Score reading",
     title: "Read the staff fluently from left to right.",
     lead: "Name each note in sequence. Move at your own pace in flow mode, or keep up with a continuous pulse in rhythm mode.",
-    repertoire: "Repertoire",
-    repertoireTitle: "A familiar melody in every session",
-    repertoireCopy: "Short staff lines prepared from public-domain and traditional music rotate between sessions.",
     mode: "Reading style",
     flow: "Flow reading",
     flowCopy: "Choose an answer and move straight to the next note.",
@@ -320,12 +314,14 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
       <section className="score-reading-shell score-reading-setup">
         <header className="score-reading-hero">
           <div className="score-reading-hero-copy"><p className="kicker">{text.kicker}</p><h1>{text.title}</h1><p>{text.lead}</p></div>
-          <div className="score-reading-hero-visual" aria-hidden="true"><div className="score-reading-hero-staff"><span>𝄞</span><i /><i /><i /><i /><i /><b /><b /><b /><b /><b /></div></div>
+          <div className="score-reading-hero-visual">
+            <div className="score-reading-hero-staff" aria-hidden="true"><span>𝄞</span><b /><b /><b /><b /><b /><b /><b /><b /></div>
+            <p><strong>{locale === "tr" ? "Neşeye Övgü" : "Ode to Joy"}</strong><span>Ludwig van Beethoven</span></p>
+          </div>
         </header>
 
         <div className="score-reading-options">
-          <section className="score-repertoire-card" aria-labelledby="score-repertoire-title"><p className="kicker">{text.repertoire}</p><h2 id="score-repertoire-title">{text.repertoireTitle}</h2><p>{text.repertoireCopy}</p><div className="score-repertoire-notes" aria-hidden="true"><i /><i /><i /><i /><i /></div></section>
-          <section aria-labelledby="score-mode-title"><p className="kicker">{text.mode}</p><h2 id="score-mode-title">{text.mode}</h2><div className="score-option-grid">
+          <section className="score-reading-mode-section" aria-labelledby="score-mode-title"><p className="kicker">{text.mode}</p><h2 id="score-mode-title">{text.mode}</h2><div className="score-option-grid">
             <button type="button" className={readingMode === "flow" ? "is-selected" : ""} onClick={() => setReadingMode("flow")} aria-pressed={readingMode === "flow"}><strong>{text.flow}</strong><span>{text.flowCopy}</span><i /></button>
             <button type="button" className={readingMode === "rhythm" ? "is-selected" : ""} onClick={() => setReadingMode("rhythm")} aria-pressed={readingMode === "rhythm"}><strong>{text.rhythm}</strong><span>{text.rhythmCopy}</span><i /></button>
           </div></section>
@@ -362,7 +358,7 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
     <section className="score-reading-shell score-reading-session">
       <div className="score-reading-session-top"><button type="button" onClick={finishLine}>← {text.exit}</button><div><span>{text.progress}</span><strong>{Math.min(currentIndex + 1, line.length)} / {line.length}</strong></div><button type="button" onClick={start}>{text.restart}</button></div>
       <div className="score-reading-card">
-        <div className="score-reading-context"><p className="kicker">{piece?.title[locale] ?? text.repertoire}</p><span>{piece?.credit[locale] ?? text.repertoireCopy}</span></div>
+        <div className="score-reading-context"><p className="kicker">{piece?.title[locale] ?? text.kicker}</p><span>{piece?.credit[locale] ?? ""}</span></div>
         <div className="score-line-scroll" role="region" aria-label={text.progress} tabIndex={0}>
           <div className="score-line"><span className="score-line-clef" aria-hidden="true">𝄞</span><div className="score-line-notes">
             {line.map((event, index) => {

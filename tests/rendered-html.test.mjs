@@ -276,6 +276,10 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.doesNotMatch(page, /module-score-note--triplet[\s\S]{0,80}<b>3<\/b>/);
   assert.doesNotMatch(scoreReading, /id === "triplet" && <b>3<\/b>/);
   assert.doesNotMatch(scoreReading, /score-note-triplet/);
+  assert.match(styles, /\.app-navigation a > b \{[\s\S]*overflow-wrap: normal;[\s\S]*white-space: nowrap;/);
+  assert.match(styles, /\.module-score-note > u \{[\s\S]*transform: none;/);
+  assert.match(styles, /\.score-reading-hero \{[\s\S]*minmax\(0, 1\.28fr\)/);
+  assert.match(styles, /@media \(min-width: 821px\) \{[\s\S]*\.header-actions \{ transform: translateY\(-42px\); \}/);
   assert.match(styles, /\.module-guitar-visual \{[\s\S]*#e3c293[\s\S]*radial-gradient/);
   assert.match(styles, /\.module-card--staff \.module-visual \.range-preview \{[\s\S]*transform: none/);
   assert.match(page, /module-score-note--eighth-pair/);

@@ -11,6 +11,7 @@ import {
   CommunityProvider,
   CommunityResult,
 } from "./community";
+import { RhythmPatternPreview } from "./rhythm-glyphs";
 import type { ScoreSubmission, SessionType } from "@/lib/leaderboard";
 import {
   buildSessionInsight,
@@ -1320,12 +1321,7 @@ export default function Home() {
                 <a className="module-card module-card--score" href={STAGE_ROUTES.pieces} onClick={(event) => { event.preventDefault(); navigateTo("pieces"); }}>
                   <span className="module-score-copy"><strong>{landing.scoreTitle}</strong><span>{landing.scoreCopy}</span><small>{landing.scoreMeta}</small><b className="module-card-cta">{landing.openScore}<i aria-hidden="true">→</i></b></span>
                   <span className="module-score-visual module-visual-frame" aria-hidden="true">
-                    <i>𝄞</i>
-                    <em className="module-score-note module-score-note--quarter" />
-                    <em className="module-score-note module-score-note--half" />
-                    <em className="module-score-note module-score-note--eighth-pair"><u /><u /></em>
-                    <em className="module-score-note module-score-note--sixteenth-group"><u /><u /><u /><u /></em>
-                    <em className="module-score-note module-score-note--triplet"><u /><u /><u /></em>
+                    <RhythmPatternPreview variant="mixed" />
                   </span>
                 </a>
               </section>

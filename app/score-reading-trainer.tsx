@@ -1,21 +1,21 @@
 "use client";
 
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
-import { beatDurationMs, chooseUnrecentPiece, nextPieceHistory, RHYTHM_VALUES } from "@/lib/score-reading.mjs";
+import { beatDurationMs, chooseUnrecentPiece, groupRhythmValues, nextPieceHistory, RHYTHM_VALUES } from "@/lib/score-reading.mjs";
 import { noteIdToMidi, playPracticeNote } from "@/lib/practice-audio";
 import { CommunityPracticeRecorder, CommunityPracticeStreak } from "./community";
+import { RhythmGlyph, RhythmPatternPreview, RhythmScoreLine, type RhythmId, type RhythmScoreNote, type RhythmScoreValue } from "./rhythm-glyphs";
 
 type Locale = "tr" | "en";
 type ReadingMode = "flow" | "rhythm";
 type Stage = "setup" | "playing" | "done";
 type Letter = "C" | "D" | "E" | "F" | "G" | "A" | "B";
 type Solfege = "Do" | "Re" | "Mi" | "Fa" | "Sol" | "La" | "Si";
-type RhythmId = "whole" | "half" | "quarter" | "eighth" | "sixteenth" | "triplet";
 
 type ScoreNote = { id: string; letter: Letter; solfege: Solfege; position: number };
-type ScoreEvent = { key: string; note: ScoreNote; rhythm: { id: RhythmId; beats: number }; tripletIndex?: number };
+type ScoreEvent = { key: string; note: ScoreNote; rhythm: { id: RhythmScoreValue; beats: number }; groupId?: string };
 type AnswerResult = { index: number; expected: ScoreNote; guessed: Letter | null; correct: boolean; timedOut: boolean };
-type Piece = { id: string; title: Record<Locale, string>; credit: Record<Locale, string>; notes: string[]; rhythms: RhythmId[] };
+type Piece = { id: string; title: Record<Locale, string>; credit: Record<Locale, string>; notes: string[]; rhythms: RhythmScoreValue[] };
 
 const SCORE_NOTES: ScoreNote[] = [
   { id: "c4", letter: "C", solfege: "Do", position: -2 },
@@ -38,7 +38,7 @@ const PIECES: Piece[] = [
     title: { tr: "Neşeye Övgü", en: "Ode to Joy" },
     credit: { tr: "Ludwig van Beethoven", en: "Ludwig van Beethoven" },
     notes: ["e4", "e4", "f4", "g4", "g4", "f4", "e4", "d4", "c4", "c4", "d4", "e4", "e4", "d4", "d4"],
-    rhythms: ["quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "half"],
+    rhythms: ["quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "quarter", "dottedQuarter", "eighth", "half"],
   },
   {
     id: "frere-jacques",
@@ -91,7 +91,10 @@ const PIECES: Piece[] = [
   },
 ];
 
-const RHYTHM_BY_ID = Object.fromEntries(RHYTHM_VALUES.map((rhythm) => [rhythm.id, rhythm])) as Record<RhythmId, { id: RhythmId; beats: number }>;
+const RHYTHM_BY_ID = {
+  ...Object.fromEntries(RHYTHM_VALUES.map((rhythm) => [rhythm.id, rhythm])),
+  dottedQuarter: { id: "dottedQuarter", beats: 1.5 },
+} as Record<RhythmScoreValue, { id: RhythmScoreValue; beats: number }>;
 const PIECE_HISTORY_KEY = "nota-nota-recent-score-pieces";
 
 const COPY = {
@@ -107,7 +110,7 @@ const COPY = {
     tempo: "Tempo",
     start: "Satırı okumaya başla",
     noteValues: "Nota değerleri",
-    valueNames: { whole: "Birlik", half: "İkilik", quarter: "Dörtlük", eighth: "Sekizlik", sixteenth: "On altılık", triplet: "Üçleme" } as Record<RhythmId, string>,
+    valueNames: { whole: "Birlik", half: "İkilik", quarter: "Dörtlük", dottedQuarter: "Noktalı dörtlük", eighth: "Sekizlik", sixteenth: "On altılık", triplet: "Üçleme" } as Record<RhythmScoreValue, string>,
     progress: "Satır ilerlemesi",
     choose: "Bu nota hangisi?",
     rhythmHint: "Vuruş bitmeden notayı seç",
@@ -141,7 +144,7 @@ const COPY = {
     tempo: "Tempo",
     start: "Start reading the line",
     noteValues: "Note values",
-    valueNames: { whole: "Whole", half: "Half", quarter: "Quarter", eighth: "Eighth", sixteenth: "Sixteenth", triplet: "Triplet" } as Record<RhythmId, string>,
+    valueNames: { whole: "Whole", half: "Half", quarter: "Quarter", dottedQuarter: "Dotted quarter", eighth: "Eighth", sixteenth: "Sixteenth", triplet: "Triplet" } as Record<RhythmScoreValue, string>,
     progress: "Line progress",
     choose: "Which note is this?",
     rhythmHint: "Choose before the beat window closes",
@@ -170,46 +173,13 @@ function noteName(note: ScoreNote, locale: Locale) {
 }
 
 function buildPieceLine(piece: Piece): ScoreEvent[] {
+  const groupedRhythms = groupRhythmValues(piece.rhythms, piece.id) as Array<{ id: RhythmScoreValue; groupId?: string }>;
   return piece.notes.map((id, index) => ({
     key: `${piece.id}-${index}`,
     note: SCORE_NOTES.find((note) => note.id === id) ?? SCORE_NOTES[0],
-    rhythm: RHYTHM_BY_ID[piece.rhythms[index] ?? "quarter"],
+    rhythm: RHYTHM_BY_ID[groupedRhythms[index]?.id ?? "quarter"],
+    groupId: groupedRhythms[index]?.groupId,
   }));
-}
-
-function ScoreGlyph({ event, state }: { event: ScoreEvent; state: "future" | "active" | "correct" | "wrong" }) {
-  const stemDown = event.note.position >= 4;
-  const flagged = event.rhythm.id === "eighth" || event.rhythm.id === "sixteenth" || event.rhythm.id === "triplet";
-  return (
-    <span className={`score-note score-note--${event.rhythm.id} is-${state}`} style={{ "--score-position": event.note.position } as CSSProperties}>
-      {(event.note.position <= -2 || event.note.position >= 10) && <i className="score-note-ledger" />}
-      <i className="score-note-head" />
-      {event.rhythm.id !== "whole" && <i className={`score-note-stem ${stemDown ? "is-down" : ""}`} />}
-      {flagged && <i className={`score-note-flag ${stemDown ? "is-down" : ""}`} />}
-      {event.rhythm.id === "sixteenth" && <i className={`score-note-flag score-note-flag--second ${stemDown ? "is-down" : ""}`} />}
-    </span>
-  );
-}
-
-function RhythmSymbol({ id }: { id: RhythmId }) {
-  if (id === "eighth" || id === "sixteenth" || id === "triplet") {
-    const count = id === "eighth" ? 2 : id === "sixteenth" ? 4 : 3;
-    const positions = id === "eighth" ? [5, 28] : id === "sixteenth" ? [4, 19, 34, 49] : [4, 22, 40];
-    return (
-      <span className={`rhythm-symbol rhythm-symbol--group rhythm-symbol--${id}`} aria-hidden="true">
-        <i className="rhythm-symbol-beam" />
-        {id === "sixteenth" && <i className="rhythm-symbol-beam rhythm-symbol-beam--second" />}
-        {Array.from({ length: count }, (_, index) => <i className="rhythm-symbol-group-note" key={index} style={{ left: `${positions[index]}px` }} />)}
-      </span>
-    );
-  }
-
-  return (
-    <span className={`rhythm-symbol rhythm-symbol--${id}`} aria-hidden="true">
-      <i className="rhythm-symbol-head" />
-      {id !== "whole" && <i className="rhythm-symbol-stem" />}
-    </span>
-  );
 }
 
 export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveChange }: { locale: Locale; noteSoundEnabled: boolean; onSessionActiveChange?: (active: boolean) => void }) {
@@ -225,10 +195,22 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
   const [sessionKey, setSessionKey] = useState(0);
   const flowTimerRef = useRef<number | null>(null);
   const answeredIndexRef = useRef<number | null>(null);
-  const currentNoteRef = useRef<HTMLSpanElement>(null);
+  const currentNoteRef = useRef<SVGGElement>(null);
   const current = line[currentIndex];
 
   const resultByIndex = useMemo(() => new Map(results.map((result) => [result.index, result])), [results]);
+  const renderedLine = useMemo<RhythmScoreNote[]>(() => line.map((event, index) => {
+    const result = resultByIndex.get(index);
+    const state = result ? result.correct ? "correct" : "wrong" : index === currentIndex ? "active" : "future";
+    return {
+      key: event.key,
+      position: event.note.position,
+      rhythm: event.rhythm.id,
+      groupId: event.groupId,
+      state,
+      label: text.valueNames[event.rhythm.id],
+    };
+  }), [currentIndex, line, resultByIndex, text.valueNames]);
   const correctCount = results.filter((result) => result.correct).length;
   const mistakeCount = results.length - correctCount;
   const accuracy = results.length ? Math.round((correctCount / results.length) * 100) : 0;
@@ -314,17 +296,7 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
         <header className="score-reading-hero">
           <div className="score-reading-hero-copy"><p className="kicker">{text.kicker}</p><h1>{text.title}</h1><p>{text.lead}</p></div>
           <div className="score-reading-hero-visual">
-            <div className="score-reading-hero-staff" aria-hidden="true">
-              <span>𝄞</span>
-              {[0, 0, 1, 2, 2, 1, 0, -1, -2, -2, -1, 0, 0, -1, -1].map((position, index) => (
-                <b
-                  className={index === 14 ? "is-half" : undefined}
-                  key={`${position}-${index}`}
-                  style={{ left: `${20 + index * 5.3}%`, "--hero-position": position } as CSSProperties}
-                />
-              ))}
-              {[3, 7, 11, 14].map((index) => <i key={index} style={{ left: `${22.8 + index * 5.3}%` }} />)}
-            </div>
+            <RhythmPatternPreview variant="ode" className="score-reading-hero-score" />
             <p><strong>{locale === "tr" ? "Neşeye Övgü" : "Ode to Joy"}</strong><span>Ludwig van Beethoven</span></p>
           </div>
         </header>
@@ -337,7 +309,7 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
         </div>
 
         <div className="score-reading-start-card">
-          <div><p className="kicker">{text.noteValues}</p><div className="rhythm-legend">{RHYTHM_VALUES.map((rhythm) => <span key={rhythm.id}><RhythmSymbol id={rhythm.id as RhythmId} />{text.valueNames[rhythm.id as RhythmId]}</span>)}</div></div>
+          <div><p className="kicker">{text.noteValues}</p><div className="rhythm-legend">{RHYTHM_VALUES.map((rhythm) => <span key={rhythm.id}><RhythmGlyph id={rhythm.id as RhythmId} title={text.valueNames[rhythm.id as RhythmId]} />{text.valueNames[rhythm.id as RhythmId]}</span>)}</div></div>
           {readingMode === "rhythm" && <label className="tempo-control"><span>{text.tempo}</span><strong>{bpm} BPM</strong><input type="range" min="60" max="112" step="4" value={bpm} onChange={(event) => setBpm(Number(event.target.value))} /></label>}
           <button className="primary-button" type="button" onClick={start}>{text.start} <span aria-hidden="true">→</span></button>
         </div>
@@ -369,13 +341,13 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
       <div className="score-reading-card">
         <div className="score-reading-context"><p className="kicker">{piece?.title[locale] ?? text.kicker}</p><span>{piece?.credit[locale] ?? ""}</span></div>
         <div className="score-line-scroll" role="region" aria-label={text.progress} tabIndex={0}>
-          <div className="score-line"><span className="score-line-clef" aria-hidden="true">𝄞</span><div className="score-line-notes">
-            {line.map((event, index) => {
-              const result = resultByIndex.get(index);
-              const state = result ? result.correct ? "correct" : "wrong" : index === currentIndex ? "active" : "future";
-              return <span ref={index === currentIndex ? currentNoteRef : undefined} className="score-event" key={event.key} aria-label={`${index + 1}. ${index === currentIndex ? text.current : ""}`}><ScoreGlyph event={event} state={state} /><small>{text.valueNames[event.rhythm.id]}</small></span>;
-            })}
-          </div></div>
+          <RhythmScoreLine
+            activeIndex={currentIndex}
+            activeNoteRef={currentNoteRef}
+            ariaLabel={`${text.progress}: ${Math.min(currentIndex + 1, line.length)} / ${line.length}`}
+            className="rhythm-score-line--interactive"
+            notes={renderedLine}
+          />
         </div>
         {readingMode === "rhythm" && current && <div className="rhythm-window" key={`${currentIndex}-${sessionKey}`} style={{ "--rhythm-window": `${windowMs}ms` } as CSSProperties}><span /></div>}
         <div className="score-answer-area"><div><p>{text.choose}</p><span>{readingMode === "rhythm" ? text.rhythmHint : text.flowHint}</span></div><div className="score-answer-grid" role="group" aria-label={text.choices}>{answerChoices.map((choice) => <button type="button" key={choice} onClick={() => answer(choice)} disabled={locked}>{choice}</button>)}</div></div>

@@ -3,8 +3,10 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   RHYTHM_GLYPH_VIEWBOX,
+  RHYTHM_DEMO_PATTERNS,
   RHYTHM_PRESETS,
   groupRhythmValues,
+  rhythmDemoStepDurationMs,
 } from "../lib/rhythm-presets.mjs";
 
 const expected = {
@@ -66,6 +68,20 @@ test("kısa nota değerleri deterministik grup kimlikleriyle gruplanır", () => 
   assert.deepEqual(values.slice(7, 10).map((item) => item.groupIndex), [0, 1, 2]);
 });
 
+test("ritim kartları bir vuruşu doğru ve eşit zaman aralıklarına böler", () => {
+  const cycleBeats = Object.fromEntries(Object.entries(RHYTHM_DEMO_PATTERNS).map(([id, pattern]) => [id, pattern.stepBeats * pattern.stepCount]));
+  assert.deepEqual(cycleBeats, { whole: 4, half: 2, quarter: 1, eighth: 1, sixteenth: 1, triplet: 1 });
+  assert.deepEqual(RHYTHM_DEMO_PATTERNS.whole.audibleSteps, [0]);
+  assert.deepEqual(RHYTHM_DEMO_PATTERNS.half.audibleSteps, [0]);
+  assert.deepEqual(RHYTHM_DEMO_PATTERNS.eighth.audibleSteps, [0, 1]);
+  assert.deepEqual(RHYTHM_DEMO_PATTERNS.sixteenth.audibleSteps, [0, 1, 2, 3]);
+  assert.deepEqual(RHYTHM_DEMO_PATTERNS.triplet.audibleSteps, [0, 1, 2]);
+  assert.equal(rhythmDemoStepDurationMs("whole", 60), 1000);
+  assert.equal(rhythmDemoStepDurationMs("eighth", 60), 500);
+  assert.equal(rhythmDemoStepDurationMs("sixteenth", 60), 250);
+  assert.equal(rhythmDemoStepDurationMs("triplet", 60), 333);
+});
+
 test("ana kart, değer göstergesi ve çalışma ekranı aynı SVG bileşenlerini kullanır", async () => {
   const [glyphs, page, trainer, styles] = await Promise.all([
     readFile(new URL("../app/rhythm-glyphs.tsx", import.meta.url), "utf8"),
@@ -80,8 +96,11 @@ test("ana kart, değer göstergesi ve çalışma ekranı aynı SVG bileşenlerin
   assert.match(glyphs, /export function RhythmGroup/);
   assert.match(glyphs, /export function RhythmPatternPreview/);
   assert.match(page, /<RhythmPatternPreview variant="mixed"/);
-  assert.match(trainer, /<RhythmPatternPreview variant="ode"/);
-  assert.match(trainer, /<RhythmGlyph id=\{rhythm\.id as RhythmId\}/);
+  assert.match(trainer, /<RhythmPatternPreview variant="mixed"/);
+  assert.match(trainer, /<RhythmGlyph id=\{id\}/);
+  assert.match(trainer, /toggleRhythmDemo\(id\)/);
+  assert.match(trainer, /className="rhythm-demo-control"/);
+  assert.match(trainer, /className="rhythm-demo-pulses"/);
   assert.match(trainer, /<RhythmScoreLine/);
   assert.doesNotMatch(page, /module-score-note--/);
   assert.doesNotMatch(trainer, /function RhythmSymbol|function ScoreGlyph|score-note-flag/);

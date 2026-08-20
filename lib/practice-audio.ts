@@ -66,3 +66,26 @@ export function playPracticeNote(midi: number, enabled = true) {
   body.stop(now + 1.08);
   warmth.stop(now + 1.08);
 }
+
+export function playRhythmPulse(midi: number, enabled = true, durationMs = 150) {
+  if (!enabled) return;
+  const audio = context();
+  if (!audio) return;
+
+  const now = audio.currentTime;
+  const duration = Math.max(0.08, Math.min(0.24, durationMs / 1000));
+  const frequency = 440 * 2 ** ((midi - 69) / 12);
+  const oscillator = audio.createOscillator();
+  const gain = audio.createGain();
+
+  oscillator.type = "sine";
+  oscillator.frequency.setValueAtTime(frequency, now);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.2, now + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+  oscillator.connect(gain);
+  gain.connect(audio.destination);
+  oscillator.start(now);
+  oscillator.stop(now + duration + 0.02);
+}

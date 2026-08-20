@@ -8,6 +8,7 @@ import { CommunityPracticeRecorder, CommunityPracticeStreak } from "./community"
 type Locale = "tr" | "en";
 type GuitarStage = "setup" | "quiz" | "done";
 type GuitarMode = "name-note" | "staff-to-fretboard";
+type GuitarSessionType = "standard" | "endless";
 type Letter = "C" | "D" | "E" | "F" | "G" | "A" | "B";
 
 type GuitarQuestion = {
@@ -98,6 +99,14 @@ const COPY = {
     change: "Perde aralığını değiştir",
     choices: "Nota seçenekleri",
     modeChoices: "Gitar çalışma biçimleri",
+    session: "Oturum biçimi",
+    standardSession: "Normal tur",
+    standardSessionCopy: "Seçtiğin aralıktaki tüm doğal konumları tamamla.",
+    endlessSession: "Sonsuz mod",
+    endlessSessionCopy: "İlk yanlışına kadar rastgele konumlarla devam et.",
+    endlessResult: "Sonsuz seri sona erdi",
+    endlessResultCopy: (count: number) => `${count} doğru cevap verdin. İlk yanlışında seri durdu.`,
+    endlessCorrect: "Doğru cevap",
     positionChoices: "Gitar klavyesindeki konum seçenekleri",
   },
   en: {
@@ -151,6 +160,14 @@ const COPY = {
     change: "Change fret range",
     choices: "Note choices",
     modeChoices: "Guitar practice modes",
+    session: "Session type",
+    standardSession: "Standard round",
+    standardSessionCopy: "Complete every natural-note location in the selected range.",
+    endlessSession: "Endless mode",
+    endlessSessionCopy: "Keep finding random locations until your first mistake.",
+    endlessResult: "Endless streak finished",
+    endlessResultCopy: (count: number) => `You answered ${count} correctly. The streak stopped at your first mistake.`,
+    endlessCorrect: "Correct answers",
     positionChoices: "Fretboard position choices",
   },
 } as const;
@@ -244,6 +261,12 @@ function shuffle<T>(items: T[]) {
     [result[index], result[target]] = [result[target], result[index]];
   }
   return result;
+}
+
+function pickRandomQuestion(pool: GuitarQuestion[], avoidId = "") {
+  const candidates = pool.filter((question) => question.id !== avoidId);
+  const question = candidates[Math.floor(Math.random() * candidates.length)] ?? pool[0];
+  return question ? { ...question, misses: 0 } : null;
 }
 
 function noteName(letter: Letter, locale: Locale) {
@@ -385,6 +408,7 @@ export function GuitarTrainer({
   const [stage, setStage] = useState<GuitarStage>("setup");
   const [maxFret, setMaxFret] = useState(3);
   const [practiceMode, setPracticeMode] = useState<GuitarMode>("name-note");
+  const [sessionType, setSessionType] = useState<GuitarSessionType>("standard");
   const [studyLetter, setStudyLetter] = useState<Letter | null>(null);
   const [queue, setQueue] = useState<GuitarQuestion[]>([]);
   const [answer, setAnswer] = useState("");
@@ -406,7 +430,9 @@ export function GuitarTrainer({
   const current = queue[0];
   const displayed = feedbackQuestion ?? current;
   const choices = locale === "tr" ? Object.values(SOLFEGE) : Object.keys(SOLFEGE);
-  const completed = initialCount - queue.length;
+  const answeredCount = times.length;
+  const correctAnswers = Math.max(0, answeredCount - wrong);
+  const completed = sessionType === "standard" ? initialCount - queue.length : correctAnswers;
   const average = times.length ? `${(times.reduce((sum, time) => sum + time, 0) / times.length / 1000).toFixed(2).replace(".", locale === "tr" ? "," : ".")} ${locale === "tr" ? "sn" : "sec"}` : `0${locale === "tr" ? "," : "."}00`;
   const matchingLocations = displayed
     ? buildQuestions(maxFret).filter((question) => question.midi === displayed.midi).map((question) => text.location(question.stringNumber, question.fret)).join(locale === "tr" ? ", " : "; ")
@@ -455,7 +481,12 @@ export function GuitarTrainer({
   function finishCorrectAnswer(question: GuitarQuestion) {
     playPracticeNote(question.midi, noteSoundEnabled);
     if (question.misses === 0) setFirstTry((count) => count + 1);
-    setQueue((items) => items.slice(1));
+    setQueue((items) => {
+      if (sessionType === "standard") return items.slice(1);
+      const pool = practiceMode === "staff-to-fretboard" ? buildPitchQuestions(maxFret) : buildQuestions(maxFret);
+      const nextQuestion = pickRandomQuestion(pool, question.id);
+      return nextQuestion ? [...items.slice(1), nextQuestion] : items.slice(1);
+    });
     setFeedback("correct");
   }
 
@@ -470,7 +501,9 @@ export function GuitarTrainer({
       finishCorrectAnswer(current);
     } else {
       setWrong((count) => count + 1);
-      setQueue((items) => [...items.slice(1), { ...items[0], misses: items[0].misses + 1 }]);
+      setQueue((items) => sessionType === "standard"
+        ? [...items.slice(1), { ...items[0], misses: items[0].misses + 1 }]
+        : items.slice(1));
       setFeedback("wrong");
     }
   }
@@ -484,12 +517,19 @@ export function GuitarTrainer({
       finishCorrectAnswer(current);
     } else {
       setWrong((count) => count + 1);
-      setQueue((items) => [...items.slice(1), { ...items[0], misses: items[0].misses + 1 }]);
+      setQueue((items) => sessionType === "standard"
+        ? [...items.slice(1), { ...items[0], misses: items[0].misses + 1 }]
+        : items.slice(1));
       setFeedback("wrong");
     }
   }
 
   function next() {
+    if (sessionType === "endless" && feedback === "wrong") {
+      setStage("done");
+      setFeedback(null);
+      return;
+    }
     if (queue.length === 0) {
       setStage("done");
       setFeedback(null);
@@ -524,6 +564,24 @@ export function GuitarTrainer({
               <small>{range.eyebrow}</small><strong>{range.title}</strong><span>{range.copy}</span><i />
             </button>
           ))}
+        </div>
+
+        <div className="guitar-session-section">
+          <div className="guitar-range-heading">
+            <div><p className="kicker" aria-hidden="true">⚬</p><h2>{text.session}</h2></div>
+          </div>
+          <div className="mode-grid guitar-session-grid" role="group" aria-label={text.session}>
+            <button className={`mode-card ${sessionType === "standard" ? "is-selected" : ""}`} type="button" onClick={() => setSessionType("standard")} aria-pressed={sessionType === "standard"}>
+              <span className="guitar-mode-icon guitar-mode-icon--staff" aria-hidden="true"><i /><i /><i /><i /><i /><b /></span>
+              <span><strong>{text.standardSession}</strong><small>{text.standardSessionCopy}</small></span>
+              <i className="selection-indicator" aria-hidden="true" />
+            </button>
+            <button className={`mode-card ${sessionType === "endless" ? "is-selected" : ""}`} type="button" onClick={() => setSessionType("endless")} aria-pressed={sessionType === "endless"}>
+              <span className="guitar-mode-icon guitar-mode-icon--position" aria-hidden="true"><i /><b>∞</b></span>
+              <span><strong>{text.endlessSession}</strong><small>{text.endlessSessionCopy}</small></span>
+              <i className="selection-indicator" aria-hidden="true" />
+            </button>
+          </div>
         </div>
 
         <div className="guitar-mode-section">
@@ -578,10 +636,10 @@ export function GuitarTrainer({
       <section className="guitar-shell guitar-results">
         <CommunityPracticeRecorder active activityKey={`guitar-${practiceMode}-${sessionKey}`} />
         <p className="kicker">{text.kicker}</p>
-        <h1 ref={resultsHeadingRef} tabIndex={-1}>{text.complete}</h1>
-        <p>{practiceMode === "name-note" ? text.completeCopy : text.positionCompleteCopy}</p>
+        <h1 ref={resultsHeadingRef} tabIndex={-1}>{sessionType === "endless" ? text.endlessResult : text.complete}</h1>
+        <p>{sessionType === "endless" ? text.endlessResultCopy(correctAnswers) : practiceMode === "name-note" ? text.completeCopy : text.positionCompleteCopy}</p>
         <div className="guitar-stats">
-          <div><strong>{initialCount}</strong><span>{practiceMode === "name-note" ? text.unique : text.writtenNotes}</span></div>
+          <div><strong>{sessionType === "endless" ? correctAnswers : initialCount}</strong><span>{sessionType === "endless" ? text.endlessCorrect : practiceMode === "name-note" ? text.unique : text.writtenNotes}</span></div>
           <div><strong>{firstTry}</strong><span>{text.firstTry}</span></div>
           <div><strong>{wrong}</strong><span>{text.wrong}</span></div>
           <div><strong>{average}</strong><span>{text.average}</span></div>
@@ -599,7 +657,7 @@ export function GuitarTrainer({
     <section className="guitar-shell guitar-quiz">
       <div className="guitar-quiz-top">
         <button className="guitar-exit-button" type="button" onClick={() => setStage("setup")}><span aria-hidden="true">←</span> {text.exit}</button>
-        <div role="progressbar" aria-label={text.progress} aria-valuemin={0} aria-valuemax={initialCount} aria-valuenow={completed}><span>{text.progress}</span><strong>{completed} / {initialCount}</strong></div>
+        <div role="progressbar" aria-label={text.progress} aria-valuemin={0} aria-valuemax={sessionType === "standard" ? initialCount : undefined} aria-valuenow={sessionType === "standard" ? completed : undefined}><span>{text.progress}</span><strong>{sessionType === "standard" ? `${completed} / ${initialCount}` : completed}</strong></div>
       </div>
       <div className={`guitar-question-card ${practiceMode === "staff-to-fretboard" ? "guitar-question-card--staff-position" : ""}`}>
         {displayed && (

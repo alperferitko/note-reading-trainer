@@ -1,7 +1,7 @@
 "use client";
 
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
-import { beatDurationMs, groupRhythmValues, RHYTHM_VALUES } from "@/lib/score-reading.mjs";
+import { beatDurationMs, buildRandomRhythmSequence, groupRhythmValues, RHYTHM_VALUES } from "@/lib/score-reading.mjs";
 import { RHYTHM_DEMO_PATTERNS, rhythmDemoStepDurationMs } from "@/lib/rhythm-presets.mjs";
 import { noteIdToMidi, playPracticeNote, playRhythmPulse } from "@/lib/practice-audio";
 import { CommunityPracticeRecorder, CommunityPracticeStreak } from "./community";
@@ -78,7 +78,7 @@ function notesForRange(range: ScoreRangeId) {
 
 function buildRandomLine(range: ScoreRangeId): ScoreEvent[] {
   const pool = notesForRange(range);
-  const rhythms = Array.from({ length: 14 }, () => RHYTHM_VALUES[Math.floor(Math.random() * RHYTHM_VALUES.length)].id as RhythmScoreValue);
+  const rhythms = buildRandomRhythmSequence(16) as RhythmScoreValue[];
   const lineId = `random-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const groupedRhythms = groupRhythmValues(rhythms, lineId) as Array<{ id: RhythmScoreValue; groupId?: string }>;
   let previousId = "";
@@ -231,9 +231,8 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
       rhythm: event.rhythm.id,
       groupId: event.groupId,
       state,
-      label: text.valueNames[event.rhythm.id],
     };
-  }), [currentIndex, line, resultByIndex, text.valueNames]);
+  }), [currentIndex, line, resultByIndex]);
   const correctCount = results.filter((result) => result.correct).length;
   const mistakeCount = results.length - correctCount;
   const accuracy = results.length ? Math.round((correctCount / results.length) * 100) : 0;
@@ -286,8 +285,8 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
         setStage("done");
       } else if (currentIndex >= line.length - 1) {
         if (sessionType === "endless") {
-          const extra = buildRandomLine(scoreRange)[0];
-          if (extra) setLine((items) => [...items, extra]);
+          const extra = buildRandomLine(scoreRange);
+          if (extra.length) setLine((items) => [...items, ...extra]);
           setLocked(false);
           setCurrentIndex((index) => index + 1);
         } else setStage("done");
@@ -353,8 +352,8 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
         if (sessionType === "endless" && !correct) finishLine();
         else if (currentIndex >= line.length - 1) {
           if (sessionType === "endless") {
-            const extra = buildRandomLine(scoreRange)[0];
-            if (extra) setLine((items) => [...items, extra]);
+            const extra = buildRandomLine(scoreRange);
+            if (extra.length) setLine((items) => [...items, ...extra]);
             setCurrentIndex((index) => index + 1);
             setLocked(false);
           } else finishLine();

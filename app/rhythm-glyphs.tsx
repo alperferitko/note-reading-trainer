@@ -13,7 +13,6 @@ export type RhythmScoreNote = {
   groupId?: string;
   barAfter?: boolean;
   state?: RhythmNoteState;
-  label?: string;
 };
 
 type GroupNote = RhythmScoreNote & { index: number; x: number; y: number };
@@ -170,7 +169,6 @@ export function RhythmGroup({
             key={note.key}
             ref={note.index === activeIndex ? activeNoteRef : undefined}
           >
-            {note.label && <title>{note.label}</title>}
             <LedgerLines x={note.x} position={note.position} firstLineY={firstLineY} />
             {note.rhythm !== "whole" && (
               <line
@@ -190,7 +188,6 @@ export function RhythmGroup({
             )}
             <NoteHead x={note.x} y={note.y} open={open} preset={preset} />
             {note.rhythm === "dottedQuarter" && <circle className="rhythm-augmentation-dot" cx={note.x + 17} cy={note.y} r="3.1" />}
-            {note.label && <text className="rhythm-score-label" x={note.x} y="171" textAnchor="middle">{note.label}</text>}
           </g>
         );
       })}
@@ -198,22 +195,46 @@ export function RhythmGroup({
   );
 }
 
-function groupScoreNotes(notes: RhythmScoreNote[], firstLineY: number, startX: number, spacing: number) {
-  const positioned = notes.map((note, index) => ({ ...note, index, x: startX + index * spacing, y: firstLineY - note.position * 7 }));
+const GROUP_NOTE_GAPS: Record<RhythmPresetId, number> = {
+  whole: 0,
+  half: 0,
+  quarter: 0,
+  dottedQuarter: 0,
+  eighthPair: 34,
+  sixteenthGroup: 24,
+  eighthTriplet: 28,
+};
+
+function layoutScoreNotes(notes: RhythmScoreNote[], firstLineY: number, startX: number) {
   const groups: { presetId: RhythmPresetId; notes: GroupNote[] }[] = [];
+  const noteXs = new Map<number, number>();
   let cursor = 0;
-  while (cursor < positioned.length) {
-    const first = positioned[cursor];
+  let nextX = startX;
+
+  while (cursor < notes.length) {
+    const first = notes[cursor];
     const presetId = presetIdForRhythm(first.rhythm);
     const preset = rhythmPresets[presetId];
     const groupId = first.groupId;
-    const take = groupId
-      ? positioned.slice(cursor, cursor + preset.noteCount).filter((note) => note.groupId === groupId)
-      : [first];
-    groups.push({ presetId, notes: take.length ? take : [first] });
-    cursor += Math.max(1, take.length);
+    const candidate = groupId ? notes.slice(cursor, cursor + preset.noteCount) : [first];
+    const completeGroup = Boolean(groupId)
+      && candidate.length === preset.noteCount
+      && candidate.every((note) => note.groupId === groupId && presetIdForRhythm(note.rhythm) === presetId);
+    const sourceNotes = completeGroup ? candidate : [first];
+    const noteGap = completeGroup ? GROUP_NOTE_GAPS[presetId] : 0;
+    const positioned = sourceNotes.map((note, offset) => {
+      const index = cursor + offset;
+      const x = nextX + offset * noteGap;
+      noteXs.set(index, x);
+      return { ...note, index, x, y: firstLineY - note.position * 7 };
+    });
+
+    groups.push({ presetId, notes: positioned });
+    nextX += noteGap * Math.max(0, positioned.length - 1) + (completeGroup ? 52 : 66);
+    cursor += positioned.length;
   }
-  return groups;
+
+  return { groups, noteXs, width: Math.max(720, nextX + 26) };
 }
 
 export function RhythmScoreLine({ notes, activeIndex, activeNoteRef, className = "", ariaLabel }: {
@@ -224,10 +245,8 @@ export function RhythmScoreLine({ notes, activeIndex, activeNoteRef, className =
   ariaLabel?: string;
 }) {
   const firstLineY = 118;
-  const spacing = notes.length > 12 ? 53 : 56;
   const startX = 126;
-  const width = Math.max(720, startX + Math.max(1, notes.length - 1) * spacing + 44);
-  const groups = groupScoreNotes(notes, firstLineY, startX, spacing);
+  const { groups, noteXs, width } = layoutScoreNotes(notes, firstLineY, startX);
   return (
     <svg
       className={`rhythm-score-line ${className}`.trim()}
@@ -257,8 +276,8 @@ export function RhythmScoreLine({ notes, activeIndex, activeNoteRef, className =
           <line
             className="rhythm-barline"
             key={`bar-${note.key}`}
-            x1={Math.min(width - 20, startX + index * spacing + spacing / 2)}
-            x2={Math.min(width - 20, startX + index * spacing + spacing / 2)}
+            x1={Math.min(width - 20, (noteXs.get(index) ?? startX) + 30)}
+            x2={Math.min(width - 20, (noteXs.get(index) ?? startX) + 30)}
             y1={firstLineY - 56}
             y2={firstLineY}
           />

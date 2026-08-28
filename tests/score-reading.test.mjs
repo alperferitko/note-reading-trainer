@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { beatDurationMs, chooseUnrecentPiece, nextPieceHistory, RHYTHM_VALUES } from "../lib/score-reading.mjs";
+import { beatDurationMs, buildRandomRhythmSequence, chooseUnrecentPiece, nextPieceHistory, RHYTHM_GROUP_SIZES, RHYTHM_VALUES } from "../lib/score-reading.mjs";
 
 test("ritim pencereleri BPM ve nota değeriyle kesintisiz hesaplanır", () => {
   assert.equal(beatDurationMs(4, 60), 4000);
@@ -15,6 +15,21 @@ test("iki sekizlik, dört on altılık ve üç sekizlik üçleme birer vuruşa e
   assert.equal(values.eighth * 2, values.quarter);
   assert.equal(values.sixteenth * 4, values.quarter);
   assert.equal(values.triplet * 3, values.quarter);
+});
+
+test("rastgele satırlar kısa nota değerlerini eksiksiz gruplar halinde üretir", () => {
+  const deterministicValues = [0.99, 0.8, 0.6, 0.4, 0.2, 0];
+  let cursor = 0;
+  const sequence = buildRandomRhythmSequence(16, () => deterministicValues[cursor++ % deterministicValues.length]);
+  assert.equal(sequence.length, 16);
+
+  let index = 0;
+  while (index < sequence.length) {
+    const id = sequence[index];
+    const size = RHYTHM_GROUP_SIZES[id];
+    assert.deepEqual(sequence.slice(index, index + size), Array.from({ length: size }, () => id));
+    index += size;
+  }
 });
 
 test("yakın zamanda gösterilen eserler seçim havuzundan çıkarılır", () => {

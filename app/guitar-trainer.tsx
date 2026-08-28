@@ -67,7 +67,7 @@ const COPY = {
     nameMode: "Konumu gör, notayı bul",
     nameModeCopy: "İşaretlenen tel ve perdenin nota adını yaz.",
     positionMode: "Porteyi gör, gitarda bul",
-    positionModeCopy: "Portedeki notanın doğru tel ve perde konumunu seç.",
+    positionModeCopy: "Portedeki sesin seçili aralıktaki bütün tel ve perde konumlarını işaretle.",
     start: "Gitar çalışmasını başlat",
     startReady: "Haritayı incelediğinde seçtiğin aralıkla kısa bir tura başlayabilirsin.",
     progress: "İlerleme",
@@ -75,7 +75,11 @@ const COPY = {
     positionQuestion: "Bu nota gitarda nerede?",
     staffTarget: "Portedeki nota",
     staffTargetCopy: "Oktavlı sol anahtarı",
-    choosePosition: "Gitar klavyesinde bir tel ve perde seç",
+    choosePosition: "Gitar klavyesindeki bütün doğru konumları işaretle",
+    positionProgress: (selected: number, total: number) => `${selected} / ${total} konum bulundu`,
+    positionCount: (count: number) => `${count} doğru konum`,
+    showNoteNames: "Nota adlarını göster",
+    hideNoteNames: "Nota adlarını gizle",
     location: (stringNumber: number, fret: number) => `${stringNumber}. tel, ${fret === 0 ? "açık tel" : `${fret}. perde`}`,
     target: "Sorulan konum",
     exit: "Oturumdan çık",
@@ -85,7 +89,8 @@ const COPY = {
     correct: "Doğru",
     incorrect: "Yanlış",
     wrongCopy: (name: string) => `Doğru nota ${name}. Bu konum listenin sonuna eklendi.`,
-    positionWrongCopy: (locations: string) => `Doğru konum: ${locations}. Bu nota listenin sonuna eklendi.`,
+    positionCorrectCopy: (locations: string) => `Bütün doğru konumları buldun: ${locations}.`,
+    positionWrongCopy: (locations: string) => `Doğru konumlar: ${locations}. Bu nota listenin sonuna eklendi.`,
     next: "Sonraki",
     complete: "Klavye turu tamamlandı",
     completeCopy: "Seçtiğin alandaki bütün doğal nota konumlarını en az bir kez doğru buldun.",
@@ -128,7 +133,7 @@ const COPY = {
     nameMode: "See a position, name the note",
     nameModeCopy: "Type the note at the highlighted string and fret.",
     positionMode: "See the staff, find it on guitar",
-    positionModeCopy: "Choose the matching string and fret for the written note.",
+    positionModeCopy: "Mark every matching string and fret for the written pitch in the selected range.",
     start: "Start guitar practice",
     startReady: "When you have scanned the map, begin a short round with this range.",
     progress: "Progress",
@@ -136,7 +141,11 @@ const COPY = {
     positionQuestion: "Where is this note on the guitar?",
     staffTarget: "Written note",
     staffTargetCopy: "Octave treble clef",
-    choosePosition: "Choose a string and fret on the guitar",
+    choosePosition: "Mark every matching position on the fretboard",
+    positionProgress: (selected: number, total: number) => `${selected} of ${total} positions found`,
+    positionCount: (count: number) => `${count} matching positions`,
+    showNoteNames: "Show note names",
+    hideNoteNames: "Hide note names",
     location: (stringNumber: number, fret: number) => `String ${stringNumber}, ${fret === 0 ? "open string" : `fret ${fret}`}`,
     target: "Target location",
     exit: "Exit session",
@@ -146,7 +155,8 @@ const COPY = {
     correct: "Correct",
     incorrect: "Incorrect",
     wrongCopy: (name: string) => `The correct note is ${name}. This location moved to the end of the queue.`,
-    positionWrongCopy: (locations: string) => `Correct position: ${locations}. This note moved to the end of the queue.`,
+    positionCorrectCopy: (locations: string) => `You found every matching position: ${locations}.`,
+    positionWrongCopy: (locations: string) => `Correct positions: ${locations}. This note moved to the end of the queue.`,
     next: "Next",
     complete: "Fretboard round complete",
     completeCopy: "You found every natural-note location in the selected range at least once.",
@@ -220,36 +230,44 @@ function guitarLedgerPositions(position: number) {
 
 function GuitarStaffNote({ question, locale }: { question: GuitarQuestion; locale: Locale }) {
   const position = writtenStaffPosition(question);
-  const firstLineY = 126;
-  const step = 12;
+  const firstLineY = 122;
+  const step = 14;
   const noteY = firstLineY - position * (step / 2);
   const stemDown = position >= 4;
+  const noteX = 286;
 
   return (
     <div className="guitar-staff-frame">
-      <div
-        className="staff guitar-staff-note"
+      <svg
+        className="guitar-staff-note"
+        viewBox="0 0 520 190"
+        preserveAspectRatio="xMidYMid meet"
         role="img"
         aria-label={locale === "tr"
           ? `Oktavlı sol anahtarında ${noteName(question.letter, locale)} notası`
           : `${noteName(question.letter, locale)} on the octave treble staff`}
       >
-        <span className="clef" aria-hidden="true">𝄞</span>
-        <span className="guitar-clef-eight" aria-hidden="true">8</span>
-        <div className="staff-lines" aria-hidden="true">
+        <g className="guitar-staff-lines" aria-hidden="true">
           {[0, 1, 2, 3, 4].map((index) => (
-            <span key={index} style={{ left: 42, width: 390, top: firstLineY - index * step }} />
+            <line key={index} x1="76" x2="474" y1={firstLineY - index * step} y2={firstLineY - index * step} />
           ))}
+        </g>
+        <text className="guitar-staff-clef" x="24" y="143" aria-hidden="true">𝄞</text>
+        <text className="guitar-clef-eight" x="62" y="162" aria-hidden="true">8</text>
+        <g aria-hidden="true">
           {guitarLedgerPositions(position).map((ledger) => (
-            <span className="ledger" key={ledger} style={{ left: 208, width: 44, top: firstLineY - ledger * (step / 2) }} />
+            <line className="guitar-staff-ledger" key={ledger} x1={noteX - 24} x2={noteX + 24} y1={firstLineY - ledger * (step / 2)} y2={firstLineY - ledger * (step / 2)} />
           ))}
-          <span className="note-head" style={{ left: 230, top: noteY }} />
-          <span
-            className="note-stem"
-            style={{ left: 230 + (stemDown ? -11 : 11), top: stemDown ? noteY : noteY - 45 }}
+          <line
+            className="guitar-staff-stem"
+            x1={noteX + (stemDown ? -10 : 10)}
+            x2={noteX + (stemDown ? -10 : 10)}
+            y1={stemDown ? noteY + 2 : noteY - 45}
+            y2={stemDown ? noteY + 47 : noteY - 2}
           />
-        </div>
-      </div>
+          <ellipse className="guitar-staff-head" cx={noteX} cy={noteY} rx="13" ry="8.5" transform={`rotate(-15 ${noteX} ${noteY})`} />
+        </g>
+      </svg>
     </div>
   );
 }
@@ -279,8 +297,9 @@ function Fretboard({
   active,
   reveal = false,
   onSelect,
-  selectedPosition,
+  selectedPositions = [],
   selectionFeedback,
+  showNoteNames = false,
   studyLetter = null,
   orientationHint,
 }: {
@@ -289,8 +308,9 @@ function Fretboard({
   active?: GuitarQuestion;
   reveal?: boolean;
   onSelect?: (position: GuitarQuestion) => void;
-  selectedPosition?: GuitarQuestion | null;
+  selectedPositions?: GuitarQuestion[];
   selectionFeedback?: "correct" | "wrong" | null;
+  showNoteNames?: boolean;
   studyLetter?: Letter | null;
   orientationHint?: string;
 }) {
@@ -318,7 +338,7 @@ function Fretboard({
         role="region"
         tabIndex={0}
         aria-label={interactive
-          ? locale === "tr" ? "Portedeki notanın gitar klavyesindeki konumunu seç" : "Choose the written note's position on the fretboard"
+          ? locale === "tr" ? "Portedeki sesin gitar klavyesindeki bütün konumlarını seç" : "Choose every fretboard position for the written pitch"
           : active
           ? locale === "tr" ? `${active.stringNumber}. tel, ${active.fret === 0 ? "açık tel" : `${active.fret}. perde`} işaretli` : `String ${active.stringNumber}, ${active.fret === 0 ? "open string" : `fret ${active.fret}`} highlighted`
           : locale === "tr" ? `Açık tellerden ${maxFret}. perdeye doğal nota haritası` : `Natural-note map from open strings to fret ${maxFret}`}
@@ -360,21 +380,23 @@ function Fretboard({
                 midi: string.openMidi + fret,
                 misses: 0,
               } : null;
-              const selected = selectedPosition?.stringId === string.id && selectedPosition.fret === fret;
+              const selected = selectedPositions.some((item) => item.stringId === string.id && item.fret === fret);
               const correct = Boolean(selectionFeedback && active && position?.midi === active.midi);
+              const found = Boolean(!selectionFeedback && selected && active && position?.midi === active.midi);
+              const visibleChoiceName = position && showNoteNames ? noteName(position.letter, locale) : "";
               return (
                 <span className={`fret-cell ${fret === 0 ? "fret-cell--open" : ""}`} key={fret}>
                   {interactive && position && onSelect ? (
                     <button
-                      className={`fret-note fret-note--choice ${selected ? "is-selected" : ""} ${correct ? "is-correct" : ""} ${selectionFeedback === "wrong" && selected && !correct ? "is-wrong" : ""}`}
+                      className={`fret-note fret-note--choice ${visibleChoiceName ? "has-note-name" : ""} ${found ? "is-found" : ""} ${correct ? "is-correct" : ""} ${selectionFeedback === "wrong" && selected && !correct ? "is-wrong" : ""}`}
                       type="button"
                       ref={string.id === "e-low" && fret === Math.min(maxFret, 3) ? firstChoiceRef : undefined}
                       onClick={() => onSelect(position)}
                       disabled={Boolean(selectionFeedback)}
-                      aria-label={locale === "tr" ? `${string.number}. tel, ${fret === 0 ? "açık tel" : `${fret}. perde`}` : `String ${string.number}, ${fret === 0 ? "open string" : `fret ${fret}`}`}
+                      aria-label={`${locale === "tr" ? `${string.number}. tel, ${fret === 0 ? "açık tel" : `${fret}. perde`}` : `String ${string.number}, ${fret === 0 ? "open string" : `fret ${fret}`}`}${visibleChoiceName ? `: ${visibleChoiceName}` : ""}`}
                       aria-pressed={selected}
                     >
-                      {correct ? noteName(position.letter, locale) : selectionFeedback === "wrong" && selected ? "×" : ""}
+                      {selectionFeedback === "wrong" && selected && !correct ? "×" : visibleChoiceName || (correct || found ? "✓" : "")}
                     </button>
                   ) : (highlighted || (reveal && natural)) && (
                     <i className={`fret-note ${highlighted ? "is-active" : ""} ${reveal && studyLetter === letter ? "is-study-focus" : ""} ${reveal && studyLetter && studyLetter !== letter ? "is-study-muted" : ""}`}>
@@ -412,7 +434,8 @@ export function GuitarTrainer({
   const [studyLetter, setStudyLetter] = useState<Letter | null>(null);
   const [queue, setQueue] = useState<GuitarQuestion[]>([]);
   const [answer, setAnswer] = useState("");
-  const [selectedPosition, setSelectedPosition] = useState<GuitarQuestion | null>(null);
+  const [selectedPositions, setSelectedPositions] = useState<GuitarQuestion[]>([]);
+  const [showNoteNames, setShowNoteNames] = useState(false);
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
   const [feedbackQuestion, setFeedbackQuestion] = useState<GuitarQuestion | null>(null);
   const [firstTry, setFirstTry] = useState(0);
@@ -434,9 +457,12 @@ export function GuitarTrainer({
   const correctAnswers = Math.max(0, answeredCount - wrong);
   const completed = sessionType === "standard" ? initialCount - queue.length : correctAnswers;
   const average = times.length ? `${(times.reduce((sum, time) => sum + time, 0) / times.length / 1000).toFixed(2).replace(".", locale === "tr" ? "," : ".")} ${locale === "tr" ? "sn" : "sec"}` : `0${locale === "tr" ? "," : "."}00`;
-  const matchingLocations = displayed
-    ? buildQuestions(maxFret).filter((question) => question.midi === displayed.midi).map((question) => text.location(question.stringNumber, question.fret)).join(locale === "tr" ? ", " : "; ")
-    : "";
+  const matchingPositionQuestions = displayed
+    ? buildQuestions(maxFret).filter((question) => question.midi === displayed.midi)
+    : [];
+  const matchingLocations = matchingPositionQuestions
+    .map((question) => text.location(question.stringNumber, question.fret))
+    .join(locale === "tr" ? ", " : "; ");
 
   const previewQuestions = useMemo(() => buildQuestions(maxFret), [maxFret]);
 
@@ -465,7 +491,8 @@ export function GuitarTrainer({
     setWrong(0);
     setTimes([]);
     setAnswer("");
-    setSelectedPosition(null);
+    setSelectedPositions([]);
+    setShowNoteNames(false);
     setFeedback(null);
     setFeedbackQuestion(null);
     setStartedAt(sessionStartedAt);
@@ -510,17 +537,27 @@ export function GuitarTrainer({
 
   function answerPosition(position: GuitarQuestion) {
     if (!current || feedback || practiceMode !== "staff-to-fretboard") return;
-    setFeedbackQuestion(current);
-    setSelectedPosition(position);
-    setTimes((items) => [...items, Math.max(100, Date.now() - startedAt)]);
-    if (position.midi === current.midi) {
-      finishCorrectAnswer(current);
-    } else {
+    if (selectedPositions.some((item) => item.id === position.id)) return;
+
+    const nextSelected = [...selectedPositions, position];
+    setSelectedPositions(nextSelected);
+    if (position.midi !== current.midi) {
+      setFeedbackQuestion(current);
+      setTimes((items) => [...items, Math.max(100, Date.now() - startedAt)]);
       setWrong((count) => count + 1);
       setQueue((items) => sessionType === "standard"
         ? [...items.slice(1), { ...items[0], misses: items[0].misses + 1 }]
         : items.slice(1));
       setFeedback("wrong");
+      return;
+    }
+
+    const requiredPositions = buildQuestions(maxFret).filter((question) => question.midi === current.midi);
+    const selectedCorrectIds = new Set(nextSelected.filter((item) => item.midi === current.midi).map((item) => item.id));
+    if (requiredPositions.every((item) => selectedCorrectIds.has(item.id))) {
+      setFeedbackQuestion(current);
+      setTimes((items) => [...items, Math.max(100, Date.now() - startedAt)]);
+      finishCorrectAnswer(current);
     }
   }
 
@@ -536,7 +573,7 @@ export function GuitarTrainer({
       return;
     }
     setAnswer("");
-    setSelectedPosition(null);
+    setSelectedPositions([]);
     setFeedback(null);
     setFeedbackQuestion(null);
     setStartedAt(Date.now());
@@ -657,13 +694,24 @@ export function GuitarTrainer({
     <section className="guitar-shell guitar-quiz">
       <div className="guitar-quiz-top">
         <button className="guitar-exit-button" type="button" onClick={() => setStage("setup")}><span aria-hidden="true">←</span> {text.exit}</button>
-        <div role="progressbar" aria-label={text.progress} aria-valuemin={0} aria-valuemax={sessionType === "standard" ? initialCount : undefined} aria-valuenow={sessionType === "standard" ? completed : undefined}><span>{text.progress}</span><strong>{sessionType === "standard" ? `${completed} / ${initialCount}` : completed}</strong></div>
+        <div className="guitar-quiz-tools">
+          <button
+            className="guitar-note-name-toggle"
+            type="button"
+            aria-pressed={showNoteNames}
+            onClick={() => setShowNoteNames((visible) => !visible)}
+          >
+            <span className="guitar-note-name-toggle-icon" aria-hidden="true">Aa</span>
+            {showNoteNames ? text.hideNoteNames : text.showNoteNames}
+          </button>
+          <div className="guitar-quiz-progress" role="progressbar" aria-label={text.progress} aria-valuemin={0} aria-valuemax={sessionType === "standard" ? initialCount : undefined} aria-valuenow={sessionType === "standard" ? completed : undefined}><span>{text.progress}</span><strong>{sessionType === "standard" ? `${completed} / ${initialCount}` : completed}</strong></div>
+        </div>
       </div>
       <div className={`guitar-question-card ${practiceMode === "staff-to-fretboard" ? "guitar-question-card--staff-position" : ""}`}>
         {displayed && (
           <div className="guitar-target-location">
             <span>{practiceMode === "name-note" ? text.target : text.staffTarget}</span>
-            <strong>{practiceMode === "name-note" ? text.location(displayed.stringNumber, displayed.fret) : text.staffTargetCopy}</strong>
+            <strong>{practiceMode === "name-note" ? text.location(displayed.stringNumber, displayed.fret) : `${text.staffTargetCopy}, ${text.positionCount(matchingPositionQuestions.length)}`}</strong>
           </div>
         )}
         <h1>{practiceMode === "name-note" ? text.question : text.positionQuestion}</h1>
@@ -674,8 +722,10 @@ export function GuitarTrainer({
             locale={locale}
             active={displayed}
             onSelect={practiceMode === "staff-to-fretboard" ? answerPosition : undefined}
-            selectedPosition={selectedPosition}
+            selectedPositions={selectedPositions}
             selectionFeedback={feedback}
+            showNoteNames={showNoteNames}
+            reveal={showNoteNames}
             orientationHint={text.orientationHint}
           />
         )}
@@ -686,14 +736,17 @@ export function GuitarTrainer({
             <div className="guitar-note-choices" role="group" aria-label={text.choices}>{choices.map((choice) => <button type="button" key={choice} onClick={() => answerQuestion(choice)}>{choice}</button>)}</div>
           </form>
         ) : !feedback ? (
-          <p className="guitar-position-instruction" id="guitar-position-instruction">{text.choosePosition}</p>
+          <p className="guitar-position-instruction" id="guitar-position-instruction" role="status" aria-live="polite" aria-atomic="true">
+            <strong>{text.choosePosition}</strong>
+            <span>{text.positionProgress(selectedPositions.length, matchingPositionQuestions.length)}</span>
+          </p>
         ) : (
           <div className={`guitar-feedback guitar-feedback--${feedback}`} role="status" aria-live="polite" aria-atomic="true">
             <div id="guitar-feedback-message">
               <strong>{feedback === "correct" ? text.correct : text.incorrect}</strong>
               <span>{practiceMode === "name-note"
                 ? feedback === "correct" ? noteName(feedbackQuestion?.letter ?? "C", locale) : text.wrongCopy(noteName(feedbackQuestion?.letter ?? "C", locale))
-                : feedback === "correct" ? text.location(selectedPosition?.stringNumber ?? 1, selectedPosition?.fret ?? 0) : text.positionWrongCopy(matchingLocations)}</span>
+                : feedback === "correct" ? text.positionCorrectCopy(matchingLocations) : text.positionWrongCopy(matchingLocations)}</span>
             </div>
             <button ref={feedbackButtonRef} type="button" aria-describedby="guitar-feedback-message" onClick={next}>{text.next} →</button>
           </div>

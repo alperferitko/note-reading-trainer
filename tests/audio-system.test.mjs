@@ -11,7 +11,7 @@ test("uygulama çalışma sesini yalnız doğru cevaplarda ve kullanıcı başla
   assert.match(page, /if \(correct\) \{[\s\S]*playPracticeNote\(noteIdToMidi\(current\.id\), noteSoundEnabled\);/);
   assert.match(guitar, /function finishCorrectAnswer\(question: GuitarQuestion\) \{[\s\S]*playPracticeNote\(question\.midi, noteSoundEnabled\);/);
   assert.match(guitar, /if \(guessed\.letter === current\.letter\) \{\s*finishCorrectAnswer\(current\);/);
-  assert.match(guitar, /if \(position\.midi === current\.midi\) \{\s*finishCorrectAnswer\(current\);/);
+  assert.match(guitar, /if \(requiredPositions\.every\(\(item\) => selectedCorrectIds\.has\(item\.id\)\)\) \{[\s\S]*finishCorrectAnswer\(current\);/);
   assert.equal((page.match(/playPracticeNote\(/g) ?? []).length, 1);
   assert.equal((guitar.match(/playPracticeNote\(/g) ?? []).length, 1);
   assert.match(scoreReading, /function toggleRhythmDemo\(id: RhythmId\)[\s\S]*if \(shouldPlay\)[\s\S]*playRhythmPulse/);

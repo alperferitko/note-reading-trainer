@@ -244,13 +244,16 @@ export function RhythmScoreLine({ notes, activeIndex, activeNoteRef, className =
   className?: string;
   ariaLabel?: string;
 }) {
-  const firstLineY = 118;
+  const highestPosition = notes.length ? Math.max(...notes.map((note) => note.position)) : 8;
+  const lowestPosition = notes.length ? Math.min(...notes.map((note) => note.position)) : 0;
+  const firstLineY = Math.max(118, 52 + highestPosition * 7);
+  const scoreHeight = Math.max(184, firstLineY - lowestPosition * 7 + 20);
   const startX = 126;
   const { groups, noteXs, width } = layoutScoreNotes(notes, firstLineY, startX);
   return (
     <svg
       className={`rhythm-score-line ${className}`.trim()}
-      viewBox={`0 0 ${width} 184`}
+      viewBox={`0 0 ${width} ${scoreHeight}`}
       preserveAspectRatio="xMidYMid meet"
       style={{ "--rhythm-score-width": `${width}px` } as CSSProperties}
       role={ariaLabel ? "img" : undefined}
@@ -260,7 +263,7 @@ export function RhythmScoreLine({ notes, activeIndex, activeNoteRef, className =
       <g className="rhythm-staff-lines">
         {[0, 1, 2, 3, 4].map((line) => <line key={line} x1="96" x2={width - 18} y1={firstLineY - line * 14} y2={firstLineY - line * 14} />)}
       </g>
-      <text className="rhythm-clef" x="18" y="131">𝄞</text>
+      <text className="rhythm-clef" x="18" y={firstLineY + 13}>𝄞</text>
       {groups.map((group) => (
         <RhythmGroup
           activeIndex={activeIndex}

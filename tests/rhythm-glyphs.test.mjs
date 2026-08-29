@@ -95,6 +95,10 @@ test("ana kart, değer göstergesi ve çalışma ekranı aynı SVG bileşenlerin
   assert.match(glyphs, /export function RhythmGlyph/);
   assert.match(glyphs, /export function RhythmGroup/);
   assert.match(glyphs, /export function RhythmPatternPreview/);
+  assert.match(glyphs, /const highestPosition = notes\.length \? Math\.max/);
+  assert.match(glyphs, /const lowestPosition = notes\.length \? Math\.min/);
+  assert.match(glyphs, /const scoreHeight = Math\.max\(184, firstLineY - lowestPosition \* 7 \+ 20\)/);
+  assert.match(glyphs, /viewBox=\{`0 0 \$\{width\} \$\{scoreHeight\}`\}/);
   assert.match(page, /<RhythmPatternPreview variant="mixed"/);
   assert.match(trainer, /<RhythmPatternPreview variant="mixed"/);
   assert.match(trainer, /<RhythmGlyph id=\{id\}/);

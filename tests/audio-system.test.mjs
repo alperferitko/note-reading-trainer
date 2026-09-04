@@ -21,7 +21,7 @@ test("uygulama çalışma sesini doğru cevaplarda ve kullanıcının açtığı
   assert.match(practiceAudio, /export function playRhythmPulse/);
   assert.match(practiceAudio, /export function playMetronomeClick/);
   assert.match(practiceAudio, /oscillator\.type = "square"/);
-  assert.match(scoreReading, /if \(nextEnabled\) playMetronomeClick\(\)/);
+  assert.match(scoreReading, /if \(nextEnabled && stage !== "playing"\) playMetronomeClick\(\)/);
   assert.match(page, /role="switch" aria-checked=\{noteSoundEnabled\}/);
   assert.match(page, /createPortal\([\s\S]*audio-settings-panel[\s\S]*document\.body/);
   assert.match(page, /!audioSettingsPanelRef\.current\?\.contains\(event\.target\)/);

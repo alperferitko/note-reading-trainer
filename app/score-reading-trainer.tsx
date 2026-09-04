@@ -301,6 +301,7 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
   useEffect(() => {
     if (stage !== "playing" || readingMode !== "rhythm" || !metronomeEnabled) return;
     const beatMs = beatDurationMs(1, bpm);
+    playMetronomeClick();
     let nextAt = performance.now() + beatMs;
     let timeoutId = 0;
 
@@ -329,14 +330,13 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
     setRhythmDemoPlaying(false);
     setRhythmDemoStep(-1);
     answeredIndexRef.current = null;
-    if (readingMode === "rhythm" && metronomeEnabled) playMetronomeClick();
     setStage("playing");
   }
 
   function toggleMetronome() {
     const nextEnabled = !metronomeEnabled;
     setMetronomeEnabled(nextEnabled);
-    if (nextEnabled) playMetronomeClick();
+    if (nextEnabled && stage !== "playing") playMetronomeClick();
   }
 
   function toggleRhythmDemo(id: RhythmId) {
@@ -490,7 +490,7 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
     );
   }
 
-  const windowMs = current ? beatDurationMs(current.rhythm.beats, bpm) : 1000;
+  const beatWindowMs = beatDurationMs(1, bpm);
   return (
     <section className="score-reading-shell score-reading-session">
       <div className="score-reading-session-top"><button type="button" onClick={finishLine}>← {text.exit}</button><div className="score-reading-session-progress"><span>{text.progress}</span><strong>{sessionType === "endless" ? currentIndex + 1 : `${Math.min(currentIndex + 1, line.length)} / ${line.length}`}</strong></div><div className="score-reading-session-controls">{readingMode === "rhythm" && <button type="button" className={`metronome-toggle metronome-toggle--session ${metronomeEnabled ? "is-active" : ""}`} onClick={toggleMetronome} role="switch" aria-checked={metronomeEnabled}><span className="metronome-icon" aria-hidden="true"><i /><i /><i /></span>{metronomeEnabled ? text.metronomeOff : text.metronomeOn}</button>}<button type="button" onClick={start}>{text.restart}</button></div></div>
@@ -505,7 +505,7 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
             notes={renderedLine}
           />
         </div>
-        {readingMode === "rhythm" && current && <div className="rhythm-window" key={`${currentIndex}-${sessionKey}`} style={{ "--rhythm-window": `${windowMs}ms` } as CSSProperties}><span /></div>}
+        {readingMode === "rhythm" && current && <div className="rhythm-window" key={`${sessionKey}-${metronomeEnabled}`} style={{ "--rhythm-window": `${beatWindowMs}ms` } as CSSProperties}><span /></div>}
         <div className="score-answer-area"><div><p>{text.choose}</p><span>{readingMode === "rhythm" ? text.rhythmHint : text.flowHint}</span></div><div className="score-answer-grid" role="group" aria-label={text.choices}>{answerChoices.map((choice) => <button type="button" key={choice} onClick={() => answer(choice)} disabled={locked}>{choice}</button>)}</div></div>
       </div>
     </section>

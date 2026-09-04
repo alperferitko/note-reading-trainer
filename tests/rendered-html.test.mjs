@@ -137,6 +137,9 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(scoreReading, /playMetronomeClick\(\)/);
   assert.match(scoreReading, /nextAt - performance\.now\(\)/);
   assert.match(scoreReading, /role="switch" aria-checked=\{metronomeEnabled\}/);
+  assert.match(scoreReading, /const beatWindowMs = beatDurationMs\(1, bpm\)/);
+  assert.match(scoreReading, /key=\{`\$\{sessionKey\}-\$\{metronomeEnabled\}`\}/);
+  assert.match(styles, /rhythm-window-countdown var\(--rhythm-window\) linear infinite/);
   assert.match(scoreReading, /function buildRandomLine\(range: ScoreRangeId\)/);
   assert.match(scoreReading, /score-range-grid/);
   assert.match(scoreReading, /buildRandomRhythmSequence\(16\)/);

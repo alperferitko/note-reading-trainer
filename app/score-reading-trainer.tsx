@@ -466,7 +466,7 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
               </button>
             );
           })}</div><p className="sr-only" aria-live="polite">{rhythmDemoId ? (rhythmDemoPlaying ? text.demoPlaying(text.valueNames[rhythmDemoId], bpm) : text.demoPaused(text.valueNames[rhythmDemoId])) : ""}</p></div>
-          {readingMode === "rhythm" && <div className="score-rhythm-controls"><label className="tempo-control"><span>{text.tempo}</span><strong>{bpm} BPM</strong><input type="range" min="30" max="112" step="2" value={bpm} onChange={(event) => setBpm(Number(event.target.value))} /></label><button type="button" className={`metronome-toggle ${metronomeEnabled ? "is-active" : ""}`} onClick={toggleMetronome} role="switch" aria-checked={metronomeEnabled}><span className="metronome-icon" aria-hidden="true"><i /><i /><i /></span>{metronomeEnabled ? text.metronomeOff : text.metronomeOn}</button></div>}
+          {readingMode === "rhythm" && <div className="score-rhythm-controls"><label className="tempo-control"><span>{text.tempo}</span><strong>{bpm} BPM</strong><input type="range" min="15" max="112" step="1" value={bpm} onChange={(event) => setBpm(Number(event.target.value))} /></label><button type="button" className={`metronome-toggle ${metronomeEnabled ? "is-active" : ""}`} onClick={toggleMetronome} role="switch" aria-checked={metronomeEnabled}><span className="metronome-icon" aria-hidden="true"><i /><i /><i /></span>{metronomeEnabled ? text.metronomeOff : text.metronomeOn}</button></div>}
           <button className="primary-button" type="button" onClick={start}>{text.start} <span aria-hidden="true">→</span></button>
         </div>
       </section>

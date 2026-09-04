@@ -133,7 +133,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(scoreReading, /endlessCompleteCopy/);
   assert.doesNotMatch(scoreReading, /sessionType === "endless" && !correct/);
   assert.doesNotMatch(scoreReading, /answerCorrectRef/);
-  assert.match(scoreReading, /type="range" min="30" max="112" step="2"/);
+  assert.match(scoreReading, /type="range" min="15" max="112" step="1"/);
   assert.match(scoreReading, /playMetronomeClick\(\)/);
   assert.match(scoreReading, /nextAt - performance\.now\(\)/);
   assert.match(scoreReading, /role="switch" aria-checked=\{metronomeEnabled\}/);

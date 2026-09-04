@@ -9,6 +9,7 @@ test("ritim pencereleri BPM ve nota değeriyle kesintisiz hesaplanır", () => {
   assert.equal(beatDurationMs(0.25, 120), 125);
   assert.equal(beatDurationMs(1 / 3, 60), 333);
   assert.equal(beatDurationMs(1, 30), 2000);
+  assert.equal(beatDurationMs(1, 15), 4000);
 });
 
 test("iki sekizlik, dört on altılık ve üç sekizlik üçleme birer vuruşa eşittir", () => {

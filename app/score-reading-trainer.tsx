@@ -3,7 +3,7 @@
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { beatDurationMs, buildRandomRhythmSequence, groupRhythmValues, RHYTHM_VALUES } from "@/lib/score-reading.mjs";
 import { RHYTHM_DEMO_PATTERNS, rhythmDemoStepDurationMs } from "@/lib/rhythm-presets.mjs";
-import { noteIdToMidi, playPracticeNote, playRhythmPulse } from "@/lib/practice-audio";
+import { noteIdToMidi, playMetronomeClick, playPracticeNote, playRhythmPulse } from "@/lib/practice-audio";
 import { CommunityPracticeRecorder, CommunityPracticeStreak } from "./community";
 import { RhythmGlyph, RhythmPatternPreview, RhythmScoreLine, type RhythmId, type RhythmScoreNote, type RhythmScoreValue } from "./rhythm-glyphs";
 
@@ -101,9 +101,9 @@ const COPY = {
     standardSession: "Normal satır",
     standardSessionCopy: "Seçtiğin aralıktaki rastgele satırı tamamla.",
     endlessSession: "Sonsuz mod",
-    endlessSessionCopy: "İlk yanlışına kadar yeni notalarla devam et.",
-    endlessComplete: "Sonsuz seri sona erdi.",
-    endlessCompleteCopy: (count: number) => `${count} doğru nota okudun. İlk yanlışında seri durdu.`,
+    endlessSessionCopy: "Sen oturumu bitirene kadar yeni notalarla devam et.",
+    endlessComplete: "Sonsuz çalışma tamamlandı.",
+    endlessCompleteCopy: (count: number) => `${count} doğru nota okudun. Oturumu sen bitirdin.`,
     range: "Nota aralığı",
     rangeCopy: "Hangi yüksekliklerde rastgele nota görmek istiyorsun?",
     randomLine: "Rastgele satır",
@@ -112,8 +112,11 @@ const COPY = {
     flow: "Akıcı okuma",
     flowCopy: "Cevabını işaretle ve beklemeden sıradaki notaya geç.",
     rhythm: "Ritimli okuma",
-    rhythmCopy: "Her nota kendi süresi içinde cevaplanır; metronom hiç durmaz.",
+    rhythmCopy: "Her nota kendi süresi içinde cevaplanır; istersen metronom her vuruşu duyurur.",
     tempo: "Tempo",
+    metronome: "Metronom",
+    metronomeOn: "Metronomu aç",
+    metronomeOff: "Metronomu kapat",
     start: "Satırı okumaya başla",
     noteValues: "Nota değerleri",
     demoRates: { whole: "4 vuruşta bir", half: "2 vuruşta bir", quarter: "Her vuruşta", eighth: "Vuruş başına 2", sixteenth: "Vuruş başına 4", triplet: "Vuruş başına 3" } as Record<RhythmId, string>,
@@ -152,9 +155,9 @@ const COPY = {
     standardSession: "Standard line",
     standardSessionCopy: "Complete a random line from your chosen range.",
     endlessSession: "Endless mode",
-    endlessSessionCopy: "Keep reading fresh notes until your first mistake.",
-    endlessComplete: "Endless streak finished.",
-    endlessCompleteCopy: (count: number) => `You read ${count} notes correctly. The streak stopped at your first mistake.`,
+    endlessSessionCopy: "Keep reading fresh notes until you end the session.",
+    endlessComplete: "Endless practice complete.",
+    endlessCompleteCopy: (count: number) => `You read ${count} notes correctly before ending the session.`,
     range: "Note range",
     rangeCopy: "Choose the height range for your random notes.",
     randomLine: "Random line",
@@ -163,8 +166,11 @@ const COPY = {
     flow: "Flow reading",
     flowCopy: "Choose an answer and move straight to the next note.",
     rhythm: "Rhythm reading",
-    rhythmCopy: "Answer inside each note value while the pulse keeps moving.",
+    rhythmCopy: "Answer inside each note value and turn on the metronome to hear every beat.",
     tempo: "Tempo",
+    metronome: "Metronome",
+    metronomeOn: "Turn metronome on",
+    metronomeOff: "Turn metronome off",
     start: "Start reading the line",
     noteValues: "Note values",
     demoRates: { whole: "Once every 4 beats", half: "Once every 2 beats", quarter: "Every beat", eighth: "2 per beat", sixteenth: "4 per beat", triplet: "3 per beat" } as Record<RhythmId, string>,
@@ -207,6 +213,7 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
   const [sessionType, setSessionType] = useState<ScoreSessionType>("standard");
   const [readingMode, setReadingMode] = useState<ReadingMode>("flow");
   const [bpm, setBpm] = useState(76);
+  const [metronomeEnabled, setMetronomeEnabled] = useState(false);
   const [line, setLine] = useState<ScoreEvent[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [results, setResults] = useState<AnswerResult[]>([]);
@@ -217,7 +224,6 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
   const [rhythmDemoStep, setRhythmDemoStep] = useState(-1);
   const flowTimerRef = useRef<number | null>(null);
   const answeredIndexRef = useRef<number | null>(null);
-  const answerCorrectRef = useRef<boolean | null>(null);
   const currentNoteRef = useRef<SVGGElement>(null);
   const current = line[currentIndex];
 
@@ -272,18 +278,11 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
   useEffect(() => {
     if (stage !== "playing" || readingMode !== "rhythm" || !current) return;
     answeredIndexRef.current = null;
-    answerCorrectRef.current = null;
     const timeout = window.setTimeout(() => {
       if (answeredIndexRef.current !== currentIndex) {
         setResults((items) => [...items, { index: currentIndex, expected: current.note, guessed: null, correct: false, timedOut: true }]);
-        if (sessionType === "endless") {
-          setStage("done");
-          return;
-        }
       }
-      if (sessionType === "endless" && answerCorrectRef.current === false) {
-        setStage("done");
-      } else if (currentIndex >= line.length - 1) {
+      if (currentIndex >= line.length - 1) {
         if (sessionType === "endless") {
           const extra = buildRandomLine(scoreRange);
           if (extra.length) setLine((items) => [...items, ...extra]);
@@ -300,6 +299,22 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
   }, [bpm, current, currentIndex, line.length, readingMode, scoreRange, sessionType, stage]);
 
   useEffect(() => {
+    if (stage !== "playing" || readingMode !== "rhythm" || !metronomeEnabled) return;
+    const beatMs = beatDurationMs(1, bpm);
+    let nextAt = performance.now() + beatMs;
+    let timeoutId = 0;
+
+    const tick = () => {
+      playMetronomeClick();
+      nextAt += beatMs;
+      timeoutId = window.setTimeout(tick, Math.max(0, nextAt - performance.now()));
+    };
+
+    timeoutId = window.setTimeout(tick, beatMs);
+    return () => window.clearTimeout(timeoutId);
+  }, [bpm, metronomeEnabled, readingMode, sessionKey, stage]);
+
+  useEffect(() => {
     if (stage === "playing") currentNoteRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
   }, [currentIndex, stage]);
 
@@ -314,8 +329,14 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
     setRhythmDemoPlaying(false);
     setRhythmDemoStep(-1);
     answeredIndexRef.current = null;
-    answerCorrectRef.current = null;
+    if (readingMode === "rhythm" && metronomeEnabled) playMetronomeClick();
     setStage("playing");
+  }
+
+  function toggleMetronome() {
+    const nextEnabled = !metronomeEnabled;
+    setMetronomeEnabled(nextEnabled);
+    if (nextEnabled) playMetronomeClick();
   }
 
   function toggleRhythmDemo(id: RhythmId) {
@@ -344,13 +365,11 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
     setResults((items) => [...items, result]);
     setLocked(true);
     answeredIndexRef.current = currentIndex;
-    answerCorrectRef.current = correct;
     if (correct) playPracticeNote(noteIdToMidi(current.note.id), noteSoundEnabled);
 
     if (readingMode === "flow") {
       flowTimerRef.current = window.setTimeout(() => {
-        if (sessionType === "endless" && !correct) finishLine();
-        else if (currentIndex >= line.length - 1) {
+        if (currentIndex >= line.length - 1) {
           if (sessionType === "endless") {
             const extra = buildRandomLine(scoreRange);
             if (extra.length) setLine((items) => [...items, ...extra]);
@@ -447,7 +466,7 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
               </button>
             );
           })}</div><p className="sr-only" aria-live="polite">{rhythmDemoId ? (rhythmDemoPlaying ? text.demoPlaying(text.valueNames[rhythmDemoId], bpm) : text.demoPaused(text.valueNames[rhythmDemoId])) : ""}</p></div>
-          {readingMode === "rhythm" && <label className="tempo-control"><span>{text.tempo}</span><strong>{bpm} BPM</strong><input type="range" min="60" max="112" step="4" value={bpm} onChange={(event) => setBpm(Number(event.target.value))} /></label>}
+          {readingMode === "rhythm" && <div className="score-rhythm-controls"><label className="tempo-control"><span>{text.tempo}</span><strong>{bpm} BPM</strong><input type="range" min="30" max="112" step="2" value={bpm} onChange={(event) => setBpm(Number(event.target.value))} /></label><button type="button" className={`metronome-toggle ${metronomeEnabled ? "is-active" : ""}`} onClick={toggleMetronome} role="switch" aria-checked={metronomeEnabled}><span className="metronome-icon" aria-hidden="true"><i /><i /><i /></span>{metronomeEnabled ? text.metronomeOff : text.metronomeOn}</button></div>}
           <button className="primary-button" type="button" onClick={start}>{text.start} <span aria-hidden="true">→</span></button>
         </div>
       </section>
@@ -474,7 +493,7 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
   const windowMs = current ? beatDurationMs(current.rhythm.beats, bpm) : 1000;
   return (
     <section className="score-reading-shell score-reading-session">
-      <div className="score-reading-session-top"><button type="button" onClick={finishLine}>← {text.exit}</button><div><span>{text.progress}</span><strong>{sessionType === "endless" ? currentIndex + 1 : `${Math.min(currentIndex + 1, line.length)} / ${line.length}`}</strong></div><button type="button" onClick={start}>{text.restart}</button></div>
+      <div className="score-reading-session-top"><button type="button" onClick={finishLine}>← {text.exit}</button><div className="score-reading-session-progress"><span>{text.progress}</span><strong>{sessionType === "endless" ? currentIndex + 1 : `${Math.min(currentIndex + 1, line.length)} / ${line.length}`}</strong></div><div className="score-reading-session-controls">{readingMode === "rhythm" && <button type="button" className={`metronome-toggle metronome-toggle--session ${metronomeEnabled ? "is-active" : ""}`} onClick={toggleMetronome} role="switch" aria-checked={metronomeEnabled}><span className="metronome-icon" aria-hidden="true"><i /><i /><i /></span>{metronomeEnabled ? text.metronomeOff : text.metronomeOn}</button>}<button type="button" onClick={start}>{text.restart}</button></div></div>
       <div className="score-reading-card">
         <div className="score-reading-context"><p className="kicker">{text.ranges[scoreRange].title}</p><span>{sessionType === "endless" ? text.endlessSession : text.ranges[scoreRange].count} · {text.range}</span></div>
         <div className="score-line-scroll" role="region" aria-label={text.progress} tabIndex={0}>

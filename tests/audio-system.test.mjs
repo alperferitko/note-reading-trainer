@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-test("uygulama çalışma sesini yalnız doğru cevaplarda ve kullanıcı başlattığı ritim demosunda çalar", async () => {
+test("uygulama çalışma sesini doğru cevaplarda ve kullanıcının açtığı ritim araçlarında çalar", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   const guitar = await readFile(new URL("../app/guitar-trainer.tsx", import.meta.url), "utf8");
   const scoreReading = await readFile(new URL("../app/score-reading-trainer.tsx", import.meta.url), "utf8");
@@ -18,6 +18,9 @@ test("uygulama çalışma sesini yalnız doğru cevaplarda ve kullanıcı başla
   assert.match(scoreReading, /onClick=\{\(\) => toggleRhythmDemo\(id\)\}/);
   assert.match(scoreReading, /aria-pressed=\{playing\}/);
   assert.match(practiceAudio, /export function playRhythmPulse/);
+  assert.match(practiceAudio, /export function playMetronomeClick/);
+  assert.match(practiceAudio, /oscillator\.type = "square"/);
+  assert.match(scoreReading, /if \(nextEnabled\) playMetronomeClick\(\)/);
   assert.match(page, /role="switch" aria-checked=\{noteSoundEnabled\}/);
   assert.match(page, /document\.addEventListener\("pointerdown", closeOnOutsidePointer\)/);
   assert.match(page, /!audioSettingsRef\.current\?\.contains\(event\.target\)/);

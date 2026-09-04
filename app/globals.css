@@ -4472,15 +4472,25 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
 .tempo-control { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 5px 12px; color: var(--foreground-muted); font-size: 10px; font-weight: 750; }
 .tempo-control strong { color: var(--primary); }
 .tempo-control input { grid-column: 1 / -1; width: 100%; accent-color: var(--primary); }
+.score-rhythm-controls { display: grid; gap: 12px; }
+.metronome-toggle { min-height: 42px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; border: 1px solid var(--border); border-radius: 11px; background: var(--background-deep); color: var(--foreground-muted); font-size: 10px; font-weight: 780; cursor: pointer; transition: color .2s ease, background-color .2s ease, border-color .2s ease; }
+.metronome-toggle.is-active { border-color: rgba(139,47,60,.48); background: var(--primary-soft); color: var(--primary); }
+.metronome-icon { height: 18px; display: inline-flex; align-items: flex-end; gap: 2px; }
+.metronome-icon i { width: 2px; height: 7px; border-radius: 2px; background: currentColor; }
+.metronome-icon i:nth-child(2) { height: 14px; }
+.metronome-icon i:nth-child(3) { height: 10px; }
 .score-reading-start-card .primary-button { min-width: 245px; margin: 0; }
 
 .score-reading-session { padding-top: 2px; }
 .score-reading-session-top { margin-bottom: 10px; padding: 10px 14px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; border-radius: 14px; background: var(--surface); box-shadow: var(--surface-shadow-soft); }
 .score-reading-session-top > button { width: fit-content; min-height: 42px; padding: 0 14px; border: 0; border-radius: 10px; background: var(--background-deep); color: var(--foreground); font-size: 10px; font-weight: 760; }
-.score-reading-session-top > button:last-child { justify-self: end; }
-.score-reading-session-top > div { display: grid; justify-items: center; gap: 2px; }
-.score-reading-session-top > div span { color: var(--foreground-muted); font-size: 9px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
-.score-reading-session-top > div strong { font-family: var(--serif); font-size: 24px; font-weight: 500; }
+.score-reading-session-progress { display: grid; justify-items: center; gap: 2px; }
+.score-reading-session-progress span { color: var(--foreground-muted); font-size: 9px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.score-reading-session-progress strong { font-family: var(--serif); font-size: 24px; font-weight: 500; }
+.score-reading-session-controls { display: flex; align-items: center; justify-self: end; gap: 7px; }
+.score-reading-session-controls > button { min-height: 42px; padding: 0 14px; border: 0; border-radius: 10px; background: var(--background-deep); color: var(--foreground); font-size: 10px; font-weight: 760; }
+.score-reading-session-controls .metronome-toggle { border: 1px solid var(--border); }
+.score-reading-session-controls .metronome-toggle.is-active { border-color: rgba(139,47,60,.48); background: var(--primary-soft); color: var(--primary); }
 .score-reading-card { padding: clamp(20px, 3vw, 38px); border-radius: 18px; background: var(--surface-elevated); box-shadow: var(--surface-shadow); }
 .score-reading-context { display: flex; justify-content: space-between; align-items: baseline; gap: 20px; }
 .score-reading-context > span { color: var(--foreground-muted); font-size: 11px; }
@@ -4545,8 +4555,11 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
   .score-option-grid > button { min-height: 120px; }
   .score-reading-start-card { padding: 21px 17px; }
   .score-reading-session-top { grid-template-columns: 1fr 1fr; gap: 6px; }
-  .score-reading-session-top > div { grid-column: 1 / -1; grid-row: 1; }
+  .score-reading-session-progress { grid-column: 1 / -1; grid-row: 1; }
   .score-reading-session-top > button { width: 100%; grid-row: 2; }
+  .score-reading-session-controls { width: 100%; grid-column: 2; grid-row: 2; display: grid; }
+  .score-reading-session-controls > button { width: 100%; }
+  .score-reading-session-controls .metronome-toggle { min-height: 38px; }
   .score-reading-card { padding: 14px 10px; }
   .score-reading-context { align-items: flex-start; flex-direction: column; gap: 3px; }
   .score-line { min-width: 860px; }

@@ -89,3 +89,23 @@ export function playRhythmPulse(midi: number, enabled = true, durationMs = 150) 
   oscillator.start(now);
   oscillator.stop(now + duration + 0.02);
 }
+
+export function playMetronomeClick() {
+  const audio = context();
+  if (!audio) return;
+
+  const now = audio.currentTime;
+  const oscillator = audio.createOscillator();
+  const gain = audio.createGain();
+
+  oscillator.type = "square";
+  oscillator.frequency.setValueAtTime(1320, now);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.085, now + 0.002);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.035);
+
+  oscillator.connect(gain);
+  gain.connect(audio.destination);
+  oscillator.start(now);
+  oscillator.stop(now + 0.04);
+}

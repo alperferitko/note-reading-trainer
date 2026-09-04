@@ -1942,10 +1942,11 @@ button.instrument-card {
 }
 .sound-toggle svg { width: 19px; height: 19px; }
 .audio-settings-panel {
-  position: absolute;
+  position: fixed;
+  z-index: 120;
   right: auto;
-  bottom: 0;
-  left: calc(100% + 14px);
+  bottom: 90px;
+  left: 188px;
   width: min(310px, calc(100vw - 150px));
   max-height: min(420px, calc(100dvh - 32px));
   padding: 16px;
@@ -3110,6 +3111,7 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
   .app-navigation button > b { display: none; }
   .app-navigation button > span { font-size: 13px; }
   .community-header-actions button { padding-inline: 8px; font-size: 9px; }
+  .audio-settings-panel { left: 132px; }
   .landing-shell,
   .setup-shell,
   .guitar-shell { width: calc(100% - 34px); }

@@ -7,6 +7,7 @@ test("uygulama çalışma sesini doğru cevaplarda ve kullanıcının açtığı
   const guitar = await readFile(new URL("../app/guitar-trainer.tsx", import.meta.url), "utf8");
   const scoreReading = await readFile(new URL("../app/score-reading-trainer.tsx", import.meta.url), "utf8");
   const practiceAudio = await readFile(new URL("../lib/practice-audio.ts", import.meta.url), "utf8");
+  const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
 
   assert.match(page, /if \(correct\) \{[\s\S]*playPracticeNote\(noteIdToMidi\(current\.id\), noteSoundEnabled\);/);
   assert.match(guitar, /function finishCorrectAnswer\(question: GuitarQuestion\) \{[\s\S]*playPracticeNote\(question\.midi, noteSoundEnabled\);/);
@@ -22,6 +23,9 @@ test("uygulama çalışma sesini doğru cevaplarda ve kullanıcının açtığı
   assert.match(practiceAudio, /oscillator\.type = "square"/);
   assert.match(scoreReading, /if \(nextEnabled\) playMetronomeClick\(\)/);
   assert.match(page, /role="switch" aria-checked=\{noteSoundEnabled\}/);
+  assert.match(page, /createPortal\([\s\S]*audio-settings-panel[\s\S]*document\.body/);
+  assert.match(page, /!audioSettingsPanelRef\.current\?\.contains\(event\.target\)/);
+  assert.match(styles, /\.audio-settings-panel \{[\s\S]*position: fixed;[\s\S]*z-index: 120;/);
   assert.match(page, /document\.addEventListener\("pointerdown", closeOnOutsidePointer\)/);
   assert.match(page, /!audioSettingsRef\.current\?\.contains\(event\.target\)/);
   assert.doesNotMatch(

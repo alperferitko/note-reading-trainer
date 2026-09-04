@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-img-element -- Relative public assets must work on both the custom domain and GitHub Pages subpath. */
 
 import { FormEvent, lazy, MouseEvent, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   CommunityHeader,
   CommunityLeaderboardButton,
@@ -783,6 +784,7 @@ export default function Home() {
   const quizShellRef = useRef<HTMLElement>(null);
   const audioSettingsRef = useRef<HTMLDivElement>(null);
   const audioSettingsButtonRef = useRef<HTMLButtonElement>(null);
+  const audioSettingsPanelRef = useRef<HTMLDivElement>(null);
   const readingSetupCloseRef = useRef<HTMLButtonElement>(null);
   const readingSetupReturnFocusRef = useRef<HTMLElement | null>(null);
   const questionKey = useRef(0);
@@ -961,7 +963,11 @@ export default function Home() {
     if (!audioSettingsOpen) return;
 
     const closeOnOutsidePointer = (event: PointerEvent) => {
-      if (event.target instanceof Node && !audioSettingsRef.current?.contains(event.target)) {
+      if (
+        event.target instanceof Node
+        && !audioSettingsRef.current?.contains(event.target)
+        && !audioSettingsPanelRef.current?.contains(event.target)
+      ) {
         setAudioSettingsOpen(false);
       }
     };
@@ -1243,15 +1249,6 @@ export default function Home() {
                   : <path d="m16.5 9 4.5 6m0-6-4.5 6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />}
               </svg>
             </button>
-            {audioSettingsOpen && (
-              <div className="audio-settings-panel" id="audio-settings-panel" role="group" aria-label={noteSoundCopy.settings}>
-                <strong>{noteSoundCopy.settings}</strong>
-                <button type="button" role="switch" aria-checked={noteSoundEnabled} onClick={toggleNoteSound}>
-                  <span>{noteSoundCopy.title}<small>{noteSoundCopy.help}</small></span>
-                  <b>{noteSoundEnabled ? noteSoundCopy.on : noteSoundCopy.off}</b>
-                </button>
-              </div>
-            )}
           </div>
           <div className="language-switch" role="group" aria-label={locale === "tr" ? "Dil seçimi" : "Language selection"}>
             <button type="button" className={locale === "tr" ? "is-active" : ""} onClick={() => changeLocale("tr")} aria-pressed={locale === "tr"}>TR</button>
@@ -1259,6 +1256,17 @@ export default function Home() {
           </div>
         </div>
       </header>}
+
+      {!immersiveSession && audioSettingsOpen && typeof document !== "undefined" && createPortal(
+        <div ref={audioSettingsPanelRef} className="audio-settings-panel" id="audio-settings-panel" role="group" aria-label={noteSoundCopy.settings}>
+          <strong>{noteSoundCopy.settings}</strong>
+          <button type="button" role="switch" aria-checked={noteSoundEnabled} onClick={toggleNoteSound}>
+            <span>{noteSoundCopy.title}<small>{noteSoundCopy.help}</small></span>
+            <b>{noteSoundEnabled ? noteSoundCopy.on : noteSoundCopy.off}</b>
+          </button>
+        </div>,
+        document.body,
+      )}
 
       {!immersiveSession && <nav className="mobile-module-navigation" aria-label={shell.navigation}>
         <a href={STAGE_ROUTES.landing} className={stage === "landing" ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("landing"); }} aria-current={stage === "landing" ? "page" : undefined}>

@@ -4212,7 +4212,7 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
 
 .guitar-location-answer-grid {
   display: grid;
-  grid-template-columns: minmax(240px, .75fr) minmax(360px, 1.25fr);
+  grid-template-columns: minmax(0, .75fr) minmax(0, 1.25fr);
   gap: 18px;
 }
 
@@ -4226,7 +4226,7 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
 .guitar-location-answer legend {
   margin-bottom: 9px;
   color: var(--foreground-muted);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -4252,7 +4252,7 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
   border-radius: 10px;
   background: var(--surface-elevated);
   color: var(--foreground);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 740;
   cursor: pointer;
   transition: background-color .18s ease, color .18s ease, border-color .18s ease, transform .18s ease;
@@ -4268,32 +4268,36 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
   margin-top: 16px;
   padding-top: 14px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
   border-top: 1px solid rgba(139, 47, 60, .14);
 }
 
-.guitar-location-selection > span {
+.guitar-location-status {
   min-width: 0;
-  display: grid;
-  gap: 3px;
+  height: 88px;
+  overflow-y: auto;
   color: var(--foreground-muted);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
-.guitar-location-selection > span strong {
+.guitar-location-status > strong {
+  display: block;
   color: var(--foreground);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: .04em;
 }
 
-.guitar-location-selection > small {
+.guitar-location-status > small {
+  display: block;
+  margin-top: 4px;
   color: var(--primary);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .guitar-location-selection > button {
@@ -4303,7 +4307,7 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
   border-radius: 10px;
   background: var(--primary);
   color: var(--primary-foreground);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   cursor: pointer;
 }
@@ -4313,8 +4317,12 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
   opacity: .42;
 }
 
+.guitar-location-options button:disabled { cursor: default; }
+.guitar-location-selection--correct { border-color: var(--success, #597453); }
+.guitar-location-selection--wrong { border-color: var(--primary); }
+
 @media (hover: hover) and (pointer: fine) {
-  .guitar-location-options button:hover:not(.is-selected) {
+  .guitar-location-options button:hover:not(.is-selected):not(:disabled) {
     border-color: rgba(139, 47, 60, .46);
     background: var(--surface);
     transform: translateY(-1px);
@@ -4346,10 +4354,35 @@ footer span:first-child { font-family: var(--serif); font-size: 16px; }
   .guitar-staff-note { width: 100%; max-height: 170px; transform: none; }
   .guitar-location-answer { margin-top: 14px; padding: 12px; }
   .guitar-location-answer-grid { grid-template-columns: 1fr; gap: 14px; }
-  .guitar-location-options--frets { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .guitar-location-selection { grid-template-columns: 1fr; gap: 8px; }
-  .guitar-location-selection > button { width: 100%; }
+  .guitar-location-options--frets { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .guitar-location-options button { min-height: 44px; padding-inline: 4px; }
+  .guitar-location-selection {
+    position: sticky;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    z-index: 2;
+    margin-inline: -4px;
+    padding: 10px 8px;
+    gap: 8px;
+    border-radius: 12px;
+    background: var(--background-deep);
+    box-shadow: 0 -6px 18px rgba(45, 38, 28, .1);
+  }
+  .guitar-location-selection > button { min-height: 48px; padding-inline: 12px; }
+  .guitar-question-card--location-answer { padding: 18px 12px; }
+  .guitar-question-card--location-answer h1 { margin-bottom: 12px; font-size: 28px; line-height: 1.15; }
+  .guitar-question-card--location-answer .guitar-target-location { margin-bottom: 12px; }
+  .guitar-question-card--location-answer .guitar-staff-frame {
+    position: sticky;
+    top: 8px;
+    z-index: 3;
+    margin-bottom: 12px;
+  }
+  .guitar-question-card--location-answer .guitar-staff-note { max-height: 130px; }
   .quiz-shell { scroll-margin-top: 6px; }
+}
+
+@media (max-width: 620px) and (max-height: 700px) {
+  .guitar-question-card--location-answer .guitar-staff-note { max-height: 90px; }
 }
 
 @media (max-width: 420px) {

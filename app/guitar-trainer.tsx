@@ -801,26 +801,37 @@ export function GuitarTrainer({
             <div><input id="guitar-answer" ref={inputRef} value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder={text.placeholder} autoComplete="off" autoCorrect="off" autoCapitalize="none" enterKeyHint="done" spellCheck={false} /><button type="submit">{text.check}</button></div>
             <div className="guitar-note-choices" role="group" aria-label={text.choices}>{choices.map((choice) => <button type="button" key={choice} onClick={() => answerQuestion(choice)}>{choice}</button>)}</div>
           </form>
-        ) : !feedback && usesLocationAnswer ? (
+        ) : usesLocationAnswer ? (
           <div className="guitar-location-answer" aria-label={text.locationChoices}>
             <div className="guitar-location-answer-grid">
-              <fieldset>
+              <fieldset disabled={Boolean(feedback)}>
                 <legend>{text.stringChoice}</legend>
                 <div className="guitar-location-options guitar-location-options--strings">
                   {STRINGS.map((string) => <button type="button" key={string.id} className={selectedStringNumber === string.number ? "is-selected" : ""} onClick={() => setSelectedStringNumber(string.number)} aria-pressed={selectedStringNumber === string.number}>{string.number}. {text.stringChoice.toLocaleLowerCase(locale === "tr" ? "tr-TR" : "en-US")}</button>)}
                 </div>
               </fieldset>
-              <fieldset>
+              <fieldset disabled={Boolean(feedback)}>
                 <legend>{text.fretChoice}</legend>
                 <div className="guitar-location-options guitar-location-options--frets">
                   {Array.from({ length: maxFret + 1 }, (_, fret) => <button type="button" key={fret} className={selectedFret === fret ? "is-selected" : ""} onClick={() => setSelectedFret(fret)} aria-pressed={selectedFret === fret}>{fret === 0 ? text.emptyString : locale === "tr" ? `${fret}. perde` : `Fret ${fret}`}</button>)}
                 </div>
               </fieldset>
             </div>
-            <div className="guitar-location-selection" aria-live="polite">
-              <span><strong>{text.markedLocations}</strong>{selectedPositions.length ? selectedPositions.map((position) => text.location(position.stringNumber, position.fret)).join(locale === "tr" ? ", " : "; ") : "—"}</span>
-              <small>{text.positionProgress(selectedPositions.length, matchingPositionQuestions.length)}</small>
-              <button type="button" onClick={answerLocation} disabled={selectedStringNumber === null || selectedFret === null || selectedPositions.some((position) => position.stringNumber === selectedStringNumber && position.fret === selectedFret)}>{text.markLocation}</button>
+            <div className={`guitar-location-selection ${feedback ? `guitar-location-selection--${feedback}` : ""}`}>
+              <div className="guitar-location-status" id="guitar-location-status" role="status" aria-live="polite" aria-atomic="true">
+                <strong>{feedback ? feedback === "correct" ? text.correct : text.incorrect : text.markedLocations}</strong>
+                <span>{feedback
+                  ? feedback === "correct" ? text.positionCorrectCopy(matchingLocations) : text.positionWrongCopy(matchingLocations)
+                  : selectedPositions.length ? selectedPositions.map((position) => text.location(position.stringNumber, position.fret)).join("; ") : "—"}</span>
+                <small>{text.positionProgress(selectedPositions.length, matchingPositionQuestions.length)}</small>
+              </div>
+              <button
+                ref={feedbackButtonRef}
+                type="button"
+                aria-describedby="guitar-location-status"
+                onClick={feedback ? next : answerLocation}
+                disabled={!feedback && (selectedStringNumber === null || selectedFret === null || selectedPositions.some((position) => position.stringNumber === selectedStringNumber && position.fret === selectedFret))}
+              >{feedback ? `${text.next} →` : text.markLocation}</button>
             </div>
           </div>
         ) : !feedback ? (

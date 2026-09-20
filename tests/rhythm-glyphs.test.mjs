@@ -85,7 +85,7 @@ test("ritim kartları bir vuruşu doğru ve eşit zaman aralıklarına böler", 
 test("ana kart, değer göstergesi ve çalışma ekranı aynı SVG bileşenlerini kullanır", async () => {
   const [glyphs, page, trainer, styles] = await Promise.all([
     readFile(new URL("../app/rhythm-glyphs.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/learning-studio.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/score-reading-trainer.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
@@ -99,7 +99,7 @@ test("ana kart, değer göstergesi ve çalışma ekranı aynı SVG bileşenlerin
   assert.match(glyphs, /const lowestPosition = notes\.length \? Math\.min/);
   assert.match(glyphs, /const scoreHeight = Math\.max\(184, firstLineY - lowestPosition \* 7 \+ 20\)/);
   assert.match(glyphs, /viewBox=\{`0 0 \$\{width\} \$\{scoreHeight\}`\}/);
-  assert.match(page, /<RhythmPatternPreview variant="mixed"/);
+  assert.match(page, /<RhythmPatternPreview\s+variant="(?:mixed|melody)"/);
   assert.match(trainer, /<RhythmPatternPreview variant="mixed"/);
   assert.match(trainer, /<RhythmGlyph id=\{id\}/);
   assert.match(trainer, /toggleRhythmDemo\(id\)/);

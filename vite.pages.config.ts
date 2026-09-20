@@ -1,6 +1,7 @@
 import { fileURLToPath, URL } from "node:url";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
+import { staticPages } from './scripts/static-pages.mjs';
 
 const fromProjectRoot = (path: string) =>
   fileURLToPath(new URL(path, import.meta.url));
@@ -11,7 +12,7 @@ export default defineConfig({
   // working during DNS propagation and after GitHub enables the redirect.
   base: "./",
   publicDir: fromProjectRoot("./public"),
-  plugins: [react()],
+  plugins: [react(), staticPages()],
   css: {
     postcss: fromProjectRoot("./postcss.config.mjs"),
   },

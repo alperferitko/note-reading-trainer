@@ -1,0 +1,17 @@
+{
+  "id": "./",
+  "name": "NotaNota — Nota Okuma",
+  "short_name": "NotaNota",
+  "description": "Nota, ritim ve enstrüman çalışmaları / Note, rhythm and instrument practice",
+  "lang": "tr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4efe4",
+  "theme_color": "#8b2f3c",
+  "icons": [
+    { "src": "./notanota-app-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./app-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./app-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

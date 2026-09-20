@@ -4,6 +4,9 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { noteClassFromAnswer } from "@/lib/session-insights.mjs";
 import { playPracticeNote } from "@/lib/practice-audio";
 import { CommunityPracticeRecorder, CommunityPracticeStreak } from "./community";
+import { LocalResult } from './local-progress';
+import { SessionGuidance } from './session-guidance';
+import { NavigationOptions, usePracticeNavigation } from './practice-tools';
 
 type Locale = "tr" | "en";
 type GuitarStage = "setup" | "quiz" | "done";
@@ -637,8 +640,12 @@ export function GuitarTrainer({
     setSelectedFret(null);
     setFeedback(null);
     setFeedbackQuestion(null);
+    // Called only by a click, keyboard event, or the navigation effect timer.
+    // eslint-disable-next-line react-hooks/purity
     setStartedAt(Date.now());
   }
+
+  const navigation = usePracticeNavigation({ active: stage === 'quiz', feedback: Boolean(feedback), choices: practiceMode==='name-note'?choices:[], onAnswer: answerQuestion, onNext: next });
 
   if (stage === "setup") {
     return (
@@ -738,6 +745,8 @@ export function GuitarTrainer({
     return (
       <section className="guitar-shell guitar-results">
         <CommunityPracticeRecorder active activityKey={`guitar-${practiceMode}-${sessionKey}`} />
+        <LocalResult id={`guitar-${sessionKey}`} module={locale==='tr'?'Gitar':'Guitar'} correct={correctAnswers} wrong={wrong} milliseconds={times.reduce((sum,value)=>sum+value,0)} locale={locale} />
+        <SessionGuidance locale={locale} module="guitar" wrong={wrong} attempts={correctAnswers + wrong} guitarMode={practiceMode} />
         <p className="kicker">{text.kicker}</p>
         <h1 ref={resultsHeadingRef} tabIndex={-1}>{sessionType === "endless" ? text.endlessResult : text.complete}</h1>
         <p>{sessionType === "endless" ? text.endlessResultCopy(correctAnswers) : practiceMode === "name-note" ? text.completeCopy : usesLocationAnswer ? text.locationCompleteCopy : text.positionCompleteCopy}</p>
@@ -758,6 +767,7 @@ export function GuitarTrainer({
 
   return (
     <section className="guitar-shell guitar-quiz">
+      <NavigationOptions locale={locale} {...navigation} numbers={practiceMode==='name-note'} />
       <div className="guitar-quiz-top">
         <button className="guitar-exit-button" type="button" onClick={() => setStage("setup")}><span aria-hidden="true">←</span> {text.exit}</button>
         <div className="guitar-quiz-tools">

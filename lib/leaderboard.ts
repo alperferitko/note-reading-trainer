@@ -68,7 +68,17 @@ export async function getLeaderboard(
   sessionType: SessionType,
   level: PracticeLevel,
   questionMode: QuestionMode,
+  period: 'all' | 'week' = 'all',
+  usernames: string[] | null = null,
 ): Promise<LeaderboardRow[]> {
+  if (period !== 'all' || usernames !== null) {
+    const { data, error } = await client().rpc('get_leaderboard_filtered', {
+      p_session_type: sessionType, p_level: level, p_question_mode: questionMode,
+      p_period: period, p_usernames: usernames, p_limit: 50,
+    });
+    if (error) throw error;
+    return (data ?? []) as LeaderboardRow[];
+  }
   const { data, error } = await client().rpc("get_leaderboard", {
     p_session_type: sessionType,
     p_level: level,

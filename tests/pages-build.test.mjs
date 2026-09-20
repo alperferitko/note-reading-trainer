@@ -2,8 +2,29 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { access, readFile, readdir } from "node:fs/promises";
 import test from "node:test";
+import { SITE_PAGES } from '../lib/site-routes.mjs';
 
 const output = new URL("../out-pages/", import.meta.url);
+
+test('every bilingual clean route has its own title, canonical, alternates and working asset base', async () => {
+  const sitemap=await readFile(new URL('sitemap.xml',output),'utf8');
+  for(const page of Object.values(SITE_PAGES)) for(const locale of ['tr','en']) {
+    const path=`${locale==='en'?'en/':''}${page.path?page.path+'/':''}`;
+    const html=await readFile(new URL(`${path}index.html`,output),'utf8');
+    assert.ok(html.includes(`<html lang="${locale}">`));
+    assert.ok(html.includes(`<title>${page[locale][0]} | NotaNota</title>`));
+    assert.ok(html.includes(`rel="canonical" href="https://notanota.online/${path}"`));
+    assert.match(html,/hreflang="tr"/);
+    assert.match(html,/hreflang="en"/);
+    assert.match(html,/hreflang="x-default"/);
+    const base=html.match(/<base href="([^"]+)"/)?.[1];
+    assert.ok(base);
+    const resolved=new URL(base,new URL(`${path}index.html`,output));
+    assert.equal(resolved.href,output.href);
+    assert.ok(sitemap.includes(`<loc>https://notanota.online/${path}</loc>`));
+    for(const [,asset] of html.matchAll(/(?:src|href)="(\.\/assets\/[^"?#]+)/g)) await access(new URL(asset,resolved));
+  }
+});
 
 test("GitHub Pages output uses portable relative asset paths", async () => {
   const html = await readFile(new URL("index.html", output), "utf8");
@@ -11,10 +32,10 @@ test("GitHub Pages output uses portable relative asset paths", async () => {
   assert.match(html, /\.\/assets\/[^\"']+\.js/);
   assert.match(html, /\.\/assets\/[^\"']+\.css/);
   assert.match(html, /href="\.\/notanota-app-icon\.svg\?v=3"/);
-  assert.match(html, /src="\.\/notanota-monogram\.png"/);
+  assert.match(html, /src="\.\/notanota-monogram-96\.webp"/);
   assert.match(html, /content="https:\/\/notanota\.online\/og\.png"/);
   assert.match(html, /name="theme-color" content="#F4EFE4"/);
-  assert.match(html, /<title>NotaNota \| Nota Okuma Çalışması<\/title>/);
+  assert.match(html, /<title>Stüdyo \| NotaNota<\/title>/);
   assert.match(html, /rel="canonical" href="https:\/\/notanota\.online\/"/);
   assert.match(html, /type="application\/ld\+json">.*"EducationalApplication"/);
   assert.match(html, /http-equiv="Content-Security-Policy"/);

@@ -5,6 +5,10 @@ import { beatDurationMs, buildRandomRhythmSequence, groupRhythmValues, RHYTHM_VA
 import { RHYTHM_DEMO_PATTERNS, rhythmDemoStepDurationMs } from "@/lib/rhythm-presets.mjs";
 import { noteIdToMidi, playMetronomeClick, playPracticeNote, playRhythmPulse } from "@/lib/practice-audio";
 import { CommunityPracticeRecorder, CommunityPracticeStreak } from "./community";
+import { LocalResult } from './local-progress';
+import { SessionGuidance } from './session-guidance';
+import { NotationOptions, usePracticeNavigation, type Clef, type AccidentalMode } from './practice-tools';
+import { pitchAt, pitchName, matchesPitch, accidentalsFor } from '@/lib/music-pitch.mjs';
 import { RhythmGlyph, RhythmPatternPreview, RhythmScoreLine, type RhythmId, type RhythmScoreNote, type RhythmScoreValue } from "./rhythm-glyphs";
 
 type Locale = "tr" | "en";
@@ -15,9 +19,9 @@ type ScoreSessionType = "standard" | "endless";
 type Letter = "C" | "D" | "E" | "F" | "G" | "A" | "B";
 type Solfege = "Do" | "Re" | "Mi" | "Fa" | "Sol" | "La" | "Si";
 
-type ScoreNote = { id: string; letter: Letter; solfege: Solfege; position: number };
+type ScoreNote = { id: string; letter: Letter; solfege: Solfege; position: number; accidental?: number; midi?: number };
 type ScoreEvent = { key: string; note: ScoreNote; rhythm: { id: RhythmScoreValue; beats: number }; groupId?: string };
-type AnswerResult = { index: number; expected: ScoreNote; guessed: Letter | null; correct: boolean; timedOut: boolean };
+type AnswerResult = { index: number; expected: ScoreNote; guessed: string | null; correct: boolean; timedOut: boolean };
 type RhythmDemoPattern = { stepBeats: number; stepCount: number; audibleSteps: readonly number[] };
 
 const SCORE_LETTERS: Array<{ letter: Letter; solfege: Solfege; octave: number }> = [
@@ -76,8 +80,8 @@ function notesForRange(range: ScoreRangeId) {
   return SCORE_NOTES.filter((note) => note.position >= definition.min && note.position <= definition.max);
 }
 
-function buildRandomLine(range: ScoreRangeId): ScoreEvent[] {
-  const pool = notesForRange(range);
+function buildRandomLine(range: ScoreRangeId, clef: Clef = 'treble', accidentals: AccidentalMode = 'natural'): ScoreEvent[] {
+  const pool = notesForRange(range).flatMap(note=>accidentalsFor(accidentals).map(accidental=>pitchAt(note.position,clef,accidental) as ScoreNote));
   const rhythms = buildRandomRhythmSequence(16) as RhythmScoreValue[];
   const lineId = `random-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const groupedRhythms = groupRhythmValues(rhythms, lineId) as Array<{ id: RhythmScoreValue; groupId?: string }>;
@@ -203,7 +207,7 @@ const COPY = {
 } as const;
 
 function noteName(note: ScoreNote, locale: Locale) {
-  return locale === "tr" ? note.solfege : note.letter;
+  return pitchName(note, locale);
 }
 
 export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveChange }: { locale: Locale; noteSoundEnabled: boolean; onSessionActiveChange?: (active: boolean) => void }) {
@@ -213,12 +217,17 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
   const [sessionType, setSessionType] = useState<ScoreSessionType>("standard");
   const [readingMode, setReadingMode] = useState<ReadingMode>("flow");
   const [bpm, setBpm] = useState(76);
+  const [clef,setClef]=useState<Clef>('treble');
+  const [accidentals,setAccidentals]=useState<AccidentalMode>('natural');
+  const [answerAccidental,setAnswerAccidental]=useState('');
   const [metronomeEnabled, setMetronomeEnabled] = useState(false);
   const [line, setLine] = useState<ScoreEvent[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [results, setResults] = useState<AnswerResult[]>([]);
   const [locked, setLocked] = useState(false);
   const [sessionKey, setSessionKey] = useState(0);
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const sessionStartRef = useRef(0);
   const [rhythmDemoId, setRhythmDemoId] = useState<RhythmId | null>(null);
   const [rhythmDemoPlaying, setRhythmDemoPlaying] = useState(false);
   const [rhythmDemoStep, setRhythmDemoStep] = useState(-1);
@@ -234,11 +243,12 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
     return {
       key: event.key,
       position: event.note.position,
+      accidental: accidentals === 'natural' ? undefined : event.note.accidental,
       rhythm: event.rhythm.id,
       groupId: event.groupId,
       state,
     };
-  }), [currentIndex, line, resultByIndex]);
+  }), [currentIndex, line, resultByIndex, accidentals]);
   const correctCount = results.filter((result) => result.correct).length;
   const mistakeCount = results.length - correctCount;
   const accuracy = results.length ? Math.round((correctCount / results.length) * 100) : 0;
@@ -284,11 +294,14 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
       }
       if (currentIndex >= line.length - 1) {
         if (sessionType === "endless") {
-          const extra = buildRandomLine(scoreRange);
+          const extra = buildRandomLine(scoreRange,clef,accidentals);
           if (extra.length) setLine((items) => [...items, ...extra]);
           setLocked(false);
           setCurrentIndex((index) => index + 1);
-        } else setStage("done");
+        } else {
+          setElapsedMs(Math.max(0, performance.now() - sessionStartRef.current));
+          setStage("done");
+        }
       }
       else {
         setLocked(false);
@@ -296,7 +309,7 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
       }
     }, beatDurationMs(current.rhythm.beats, bpm));
     return () => window.clearTimeout(timeout);
-  }, [bpm, current, currentIndex, line.length, readingMode, scoreRange, sessionType, stage]);
+  }, [bpm, current, currentIndex, line.length, readingMode, scoreRange, sessionType, stage, clef, accidentals]);
 
   useEffect(() => {
     if (stage !== "playing" || readingMode !== "rhythm" || !metronomeEnabled) return;
@@ -316,11 +329,19 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
   }, [bpm, metronomeEnabled, readingMode, sessionKey, stage]);
 
   useEffect(() => {
-    if (stage === "playing") currentNoteRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    if (stage !== 'playing') return;
+    const note=currentNoteRef.current;
+    const scroller=note?.closest<HTMLElement>('.score-line-scroll');
+    if(note&&scroller){const bounds=note.getBoundingClientRect();const frame=scroller.getBoundingClientRect();scroller.scrollTo({left:scroller.scrollLeft+(bounds.left+bounds.right)/2-(frame.left+frame.right)/2,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});}
   }, [currentIndex, stage]);
 
   function start() {
-    const nextLine = buildRandomLine(scoreRange);
+    if (flowTimerRef.current !== null) window.clearTimeout(flowTimerRef.current);
+    flowTimerRef.current = null;
+    sessionStartRef.current = performance.now();
+    setElapsedMs(0);
+    setAnswerAccidental('');
+    const nextLine = buildRandomLine(scoreRange,clef,accidentals);
     const key = Date.now();
     setLine(nextLine);
     setCurrentIndex(0);
@@ -351,27 +372,28 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
   }
 
   function finishLine() {
+    if (flowTimerRef.current !== null) window.clearTimeout(flowTimerRef.current);
+    flowTimerRef.current = null;
+    setElapsedMs(Math.max(0, performance.now() - sessionStartRef.current));
     setStage("done");
     setLocked(false);
   }
 
   function answer(choice: string) {
-    if (!current || locked || stage !== "playing") return;
-    const guessed = (locale === "tr"
-      ? ({ Do: "C", Re: "D", Mi: "E", Fa: "F", Sol: "G", La: "A", Si: "B" } as Record<string, Letter>)[choice]
-      : choice) as Letter;
-    const correct = guessed === current.note.letter;
+    if (!current || locked || stage !== "playing" || answeredIndexRef.current === currentIndex) return;
+    const guessed = choice;
+    const correct = matchesPitch(choice, current.note);
     const result = { index: currentIndex, expected: current.note, guessed, correct, timedOut: false };
     setResults((items) => [...items, result]);
     setLocked(true);
     answeredIndexRef.current = currentIndex;
-    if (correct) playPracticeNote(noteIdToMidi(current.note.id), noteSoundEnabled);
+    if (correct) playPracticeNote(current.note.midi ?? noteIdToMidi(current.note.id), noteSoundEnabled);
 
     if (readingMode === "flow") {
       flowTimerRef.current = window.setTimeout(() => {
         if (currentIndex >= line.length - 1) {
           if (sessionType === "endless") {
-            const extra = buildRandomLine(scoreRange);
+            const extra = buildRandomLine(scoreRange,clef,accidentals);
             if (extra.length) setLine((items) => [...items, ...extra]);
             setCurrentIndex((index) => index + 1);
             setLocked(false);
@@ -385,9 +407,11 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
     }
   }
 
+  usePracticeNavigation({active:stage==='playing'&&!locked,feedback:false,choices:answerChoices.map(n=>n+answerAccidental),onAnswer:answer,onNext:()=>{}});
   if (stage === "setup") {
     return (
       <section className="score-reading-shell score-reading-setup">
+        <NotationOptions locale={locale} clef={clef} setClef={setClef} accidentals={accidentals} setAccidentals={setAccidentals} />
         <header className="score-reading-hero">
           <div className="score-reading-hero-copy"><p className="kicker">{text.kicker}</p><h1>{text.title}</h1><p>{text.lead}</p></div>
           <div className="score-reading-hero-visual">
@@ -477,12 +501,14 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
     return (
       <section className="score-reading-shell score-reading-results">
         <CommunityPracticeRecorder active={results.length > 0} activityKey={`score-reading-${sessionKey}`} />
+        <LocalResult id={`score-${sessionKey}`} module={locale==='tr'?'Eser okuma':'Score reading'} correct={correctCount} wrong={mistakeCount} milliseconds={elapsedMs} locale={locale} />
+        <SessionGuidance locale={locale} module="score" wrong={mistakeCount} attempts={results.length} />
         <p className="kicker">{text.kicker}</p>
         <h1>{sessionType === "endless" ? text.endlessComplete : text.complete}</h1>
         <p>{sessionType === "endless" ? text.endlessCompleteCopy(correctCount) : text.randomComplete(line.length)}</p>
         <dl className="score-reading-stats"><div><dt>{text.correct}</dt><dd>{sessionType === "endless" ? correctCount : `${correctCount} / ${line.length}`}</dd></div><div><dt>{text.mistakes}</dt><dd>{mistakeCount}</dd></div><div><dt>{text.accuracy}</dt><dd>%{accuracy}</dd></div></dl>
         <section className="score-reading-review" aria-labelledby="score-review-title"><h2 id="score-review-title">{text.review}</h2>
-          {mistakeCount === 0 ? <p>{text.noMistakes}</p> : <ol>{results.filter((result) => !result.correct).map((result) => <li key={result.index}><b>{result.index + 1}</b><span>{text.expected(noteName(result.expected, locale))}</span><small>{result.timedOut ? text.missed : text.answered(locale === "tr" ? SCORE_NOTES.find((note) => note.letter === result.guessed)?.solfege ?? "" : result.guessed ?? "")}</small></li>)}</ol>}
+          {mistakeCount === 0 ? <p>{text.noMistakes}</p> : <ol>{results.filter((result) => !result.correct).map((result) => <li key={result.index}><b>{result.index + 1}</b><span>{text.expected(noteName(result.expected, locale))}</span><small>{result.timedOut ? text.missed : text.answered(result.guessed ?? "")}</small></li>)}</ol>}
         </section>
         <CommunityPracticeStreak compact />
         <div className="score-reading-result-actions"><button className="primary-button" type="button" onClick={start}>{text.again} <span aria-hidden="true">↻</span></button><button className="secondary-button" type="button" onClick={() => setStage("setup")}>{text.settings}</button></div>
@@ -493,6 +519,7 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
   const beatWindowMs = beatDurationMs(1, bpm);
   return (
     <section className="score-reading-shell score-reading-session">
+      <h1 className="sr-only">{locale==='tr'?'Eser okuma oturumu':'Score reading session'}</h1>
       <div className="score-reading-session-top"><button type="button" onClick={finishLine}>← {text.exit}</button><div className="score-reading-session-progress"><span>{text.progress}</span><strong>{sessionType === "endless" ? currentIndex + 1 : `${Math.min(currentIndex + 1, line.length)} / ${line.length}`}</strong></div><div className="score-reading-session-controls">{readingMode === "rhythm" && <button type="button" className={`metronome-toggle metronome-toggle--session ${metronomeEnabled ? "is-active" : ""}`} onClick={toggleMetronome} role="switch" aria-checked={metronomeEnabled}><span className="metronome-icon" aria-hidden="true"><i /><i /><i /></span>{metronomeEnabled ? text.metronomeOff : text.metronomeOn}</button>}<button type="button" onClick={start}>{text.restart}</button></div></div>
       <div className="score-reading-card">
         <div className="score-reading-context"><p className="kicker">{text.ranges[scoreRange].title}</p><span>{sessionType === "endless" ? text.endlessSession : text.ranges[scoreRange].count} · {text.range}</span></div>
@@ -503,10 +530,13 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
             ariaLabel={`${text.progress}: ${Math.min(currentIndex + 1, line.length)} / ${line.length}`}
             className="rhythm-score-line--interactive"
             notes={renderedLine}
+            clef={clef}
           />
         </div>
+        <p className="score-scroll-hint">{locale==='tr'?'↔ Porteyi sağa/sola kaydırabilirsin. Sıradaki nota otomatik ortalanır.':'↔ Scroll the staff horizontally. The current note is centered automatically.'}</p>
+        {accidentals!=='natural'&&<div className="accidental-choices" role="group" aria-label={locale==='tr'?'Değiştirici işaret':'Accidental'}>{['','♯','♭'].map(sign=><button type="button" key={sign} aria-pressed={answerAccidental===sign} onClick={()=>setAnswerAccidental(sign)}>{sign||'♮'}</button>)}</div>}
         {readingMode === "rhythm" && current && <div className="rhythm-window" key={`${sessionKey}-${metronomeEnabled}`} style={{ "--rhythm-window": `${beatWindowMs}ms` } as CSSProperties}><span /></div>}
-        <div className="score-answer-area"><div><p>{text.choose}</p><span>{readingMode === "rhythm" ? text.rhythmHint : text.flowHint}</span></div><div className="score-answer-grid" role="group" aria-label={text.choices}>{answerChoices.map((choice) => <button type="button" key={choice} onClick={() => answer(choice)} disabled={locked}>{choice}</button>)}</div></div>
+        <div className="score-answer-area"><div><p>{text.choose}</p><span>{readingMode === "rhythm" ? text.rhythmHint : text.flowHint}</span><small>{locale==='tr'?'Kısayol: 1–7':'Shortcut: 1–7'}</small></div><div className="score-answer-grid" role="group" aria-label={text.choices}>{answerChoices.map((choice,index) => <button type="button" key={choice} onClick={() => answer(choice+answerAccidental)} disabled={locked}>{choice}{answerAccidental}<kbd>{index+1}</kbd></button>)}</div></div>
       </div>
     </section>
   );

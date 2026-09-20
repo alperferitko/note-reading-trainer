@@ -32,11 +32,11 @@ test("NotaNota çalışma ekranını sunar", async () => {
   const html = await response.text();
   assert.match(html, /<html lang="tr">/i);
   assert.match(html, /<title>NotaNota \| Note Reading Trainer<\/title>/i);
-  assert.match(html, /Notaları gör/);
-  assert.match(html, /Adını söyle/);
+  assert.match(html, /Notayı oku,/);
+  assert.match(html, /ritmi say,/);
   assert.match(html, /Porte okuma/);
   assert.match(html, /Müzik aletleri/);
-  assert.match(html, /Gitar klavyesi/);
+  assert.match(html, /Gitar/);
   assert.match(html, /Eser okuma/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
 });
@@ -58,6 +58,7 @@ test("magic-link yalnızca makul uzunlukta geçerli e-posta adreslerini kabul ed
 
 test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğunda tutar", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const studio = await readFile(new URL("../app/learning-studio.tsx", import.meta.url), "utf8");
   const community = await readFile(new URL("../app/community.tsx", import.meta.url), "utf8");
   const guitar = await readFile(new URL("../app/guitar-trainer.tsx", import.meta.url), "utf8");
   const scoreReading = await readFile(new URL("../app/score-reading-trainer.tsx", import.meta.url), "utf8");
@@ -123,8 +124,8 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /useState<Stage>\("landing"\)/);
   assert.match(page, /const GuitarTrainer = lazy/);
   assert.match(page, /const ScoreReadingTrainer = lazy/);
-  assert.match(page, /pieces: "\?sayfa=eser-okuma"/);
-  assert.match(page, /navigateTo\("pieces"\)/);
+  assert.match(page, /pieces: pageRoute\('pieces'\)/);
+  assert.match(studio, /'setup','pieces'/);
   assert.match(page, /Eser okuma/);
   assert.match(page, /Score reading/);
   assert.match(scoreReading, /type ReadingMode = "flow" \| "rhythm"/);
@@ -140,7 +141,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(scoreReading, /const beatWindowMs = beatDurationMs\(1, bpm\)/);
   assert.match(scoreReading, /key=\{`\$\{sessionKey\}-\$\{metronomeEnabled\}`\}/);
   assert.match(styles, /rhythm-window-countdown var\(--rhythm-window\) linear infinite/);
-  assert.match(scoreReading, /function buildRandomLine\(range: ScoreRangeId\)/);
+  assert.match(scoreReading, /function buildRandomLine\(range: ScoreRangeId, clef: Clef/);
   assert.match(scoreReading, /score-range-grid/);
   assert.match(scoreReading, /buildRandomRhythmSequence\(16\)/);
   assert.doesNotMatch(scoreReading, /label: text\.valueNames/);
@@ -156,7 +157,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(scoreReading, /RhythmGlyph[\s\S]*RhythmPatternPreview[\s\S]*RhythmScoreLine/);
   assert.match(rhythmGlyphs, /eighthTriplet[\s\S]*rhythm-triplet-mark/);
   assert.match(scoreReadingLogic, /chooseUnrecentPiece/);
-  assert.match(page, /navigateTo\("guitar"\)/);
+  assert.match(studio, /'guitar','piano','violin'/);
   assert.match(page, /function InstrumentHub/);
   assert.match(page, /navigateTo\("instruments"\)/);
   assert.match(page, /Piyano/);
@@ -270,12 +271,12 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.doesNotMatch(styles, /\.level-card:not\(\.is-selected\):hover,[\s\S]{0,140}transform: translateY/);
   assert.match(page, /className="mobile-module-navigation"/);
   assert.match(page, /const STAGE_ROUTES: Record<Stage, string>/);
-  assert.match(page, /setup: "\?sayfa=nota-oku"/);
-  assert.match(page, /instruments: "\?sayfa=muzik-aletleri"/);
-  assert.match(page, /guitar: "\?sayfa=muzik-aletleri&enstruman=gitar"/);
+  assert.match(page, /setup: pageRoute\('setup'\)/);
+  assert.match(page, /instruments: pageRoute\('instruments'\)/);
+  assert.match(page, /guitar: pageRoute\('guitar'\)/);
   assert.match(page, /function stageFromSearch/);
   assert.match(page, /window\.history\.pushState\(null, "", nextUrl\)/);
-  assert.match(page, /window\.history\.replaceState\(null, "", `\$\{window\.location\.pathname\}\$\{route\}`\)/);
+  assert.match(page, /window\.history\.replaceState\(null, ['"]{2}, new URL\(pageRoute/);
   assert.match(page, /nota-nota-reading-setup:\$\{communityUserId \?\? "guest"\}/);
   assert.match(community, /onIdentityChange\?: \(userId: string \| null\) => void/);
   assert.match(page, /Daha yeni başlıyorum/);
@@ -299,10 +300,8 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /These declarations intentionally close the cascade[\s\S]*\.app-navigation a\.is-active \{[^}]*background: #a33347/);
   assert.match(styles, /\.community-header-actions button \{[\s\S]*justify-content: center;[\s\S]*text-align: center/);
   assert.match(styles, /li\[aria-current="date"\]:not\(\.is-complete\) \.practice-day-mark::after[\s\S]*inset: 5px;[\s\S]*background: var\(--primary\)/);
-  assert.match(page, /const LANDING_DEMO_NOTES = \["d5", "g4", "e5", "b4", "f4", "c5", "e4", "f5", "a4"\]/);
-  assert.match(page, /window\.setInterval\(\(\) => \{[\s\S]*setNoteIndex\(\(current\) => \(current \+ 1\) % LANDING_DEMO_NOTES\.length\);[\s\S]*\}, 2800\)/);
-  assert.match(page, /<Staff note=\{note\} locale=\{locale\} compact animated \/>/);
-  assert.match(page, /\{note\.shortLocation\[locale\]\}, \{noteName\(note, locale\)\}/);
+  assert.match(studio, /className="studio-hero-score"/);
+  assert.match(studio, /<MusicStaff position=\{4\}/);
   assert.match(styles, /\.staff--animated \.note-head,[\s\S]*top \.78s cubic-bezier\(\.22, 1, \.36, 1\)/);
   assert.match(styles, /\.landing-staff-label\.is-visible \{[\s\S]*opacity: 1;[\s\S]*transform: translateY\(0\)/);
   assert.match(styles, /\.landing-art \{ min-height: 180px; \}/);
@@ -331,7 +330,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.doesNotMatch(styles, /\.header-actions \{ transform: translateY\(-42px\); \}/);
   assert.match(styles, /\.module-guitar-visual \{[\s\S]*#e3c293[\s\S]*radial-gradient/);
   assert.match(styles, /\.module-card--staff \.module-visual \.range-preview \{[\s\S]*transform: none/);
-  assert.match(page, /<RhythmPatternPreview variant="mixed"/);
+  assert.match(studio, /<RhythmPatternPreview variant="mixed"/);
   assert.match(scoreReading, /<RhythmPatternPreview variant="mixed"/);
   assert.match(scoreReading, /<RhythmScoreLine/);
   assert.match(page, /className="brand-mark brand-mark--footer"[\s\S]*navigateTo\("landing"\)/);
@@ -352,13 +351,13 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(guitar, /className="guitar-target-location"/);
   assert.match(guitar, /className="guitar-start-panel"/);
   assert.doesNotMatch(styles, /\.session-insight \{[^}]*border-left/);
-  assert.match(page, /if \(correct\) \{[\s\S]*playPracticeNote\(noteIdToMidi\(current\.id\), noteSoundEnabled\);/);
+  assert.match(page, /if \(correct\) \{[\s\S]*playPracticeNote\(current\.midi \?\? noteIdToMidi\(current\.id\), noteSoundEnabled\);/);
   assert.match(page, /document\.addEventListener\("pointerdown", closeOnOutsidePointer\)/);
   assert.match(page, /!audioSettingsRef\.current\?\.contains\(event\.target\)/);
   assert.doesNotMatch(page, /listen-note-button|playNotaNotaEffect|setAmbientMusicActive|unlockNotaNotaAudio/);
   assert.match(styles, /\.mobile-module-navigation/);
-  assert.match(page, /className="brand-mark" aria-hidden="true">[\s\S]*notanota-monogram\.png/);
-  assert.match(page, /className="brand-mark result-flourish" aria-hidden="true">[\s\S]*notanota-monogram\.png/);
+  assert.match(page, /className="brand-mark" aria-hidden="true">[\s\S]*notanota-monogram-96\.webp/);
+  assert.match(page, /className="brand-mark result-flourish" aria-hidden="true">[\s\S]*notanota-monogram-96\.webp/);
   assert.doesNotMatch(page, /className="brand-mark" aria-hidden="true">♪/);
   assert.doesNotMatch(page, /name="note"/);
   assert.match(styles, /font-family: "Bodoni MT", Didot/);
@@ -376,7 +375,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.doesNotMatch(page, /level-indicator/);
   assert.match(styles, /\.brand-name \{[\s\S]*margin-left: -7px;[\s\S]*transform: translate\(-3px, -2px\);/);
   assert.doesNotMatch(styles, /inset 0 4px var\(--coral\)/);
-  assert.match(page, /Treble clef, natural notes/);
+  assert.match(page, /Treble and bass clef, note reading/);
   assert.match(page, /Two ledger lines/);
   assert.match(page, /letter: "C"/);
   assert.match(page, /nota-nota-locale/);
@@ -385,7 +384,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /autoCorrect="off"/);
   assert.match(page, /spellCheck=\{false\}/);
   assert.match(page, /className="mobile-answer-pad"/);
-  assert.match(page, /value=\{name\} onClick=\{chooseAnswer\}/);
+  assert.match(page, /value=\{name\+answerAccidental\} onClick=\{chooseAnswer\}/);
   assert.match(styles, /@media \(hover: none\) and \(pointer: coarse\)/);
   assert.match(styles, /grid-template-areas: "filters ranking"/);
   assert.match(styles, /grid-template-areas: "ranking" "filters"/);
@@ -425,7 +424,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /<dd>\{totalTime\}<\/dd>/);
   assert.doesNotMatch(page, /7 Günlük Seri|%92/);
   assert.doesNotMatch(page, /"Nota Nota (?:ana sayfa|home)|Nota Nota ·/);
-  assert.doesNotMatch(page, /·/);
+  assert.doesNotMatch(page, /className="brand[^"\n]*"[^\n]*>·</);
   assert.doesNotMatch(community, /·/);
   assert.doesNotMatch(guitar, /·/);
   assert.doesNotMatch(magicLink, /·/);
@@ -457,7 +456,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
   assert.match(migration, /p_wrong_count <> 0/i);
   assert.match(page, /sessionType === "standard"[\s\S]*totalWrong === 0 && correctCount === uniqueCount[\s\S]*totalWrong === 1 && correctCount > 0/);
-  assert.match(page, /const leaderboardEligible = !endedEarly/);
+  assert.match(page, /const leaderboardEligible = clef === 'treble' && accidentals === 'natural' && !endedEarly/);
   assert.match(endlessEligibilityMigration, /p_session_type = 'endless' and p_wrong_count <> 1/i);
   assert.match(endlessEligibilityMigration, /p_session_type = 'standard' and \(p_wrong_count <> 0 or p_correct_count <> v_expected_count\)/i);
   assert.match(noteRangeCountMigration, /when 'yakin' then 17[\s\S]*when 'tam' then 25[\s\S]*else 29/i);

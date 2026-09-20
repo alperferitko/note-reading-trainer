@@ -1,0 +1,8 @@
+.session-guidance { display: flex; align-items: center; gap: 1.5rem; margin-block: 1.5rem; padding: clamp(1rem, 3vw, 1.75rem); border: 1px solid var(--line, #d8cbb8); border-radius: 1.25rem; background: var(--surface, #fbf8f1); color: var(--ink, #252720); text-align: left; }
+.session-guidance > div { flex: 1; min-width: 0; }
+.session-guidance h2 { margin: .25rem 0 .75rem; font-size: clamp(1.3rem, 3vw, 1.7rem); }
+.session-guidance p:not(.kicker) { margin: .5rem 0; font-size: .875rem; line-height: 1.65; }
+.session-guidance > button { flex: 0 0 auto; min-height: 48px; padding: .8rem 1rem; border: 1px solid currentColor; border-radius: .8rem; color: var(--primary, #963347); background: transparent; font: inherit; cursor: pointer; }
+.session-guidance > button small { display: block; margin-top: .3rem; font-size: .75rem; }
+.session-guidance > button:focus-visible { outline: 3px solid var(--primary, #963347); outline-offset: 4px; }
+@media (max-width: 600px) { .session-guidance { flex-direction: column; align-items: stretch; gap: .75rem; } }

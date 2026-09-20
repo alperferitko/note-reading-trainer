@@ -9,7 +9,7 @@ test("uygulama çalışma sesini doğru cevaplarda ve kullanıcının açtığı
   const practiceAudio = await readFile(new URL("../lib/practice-audio.ts", import.meta.url), "utf8");
   const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
 
-  assert.match(page, /if \(correct\) \{[\s\S]*playPracticeNote\(noteIdToMidi\(current\.id\), noteSoundEnabled\);/);
+  assert.match(page, /if \(correct\) \{[\s\S]*playPracticeNote\(current\.midi \?\? noteIdToMidi\(current\.id\), noteSoundEnabled\);/);
   assert.match(guitar, /function finishCorrectAnswer\(question: GuitarQuestion\) \{[\s\S]*playPracticeNote\(question\.midi, noteSoundEnabled\);/);
   assert.match(guitar, /if \(guessed\.letter === current\.letter\) \{\s*finishCorrectAnswer\(current\);/);
   assert.match(guitar, /if \(requiredPositions\.every\(\(item\) => selectedCorrectIds\.has\(item\.id\)\)\) \{[\s\S]*finishCorrectAnswer\(current\);/);

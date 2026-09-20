@@ -12,7 +12,14 @@ import {
   CommunityProvider,
   CommunityResult,
 } from "./community";
-import { RhythmPatternPreview } from "./rhythm-glyphs";
+import { pitchAt, pitchName, matchesPitch, accidentalsFor, parsePitchAnswer } from "@/lib/music-pitch.mjs";
+import { SITE_PAGES, pageRoute, pageFromPath } from "@/lib/site-routes.mjs";
+import { LearningStudio } from './learning-studio';
+import { LEARNING_LESSONS } from '@/lib/learning-path.mjs';
+import { MusicStaff } from "./notation";
+import { NotationOptions, NavigationOptions, usePracticeNavigation, type Clef, type AccidentalMode } from "./practice-tools";
+import { LocalResult } from "./local-progress";
+import { AppearanceTools, InfoContent, SiteLinks, type InfoPage } from "./site-features";
 import type { ScoreSubmission, SessionType } from "@/lib/leaderboard";
 import {
   buildSessionInsight,
@@ -30,18 +37,15 @@ import {
 
 type LevelId = "temel" | "yakin" | "tam" | "genis";
 type ModeId = "porte" | "konum";
-type Stage = "landing" | "setup" | "quiz" | "done" | "pieces" | "instruments" | "guitar";
+type Stage = "landing" | "setup" | "quiz" | "done" | "pieces" | "instruments" | "guitar" | "piano" | "violin" | InfoPage;
 type Locale = "tr" | "en";
 type ReadingProfileId = "new" | "growing" | "confident";
 
 const STAGE_ROUTES: Record<Stage, string> = {
-  landing: "?",
-  setup: "?sayfa=nota-oku",
-  quiz: "?sayfa=nota-oku&gorunum=oturum",
-  done: "?sayfa=nota-oku&gorunum=sonuc",
-  pieces: "?sayfa=eser-okuma",
-  instruments: "?sayfa=muzik-aletleri",
-  guitar: "?sayfa=muzik-aletleri&enstruman=gitar",
+  landing: pageRoute('landing'), setup: pageRoute('setup'), quiz: pageRoute('setup'), done: pageRoute('setup'),
+  pieces: pageRoute('pieces'), instruments: pageRoute('instruments'), guitar: pageRoute('guitar'),
+  piano: pageRoute('piano'), violin: pageRoute('violin'), about: pageRoute('about'), how: pageRoute('how'),
+  faq: pageRoute('faq'), contact: pageRoute('contact'), roadmap: pageRoute('roadmap'),
 };
 
 const READING_PRESETS: Record<ReadingProfileId, { level: LevelId; mode: ModeId; sessionType: SessionType }> = {
@@ -66,8 +70,12 @@ const GuitarTrainer = lazy(() => import("./guitar-trainer").then((module) => ({
 const ScoreReadingTrainer = lazy(() => import("./score-reading-trainer").then((module) => ({
   default: module.ScoreReadingTrainer,
 })));
+const InstrumentTrainer = lazy(() => import("./instrument-trainer").then(module => ({ default: module.InstrumentTrainer })));
 
 type NoteQuestion = {
+  accidental?: number;
+  clef?: Clef;
+  midi?: number;
   id: string;
   solfege: "Do" | "Re" | "Mi" | "Fa" | "Sol" | "La" | "Si";
   letter: "C" | "D" | "E" | "F" | "G" | "A" | "B";
@@ -83,7 +91,7 @@ type QueuedQuestion = {
 };
 
 type AnswerNoteClass = NonNullable<ReturnType<typeof noteClassFromAnswer>>;
-type AnswerFeedback = { correct: boolean; note: NoteQuestion; guessed: AnswerNoteClass | null };
+type AnswerFeedback = { correct: boolean; note: NoteQuestion; guessed: (AnswerNoteClass & { accidental?: number }) | null };
 
 type Copy = {
   homeLabel: string;
@@ -147,7 +155,7 @@ type Copy = {
 const COPY: Record<Locale, Copy> = {
   tr: {
     homeLabel: "NotaNota ana sayfa",
-    kicker: "Sol anahtarı, doğal notalar",
+    kicker: "Sol ve fa anahtarı, nota okuma",
     heroLine1: "Bugünkü Çalışma",
     heroLine2: "Nota Oku",
     heroLead: "Seviyeni, soru biçimini ve oturum türünü seç; kısa ve odaklı çalışmana başla.",
@@ -208,7 +216,7 @@ const COPY: Record<Locale, Copy> = {
   },
   en: {
     homeLabel: "NotaNota home",
-    kicker: "Treble clef, natural notes",
+    kicker: "Treble and bass clef, note reading",
     heroLine1: "Today’s Practice",
     heroLine2: "Sight-Reading",
     heroLead: "Choose your range, question style and session type, then begin a focused round.",
@@ -297,63 +305,6 @@ const EXTRA_COPY = {
     endedSession: (count: number, time: string) => `${count} correct ${count === 1 ? "answer" : "answers"}, ${time}`,
     stoppedSession: (count: number) => `You ended the session with ${count} correct answers.`,
     endlessProgress: "Endless practice",
-  },
-} as const;
-
-const LANDING_COPY = {
-  tr: {
-    eyebrow: "NotaNota müzik okuryazarlığı",
-    title: "Notaları gör.",
-    titleAccent: "Adını söyle.",
-    lead: "Sol anahtarındaki doğal notaları çizgi, aralık ve ek çizgiler üzerinde sakin, odaklı oturumlarla akıcı biçimde tanımayı öğren.",
-    primary: "Nota okumaya başla",
-    proofOne: "Türkçe + English",
-    proofTwo: "Kısa, odaklı oturumlar",
-    proofThree: "Hız ve doğruluk takibi",
-    modulesEyebrow: "Çalışma stüdyosu",
-    modulesTitle: "Bugün ne çalışmak istiyorsun?",
-    readingCategory: "Nota okuma",
-    readingTitle: "Porte okuma",
-    readingCopy: "Sol anahtarındaki doğal notaları çizgi, aralık ve ek çizgiler üzerinde tanı.",
-    readingMeta: "4 seviye, 2 soru biçimi",
-    instrumentsCategory: "Müzik aletleri",
-    scoreCategory: "Akıcı okuma",
-    scoreTitle: "Eser okuma",
-    scoreCopy: "Bir porte satırını soldan sağa, nota değerlerini izleyerek kendi hızında veya kesintisiz ritimle oku.",
-    scoreMeta: "Birlikten on altılığa ve üçlemelere, 2 okuma biçimi",
-    guitarTitle: "Gitar klavyesi",
-    guitarCopy: "Standart akortta doğal notaların tel ve perde üzerindeki yerlerini öğren.",
-    guitarMeta: "0–3 / 0–5 / 0–12 perde",
-    openReading: "Nota çalışmasına başla",
-    openGuitar: "Müzik aletlerini keşfet",
-    openScore: "Porte satırı okumaya başla",
-  },
-  en: {
-    eyebrow: "NotaNota music literacy",
-    title: "See the note.",
-    titleAccent: "Name it.",
-    lead: "Build fluent recognition of natural notes on the treble staff through calm, focused practice across four ranges.",
-    primary: "Start sight-reading",
-    proofOne: "Türkçe + English",
-    proofTwo: "Short, focused sessions",
-    proofThree: "Speed and accuracy tracking",
-    modulesEyebrow: "Practice studio",
-    modulesTitle: "What would you like to practise today?",
-    readingCategory: "Note reading",
-    readingTitle: "Sight-reading",
-    readingCopy: "Recognise natural notes on the treble staff, from the core range to extended ledger lines.",
-    readingMeta: "4 ranges, 2 question styles",
-    instrumentsCategory: "Musical instruments",
-    scoreCategory: "Fluent reading",
-    scoreTitle: "Score reading",
-    scoreCopy: "Read a complete staff line from left to right, at your own pace or against a continuous pulse.",
-    scoreMeta: "Whole notes to sixteenths and triplets, 2 reading styles",
-    guitarTitle: "Guitar fretboard",
-    guitarCopy: "Learn where natural notes sit across the strings and frets in standard tuning.",
-    guitarMeta: "Frets 0–3 / 0–5 / 0–12",
-    openReading: "Start note practice",
-    openGuitar: "Explore instruments",
-    openScore: "Start reading score lines",
   },
 } as const;
 
@@ -464,7 +415,7 @@ const INSTRUMENT_COPY = {
   },
 } as const;
 
-function InstrumentHub({ locale, onOpenGuitar }: { locale: Locale; onOpenGuitar: () => void }) {
+function InstrumentHub({ locale, onOpenGuitar, onOpenInstrument }: { locale: Locale; onOpenGuitar: () => void; onOpenInstrument: (instrument: 'piano'|'violin') => void }) {
   const text = INSTRUMENT_COPY[locale];
 
   return (
@@ -482,18 +433,18 @@ function InstrumentHub({ locale, onOpenGuitar }: { locale: Locale; onOpenGuitar:
           <span>{text.guitarCopy}</span>
           <b>{text.open} <span aria-hidden="true">→</span></b>
         </button>
-        <article className="instrument-card instrument-card--upcoming">
-          <span className="instrument-status">{text.coming}</span>
+        <button type="button" className="instrument-card" onClick={() => onOpenInstrument('piano')}>
+          <span className="instrument-status instrument-status--ready">{text.available}</span>
           <span className="instrument-illustration instrument-illustration--piano" aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /></span>
           <strong>{text.piano}</strong>
           <span>{text.pianoCopy}</span>
-        </article>
-        <article className="instrument-card instrument-card--upcoming">
-          <span className="instrument-status">{text.coming}</span>
+        </button>
+        <button type="button" className="instrument-card" onClick={() => onOpenInstrument('violin')}>
+          <span className="instrument-status instrument-status--ready">{text.available}</span>
           <span className="instrument-illustration instrument-illustration--violin" aria-hidden="true"><i /><i /><i /><i /></span>
           <strong>{text.violin}</strong>
           <span>{text.violinCopy}</span>
-        </article>
+        </button>
       </div>
     </section>
   );
@@ -566,11 +517,9 @@ const LEVELS: Record<Locale, { id: LevelId; eyebrow: string; title: string; desc
   ],
 };
 
-function questionsFor(level: LevelId) {
-  if (level === "temel") return ALL_NOTES.filter((note) => note.position >= 0 && note.position <= 8);
-  if (level === "yakin") return ALL_NOTES.filter((note) => note.position >= -4 && note.position <= 12);
-  if (level === "tam") return ALL_NOTES.filter((note) => note.position >= -8 && note.position <= 16);
-  return ALL_NOTES.filter((note) => note.position >= -10 && note.position <= 18);
+function questionsFor(level: LevelId, clef: Clef = 'treble', accidentals: AccidentalMode = 'natural'): NoteQuestion[] {
+  const bounds = { temel: [0,8], yakin: [-4,12], tam: [-8,16], genis: [-10,18] }[level];
+  return ALL_NOTES.filter(note => note.position >= bounds[0] && note.position <= bounds[1]).flatMap(note => accidentalsFor(accidentals).map(accidental => ({ ...note, ...pitchAt(note.position, clef, accidental) } as NoteQuestion)));
 }
 
 function shuffledWithoutRuns<T extends { position: number }>(items: T[]) {
@@ -602,7 +551,7 @@ function normalizeAnswer(value: string) {
 }
 
 function noteName(note: NoteQuestion, locale: Locale) {
-  return locale === "tr" ? note.solfege : note.letter;
+  return pitchName(note, locale);
 }
 
 function UiIcon({ name }: { name: "check" | "close" }) {
@@ -659,6 +608,7 @@ function RangePreview({ level }: { level: LevelId }) {
 }
 
 function Staff({ note, locale, compact = false, revealAnswer = false, animated = false }: { note: NoteQuestion; locale: Locale; compact?: boolean; revealAnswer?: boolean; animated?: boolean }) {
+  if (note.clef === 'bass' || note.accidental) return <div className="staff-notation"><MusicStaff position={note.position} clef={note.clef} accidental={note.accidental} label={revealAnswer ? noteName(note,locale) : locale==='tr'?'Portede bir nota':'A written note'} /></div>;
   const step = compact ? 8 : 12;
   const firstLineY = compact ? 67 : 126;
   const noteY = firstLineY - note.position * (step / 2);
@@ -701,41 +651,6 @@ function Staff({ note, locale, compact = false, revealAnswer = false, animated =
   );
 }
 
-const LANDING_DEMO_NOTES = ["d5", "g4", "e5", "b4", "f4", "c5", "e4", "f5", "a4"]
-  .map((id) => ALL_NOTES.find((note) => note.id === id)!);
-
-function LandingStaffDemo({ locale }: { locale: Locale }) {
-  const [noteIndex, setNoteIndex] = useState(0);
-  const [labelVisible, setLabelVisible] = useState(true);
-
-  useEffect(() => {
-    let changeTimer: number | undefined;
-    const rotationTimer = window.setInterval(() => {
-      setLabelVisible(false);
-      changeTimer = window.setTimeout(() => {
-        setNoteIndex((current) => (current + 1) % LANDING_DEMO_NOTES.length);
-        setLabelVisible(true);
-      }, 180);
-    }, 2800);
-
-    return () => {
-      window.clearInterval(rotationTimer);
-      if (changeTimer) window.clearTimeout(changeTimer);
-    };
-  }, []);
-
-  const note = LANDING_DEMO_NOTES[noteIndex];
-
-  return (
-    <div className="landing-staff-card">
-      <Staff note={note} locale={locale} compact animated />
-      <span className={`landing-staff-label ${labelVisible ? "is-visible" : ""}`}>
-        {note.shortLocation[locale]}, {noteName(note, locale)}
-      </span>
-    </div>
-  );
-}
-
 function Stat({ label, value, accent }: { label: string; value: string | number; accent?: boolean }) {
   return (
     <div className={`stat ${accent ? "stat--accent" : ""}`}>
@@ -748,6 +663,7 @@ function Stat({ label, value, accent }: { label: string; value: string | number;
 export default function Home() {
   const [locale, setLocale] = useState<Locale>("tr");
   const [stage, setStage] = useState<Stage>("landing");
+  const [requestedLessonId, setRequestedLessonId] = useState<string | null>(null);
   const [level, setLevel] = useState<LevelId>("temel");
   const [mode, setMode] = useState<ModeId>("porte");
   const [sessionType, setSessionType] = useState<SessionType>("standard");
@@ -762,6 +678,9 @@ export default function Home() {
   const [draftSessionType, setDraftSessionType] = useState<SessionType>("standard");
   const [guitarSessionActive, setGuitarSessionActive] = useState(false);
   const [scoreReadingSessionActive, setScoreReadingSessionActive] = useState(false);
+  const [clef, setClef] = useState<Clef>('treble');
+  const [accidentals, setAccidentals] = useState<AccidentalMode>('natural');
+  const [answerAccidental, setAnswerAccidental] = useState('');
   const [queue, setQueue] = useState<QueuedQuestion[]>([]);
   const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState<AnswerFeedback | null>(null);
@@ -790,13 +709,13 @@ export default function Home() {
   const questionKey = useRef(0);
   const copy = COPY[locale];
   const extra = EXTRA_COPY[locale];
-  const landing = LANDING_COPY[locale];
   const shell = SHELL_COPY[locale];
   const readingProfileCopy = READING_PROFILE_COPY[locale];
   const noteSoundCopy = NOTE_SOUND_COPY[locale];
   const levels = LEVELS[locale];
 
-  const uniqueCount = questionsFor(level).length;
+  const sessionNotes = useMemo(() => questionsFor(level, clef, accidentals), [level, clef, accidentals]);
+  const uniqueCount = sessionNotes.length;
   const currentItem = queue[0];
   const current = currentItem?.note;
   const displayedNote = feedback?.note ?? current;
@@ -811,8 +730,8 @@ export default function Home() {
       .filter(([, count]) => count > 0)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 4)
-      .map(([id, count]) => ({ note: ALL_NOTES.find((item) => item.id === id)!, count }));
-  }, [wrongByNote]);
+      .map(([id, count]) => ({ note: sessionNotes.find((item) => item.id === id)!, count }));
+  }, [wrongByNote, sessionNotes]);
 
   const dominantConfusion = useMemo(() => {
     const dominant = pickDominantConfusion(confusionByPair, totalWrong);
@@ -821,11 +740,11 @@ export default function Home() {
     const separator = dominant.key.lastIndexOf(":");
     const expectedId = dominant.key.slice(0, separator);
     const guessedLetter = dominant.key.slice(separator + 1) as NoteQuestion["letter"];
-    const expected = ALL_NOTES.find((note) => note.id === expectedId);
+    const expected = sessionNotes.find((note) => note.id === expectedId);
     if (!expected) return null;
 
     return { ...dominant, expected, guessed: noteClassFromLetter(guessedLetter) };
-  }, [confusionByPair, totalWrong]);
+  }, [confusionByPair, totalWrong, sessionNotes]);
 
   const handleCommunityIdentityChange = useCallback((userId: string | null) => {
     setCommunityUserId(userId);
@@ -846,11 +765,12 @@ export default function Home() {
 
       if (legacyStage) {
         const route = STAGE_ROUTES[legacyStage];
-        window.history.replaceState(null, "", `${window.location.pathname}${route}`);
+        window.history.replaceState(null, "", new URL(route, document.baseURI));
         setStage(legacyStage);
         return;
       }
-      setStage(stageFromSearch(window.location.search));
+      setStage(window.location.search.includes('sayfa=') ? stageFromSearch(window.location.search) : pageFromPath(window.location.pathname) as Stage);
+      setLocale(window.location.pathname.split('/').includes('en') || new URLSearchParams(window.location.search).get('lang') === 'en' ? 'en' : 'tr');
     };
     syncStageFromLocation();
     window.addEventListener("popstate", syncStageFromLocation);
@@ -861,16 +781,14 @@ export default function Home() {
 
   useEffect(() => {
     const requestedLocale = new URLSearchParams(window.location.search).get("lang");
-    const savedLocale = window.localStorage.getItem("nota-nota-locale");
-    const nextLocale = requestedLocale === "tr" || requestedLocale === "en" ? requestedLocale : savedLocale;
-    if (nextLocale !== "tr" && nextLocale !== "en") return;
+    const nextLocale = requestedLocale === "tr" || requestedLocale === "en" ? requestedLocale : window.location.pathname.split('/').includes('en') ? 'en' : 'tr';
     const timer = window.setTimeout(() => setLocale(nextLocale), 0);
     return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
     document.documentElement.lang = locale;
-    window.localStorage.setItem("nota-nota-locale", locale);
+    try { window.localStorage.setItem("nota-nota-locale", locale); } catch { /* Language remains usable without browser storage. */ }
   }, [locale]);
 
   useEffect(() => {
@@ -1017,19 +935,29 @@ export default function Home() {
 
   function changeLocale(nextLocale: Locale) {
     setLocale(nextLocale);
+    window.history.replaceState(null, '', new URL(pageRoute(stage, nextLocale), document.baseURI));
     setAnswer("");
   }
 
   function navigateTo(nextStage: Stage) {
-    const nextRoute = STAGE_ROUTES[nextStage];
-    const params = new URLSearchParams(nextRoute.slice(1));
-    const currentLanguage = new URLSearchParams(window.location.search).get("lang");
-    if (currentLanguage === "tr" || currentLanguage === "en") params.set("lang", currentLanguage);
-    const search = params.toString();
-    const nextUrl = `${window.location.pathname}${search ? `?${search}` : ""}`;
-    if (`${window.location.pathname}${window.location.search}` !== nextUrl) window.history.pushState(null, "", nextUrl);
+    const nextUrl = new URL(pageRoute(nextStage, locale), document.baseURI);
+    if (window.location.href !== nextUrl.href) window.history.pushState(null, "", nextUrl);
     setStage(nextStage);
   }
+
+  useEffect(() => {
+    const openLesson = (event: Event) => {
+      const id = (event as CustomEvent<{lessonId?: string}>).detail?.lessonId;
+      if (!LEARNING_LESSONS.some(lesson => lesson.id === id)) return;
+      setRequestedLessonId(id!);
+      setGuitarSessionActive(false);
+      setScoreReadingSessionActive(false);
+      setStage('landing');
+      window.history.pushState(null, '', new URL(pageRoute('landing', locale), document.baseURI));
+    };
+    window.addEventListener('notanota-open-lesson', openLesson);
+    return () => window.removeEventListener('notanota-open-lesson', openLesson);
+  }, [locale]);
 
   function previewReadingPreset(profile: ReadingProfileId) {
     const preset = READING_PRESETS[profile];
@@ -1071,7 +999,7 @@ export default function Home() {
 
   function startSession() {
     const startedAt = Date.now();
-    const initialQueue = shuffledWithoutRuns(questionsFor(level)).map((note) => ({
+    const initialQueue = shuffledWithoutRuns(sessionNotes).map((note) => ({
       key: questionKey.current++,
       misses: 0,
       note,
@@ -1096,13 +1024,11 @@ export default function Home() {
   function submitAnswer(event: FormEvent) {
     event.preventDefault();
     // Runs from the form submit event, never during render.
-    // eslint-disable-next-line react-hooks/purity
     recordAnswer(answer, Date.now());
   }
 
   function chooseAnswer(event: MouseEvent<HTMLButtonElement>) {
     // Runs from a note-button click, never during render.
-    // eslint-disable-next-line react-hooks/purity
     recordAnswer(event.currentTarget.value, Date.now());
   }
 
@@ -1110,13 +1036,14 @@ export default function Home() {
     if (!current || !currentItem || feedback || !normalizeAnswer(nextAnswer)) return;
 
     const elapsed = Math.max(100, answeredAt - questionStartedAt);
-    const guessed = noteClassFromAnswer(nextAnswer);
-    const correct = guessed?.letter === current.letter;
+    const parsedGuess = parsePitchAnswer(nextAnswer);
+    const guessed = parsedGuess ? { ...noteClassFromLetter(parsedGuess.letter as AnswerNoteClass['letter']), accidental: parsedGuess.accidental } : null;
+    const correct = matchesPitch(nextAnswer, current);
     setAnswer(nextAnswer);
     setAnswerTimes((times) => [...times, elapsed]);
 
     if (correct) {
-      playPracticeNote(noteIdToMidi(current.id), noteSoundEnabled);
+      playPracticeNote(current.midi ?? noteIdToMidi(current.id), noteSoundEnabled);
       setFeedback({ correct: true, note: current, guessed });
       if (currentItem.misses === 0) setFirstTryCorrect((count) => count + 1);
       setCorrectCount((count) => count + 1);
@@ -1125,12 +1052,12 @@ export default function Home() {
         const remaining = items.slice(1);
         if (sessionType === "standard") return remaining;
         const previous = remaining.at(-1)?.note ?? current;
-        const nextNote = nextEndlessNote(questionsFor(level), previous);
+        const nextNote = nextEndlessNote(sessionNotes, previous);
         return [...remaining, { key: questionKey.current++, misses: 0, note: nextNote }];
       });
     } else {
       setWrongByNote((values) => ({ ...values, [current.id]: (values[current.id] ?? 0) + 1 }));
-      if (guessed) {
+      if (guessed && !guessed.accidental && !current.accidental) {
         const confusionKey = `${current.id}:${guessed.letter}`;
         setConfusionByPair((values) => ({ ...values, [confusionKey]: (values[confusionKey] ?? 0) + 1 }));
       }
@@ -1153,6 +1080,7 @@ export default function Home() {
     } else {
       setFeedback(null);
       setAnswer("");
+      setAnswerAccidental('');
       setQuestionStartedAt(Date.now());
     }
   }
@@ -1190,7 +1118,7 @@ export default function Home() {
     correctCount,
     averageResponseMs,
   });
-  const leaderboardEligible = !endedEarly && (
+  const leaderboardEligible = clef === 'treble' && accidentals === 'natural' && !endedEarly && (
     sessionType === "standard"
       ? totalWrong === 0 && correctCount === uniqueCount
       : totalWrong === 1 && correctCount > 0
@@ -1204,6 +1132,19 @@ export default function Home() {
     totalResponseTimeMs,
   };
   const immersiveSession = stage === "quiz" || guitarSessionActive || scoreReadingSessionActive;
+  const navigation = usePracticeNavigation({ active: stage === 'quiz', feedback: Boolean(feedback), choices: answerChoices.map(n=>n+answerAccidental), onAnswer: value=>recordAnswer(value,Date.now()), onNext: nextQuestion });
+  useEffect(() => {
+    const key = stage === 'quiz' || stage === 'done' ? 'setup' : stage;
+    const page = SITE_PAGES[key];
+    if (!page) return;
+    document.title = `${stage==='quiz'?(locale==='tr'?'Oturum · ':'Session · '):stage==='done'?(locale==='tr'?'Sonuç · ':'Results · '):''}${page[locale][0]} | NotaNota`;
+    const canonical = `https://notanota.online/${locale==='en'?'en/':''}${page.path ? page.path+'/' : ''}`;
+    document.querySelector('link[rel="canonical"]')?.setAttribute('href',canonical);
+    document.querySelector('meta[name="description"]')?.setAttribute('content',page[locale][1]);
+    document.querySelector('meta[property="og:title"]')?.setAttribute('content',document.title);
+    document.querySelector('meta[property="og:url"]')?.setAttribute('content',canonical);
+    for (const lang of ['tr','en','x-default']) { let link=document.querySelector<HTMLLinkElement>(`link[hreflang="${lang}"]`); if(!link){link=document.createElement('link');link.rel='alternate';link.hreflang=lang;document.head.append(link);}link.href=`https://notanota.online/${lang==='en'?'en/':''}${page.path?page.path+'/':''}`; }
+  }, [stage,locale]);
 
   return (
     <CommunityProvider locale={locale} onIdentityChange={handleCommunityIdentityChange}>
@@ -1211,7 +1152,7 @@ export default function Home() {
       {!immersiveSession && <header className="site-header">
         <a className="brand" href={STAGE_ROUTES.landing} onClick={(event) => { event.preventDefault(); navigateTo("landing"); }} aria-label={copy.homeLabel}>
           <span className="brand-mark" aria-hidden="true">
-            <img src="./notanota-monogram.png" alt="" />
+            <img src="./notanota-monogram-96.webp" alt="" />
           </span>
           <span className="brand-name">NotaNota</span>
         </a>
@@ -1226,7 +1167,7 @@ export default function Home() {
           <a href={STAGE_ROUTES.pieces} className={stage === "pieces" ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("pieces"); }} aria-label={shell.scoreReading} aria-current={stage === "pieces" ? "page" : undefined}>
             <b>{shell.scoreReading}</b>
           </a>
-          <a href={STAGE_ROUTES.instruments} className={["instruments", "guitar"].includes(stage) ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("instruments"); }} aria-label={shell.instruments} aria-current={["instruments", "guitar"].includes(stage) ? "page" : undefined}>
+          <a href={STAGE_ROUTES.instruments} className={["instruments", "guitar", "piano", "violin"].includes(stage) ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("instruments"); }} aria-label={shell.instruments} aria-current={["instruments", "guitar", "piano", "violin"].includes(stage) ? "page" : undefined}>
             <b>{shell.instruments}</b>
           </a>
         </nav>
@@ -1278,69 +1219,17 @@ export default function Home() {
         <a href={STAGE_ROUTES.pieces} className={stage === "pieces" ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("pieces"); }} aria-current={stage === "pieces" ? "page" : undefined}>
           {shell.scoreReading}
         </a>
-        <a href={STAGE_ROUTES.instruments} className={["instruments", "guitar"].includes(stage) ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("instruments"); }} aria-current={["instruments", "guitar"].includes(stage) ? "page" : undefined}>
+        <a href={STAGE_ROUTES.instruments} className={["instruments", "guitar", "piano", "violin"].includes(stage) ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("instruments"); }} aria-current={["instruments", "guitar", "piano", "violin"].includes(stage) ? "page" : undefined}>
           {shell.instruments}
         </a>
       </nav>}
 
-      {stage === "landing" && (
-        <section className="landing-shell">
-          <div className="landing-hero">
-            <div className="landing-copy">
-              <p className="kicker">{landing.eyebrow}</p>
-              <h1>{landing.title}<br /><em>{landing.titleAccent}</em></h1>
-              <p>{landing.lead}</p>
-              <div className="landing-actions">
-                <a className="primary-button" href={STAGE_ROUTES.setup} onClick={(event) => { event.preventDefault(); navigateTo("setup"); }}>{landing.primary} <span aria-hidden="true">→</span></a>
-              </div>
-            </div>
-            <div className="landing-art" aria-hidden="true">
-              <LandingStaffDemo locale={locale} />
-              <span className="landing-orbit landing-orbit--one" />
-              <span className="landing-orbit landing-orbit--two" />
-            </div>
-          </div>
-          <CommunityPracticeStreak />
-          <div className="module-section">
-            <div className="module-heading"><p className="kicker">{landing.modulesEyebrow}</p><h2>{landing.modulesTitle}</h2></div>
-            <div className="module-grid">
-              <section className="module-category" aria-labelledby="note-reading-category">
-                <p className="module-category-label" id="note-reading-category">{landing.readingCategory}</p>
-                <a className="module-card module-card--staff" href={STAGE_ROUTES.setup} onClick={(event) => { event.preventDefault(); navigateTo("setup"); }}>
-                  <span className="module-visual module-visual-frame"><RangePreview level="tam" /></span>
-                  <strong>{landing.readingTitle}</strong>
-                  <span>{landing.readingCopy}</span>
-                  <small>{landing.readingMeta}</small>
-                  <b className="module-card-cta">{landing.openReading}<i aria-hidden="true">→</i></b>
-                </a>
-              </section>
-              <section className="module-category" aria-labelledby="instrument-category">
-                <p className="module-category-label" id="instrument-category">{landing.instrumentsCategory}</p>
-                <a className="module-card module-card--guitar" href={STAGE_ROUTES.instruments} onClick={(event) => { event.preventDefault(); navigateTo("instruments"); }}>
-                  <span className="module-guitar-visual module-visual-frame" aria-hidden="true"><b>C</b><b>E</b><b>G</b></span>
-                  <strong>{landing.guitarTitle}</strong>
-                  <span>{landing.guitarCopy}</span>
-                  <small>{landing.guitarMeta}</small>
-                  <b className="module-card-cta">{landing.openGuitar}<i aria-hidden="true">→</i></b>
-                </a>
-              </section>
-              <section className="module-category module-category--score" aria-labelledby="score-reading-category">
-                <p className="module-category-label" id="score-reading-category">{landing.scoreCategory}</p>
-                <a className="module-card module-card--score" href={STAGE_ROUTES.pieces} onClick={(event) => { event.preventDefault(); navigateTo("pieces"); }}>
-                  <span className="module-score-copy"><strong>{landing.scoreTitle}</strong><span>{landing.scoreCopy}</span><small>{landing.scoreMeta}</small><b className="module-card-cta">{landing.openScore}<i aria-hidden="true">→</i></b></span>
-                  <span className="module-score-visual module-visual-frame" aria-hidden="true">
-                    <RhythmPatternPreview variant="mixed" />
-                  </span>
-                </a>
-              </section>
-            </div>
-          </div>
-        </section>
-      )}
+      {stage === "landing" && <LearningStudio locale={locale} onNavigate={navigateTo} initialLessonId={requestedLessonId} />}
 
       {stage === "instruments" && (
-        <InstrumentHub locale={locale} onOpenGuitar={() => navigateTo("guitar")} />
+        <InstrumentHub locale={locale} onOpenGuitar={() => navigateTo("guitar")} onOpenInstrument={navigateTo} />
       )}
+
 
       {stage === "guitar" && (
         <Suspense fallback={<section className="guitar-shell guitar-shell--loading" aria-busy="true" />}>
@@ -1351,6 +1240,8 @@ export default function Home() {
           />
         </Suspense>
       )}
+      {(stage === 'piano' || stage === 'violin') && <Suspense fallback={<p>{locale==='tr'?'Yükleniyor…':'Loading…'}</p>}><InstrumentTrainer key={stage} instrument={stage} locale={locale} noteSoundEnabled={noteSoundEnabled} onSessionActiveChange={setGuitarSessionActive} /></Suspense>}
+      {(['about','how','faq','contact','roadmap'] as string[]).includes(stage) && <InfoContent page={stage as InfoPage} locale={locale} />}
 
       {stage === "pieces" && (
         <Suspense fallback={<section className="score-reading-shell score-reading-shell--loading" aria-busy="true" />}>
@@ -1445,6 +1336,7 @@ export default function Home() {
               <span aria-hidden="true">⚬</span>
               <div><p>{extra.sessionEyebrow}</p><h2>{extra.chooseSession}</h2></div>
             </div>
+            <NotationOptions locale={locale} clef={clef} setClef={setClef} accidentals={accidentals} setAccidentals={setAccidentals} />
             <div className="mode-grid session-type-grid">
               <button type="button" className={`mode-card ${sessionType === "standard" ? "is-selected" : ""}`} onClick={() => { setSessionType("standard"); persistReadingSettings({ sessionType: "standard" }); }} aria-pressed={sessionType === "standard"}>
                 <span className="mode-icon mode-icon--check" aria-hidden="true"><UiIcon name="check" /></span>
@@ -1468,6 +1360,8 @@ export default function Home() {
 
       {stage === "quiz" && displayedNote && (
         <section className="quiz-shell" ref={quizShellRef}>
+          <h1 className="sr-only">{copy.prompt}</h1>
+          <NavigationOptions locale={locale} {...navigation} />
           <div className="progress-row">
             <div>
               <span className="progress-label">{sessionType === "standard" ? copy.progress : extra.endlessProgress}</span>
@@ -1500,12 +1394,13 @@ export default function Home() {
                 <div className="location-question">
                   <span>{copy.positionLabel}</span>
                   <strong>{displayedNote.shortLocation[locale]}</strong>
-                  <p>{displayedNote.location[locale].charAt(0).toUpperCase() + displayedNote.location[locale].slice(1)}</p>
+                  <p>{displayedNote.location[locale].charAt(0).toUpperCase() + displayedNote.location[locale].slice(1)} {displayedNote.accidental === 1 ? '♯' : displayedNote.accidental === -1 ? '♭' : ''} · {clef==='bass'?(locale==='tr'?'Fa anahtarı':'Bass clef'):(locale==='tr'?'Sol anahtarı':'Treble clef')}</p>
                 </div>
               )}
             </div>
             {!feedback ? (
               <form className="answer-form" onSubmit={submitAnswer}>
+                {accidentals !== 'natural' && <div className="accidental-choices" role="group" aria-label={locale==='tr'?'Değiştirici işaret':'Accidental'}>{['','♯','♭'].map(sign=><button type="button" key={sign} aria-pressed={answerAccidental===sign} onClick={()=>setAnswerAccidental(sign)}>{sign||'♮'}</button>)}</div>}
                 <label htmlFor="answer">{copy.answerLabel}</label>
                 <div className="answer-line">
                   <input
@@ -1523,12 +1418,12 @@ export default function Home() {
                   <button type="submit" disabled={!normalizeAnswer(answer)}>{copy.check} <span aria-hidden="true">↵</span></button>
                 </div>
                 <div className="note-hints note-hints--desktop" role="group" aria-label={copy.choicesLabel}>
-                  {answerChoices.map((name) => <button type="button" key={name} onClick={() => { setAnswer(name); inputRef.current?.focus(); }}>{name}</button>)}
+                  {answerChoices.map((name,index) => <button type="button" key={name} onClick={() => recordAnswer(name+answerAccidental, Date.now())}>{name}{answerAccidental}<kbd>{index+1}</kbd></button>)}
                 </div>
                 <div className="mobile-answer-pad" role="group" aria-label={copy.choicesLabel}>
                   <span>{copy.choicesLabel}</span>
                   <div>
-                    {answerChoices.map((name) => <button type="button" key={name} value={name} onClick={chooseAnswer}>{name}</button>)}
+                    {answerChoices.map((name) => <button type="button" key={name} value={name+answerAccidental} onClick={chooseAnswer}>{name}{answerAccidental}</button>)}
                   </div>
                 </div>
               </form>
@@ -1542,7 +1437,7 @@ export default function Home() {
                   ) : (
                     <p>
                       {copy.wrongPrefix}: <b>{noteName(feedback.note, locale)}</b>. {feedback.note.location[locale].charAt(0).toUpperCase() + feedback.note.location[locale].slice(1)}.{" "}
-                      {feedback.guessed && copy.wrongGuess(locale === "tr" ? feedback.guessed.solfege : feedback.guessed.letter)}{" "}
+                      {feedback.guessed && copy.wrongGuess(pitchName(feedback.guessed, locale))}{" "}
                       {copy.wrongSuffix}
                     </p>
                   )}
@@ -1585,9 +1480,10 @@ export default function Home() {
       {stage === "done" && (
         <section className="results-shell">
           <CommunityPracticeRecorder active={completedDailyPractice} activityKey={`notes-${sessionStartedAt}`} />
+          <LocalResult id={`notes-${sessionStartedAt}`} module={locale==='tr'?'Nota okuma':'Note reading'} correct={correctCount} wrong={totalWrong} milliseconds={totalResponseTimeMs} locale={locale} />
           <div className="results-intro">
             <span className="brand-mark result-flourish" aria-hidden="true">
-              <img src="./notanota-monogram.png" alt="" />
+              <img src="./notanota-monogram-96.webp" alt="" />
             </span>
             <p className="kicker">{completedStandardSession ? copy.sessionComplete : copy.sessionSummary}</p>
             <h1 ref={resultsHeadingRef} tabIndex={-1}>{sessionType === "endless" ? extra.endlessResultTitle : sessionInsight.title}</h1>
@@ -1653,6 +1549,11 @@ export default function Home() {
           </div>}
 
           <CommunityResult score={scoreSubmission} eligible={leaderboardEligible} />
+
+          {answerTimes.length > 0 && <aside className="reading-lesson-guidance">
+            <div><p className="kicker">{locale==='tr'?'Bir sonraki adım':'Your next step'}</p><h2>{locale==='tr'?'Bilgiyi kısa bir dersle pekiştir.':'Reinforce your knowledge with a short lesson.'}</h2><p>{locale==='tr'?'Seçtiğin anahtar ve nota türüne uygun temel anlatıma dönüp yeni örneklerle devam edebilirsin. Bu öneri tek başına bir beceri eksikliği göstermez.':'Review the basics for your chosen clef and note type, then try new examples. This suggestion does not by itself indicate a skill gap.'}</p></div>
+            <button type="button" onClick={()=>window.dispatchEvent(new CustomEvent('notanota-open-lesson',{detail:{lessonId:accidentals!=='natural'?'accidentals':clef==='bass'?'bass-clef':'treble-anchors'}}))}>{locale==='tr'?'Kısa dersi aç':'Open short lesson'} →</button>
+          </aside>}
 
           {sessionType === "standard" && <div className="hardest-card">
             <div><p className="kicker">{copy.reviewList}</p><h2>{copy.hardest}</h2></div>
@@ -1735,7 +1636,8 @@ export default function Home() {
         </div>
       )}
 
-      {!immersiveSession && <footer><span>NotaNota</span><p>{copy.footer}</p><CommunityLegalLink /><a className="brand-mark brand-mark--footer" href={STAGE_ROUTES.landing} onClick={(event) => { event.preventDefault(); navigateTo("landing"); }} aria-label={copy.homeLabel}><img src="./notanota-monogram.png" alt="" /></a></footer>}
+      <div hidden={immersiveSession} className="site-extras"><AppearanceTools locale={locale} /><SiteLinks locale={locale} onNavigate={navigateTo} /></div>
+      {!immersiveSession && <footer><span>NotaNota</span><p>{copy.footer}</p><CommunityLegalLink /><a className="brand-mark brand-mark--footer" href={STAGE_ROUTES.landing} onClick={(event) => { event.preventDefault(); navigateTo("landing"); }} aria-label={copy.homeLabel}><img src="./notanota-monogram-96.webp" alt="" /></a></footer>}
     </main>
     </CommunityProvider>
   );

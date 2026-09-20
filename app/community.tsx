@@ -816,7 +816,12 @@ function DeleteAccountPanel({ locale, onBusyChange, onCancel, onDeleted }: { loc
 }
 
 function LeaderboardPanel({ locale }: { locale: Locale }) {
+  const { user, openPanel } = useCommunity();
   const [sessionType, setSessionType] = useState<SessionType>("standard");
+  const [period, setPeriod] = useState<'all'|'week'>('all');
+  const [friendsOnly, setFriendsOnly] = useState(false);
+  const [friends, setFriends] = useState('');
+  const [appliedFriends, setAppliedFriends] = useState<string[]>([]);
   const [level, setLevel] = useState<PracticeLevel>("temel");
   const [questionMode, setQuestionMode] = useState<QuestionMode>("porte");
   const [rows, setRows] = useState<LeaderboardRow[]>([]);
@@ -861,12 +866,15 @@ function LeaderboardPanel({ locale }: { locale: Locale }) {
     const timer = window.setTimeout(() => {
       setLoading(true);
       setMessage("");
-      void getLeaderboard(sessionType, level, questionMode)
+      setRows([]);
+      void getLeaderboard(sessionType, level, questionMode, period, friendsOnly ? appliedFriends : null)
         .then((nextRows) => {
           if (!cancelled) setRows(nextRows);
         })
         .catch(() => {
-          if (!cancelled) setMessage(text.backendPending);
+          if (!cancelled) setMessage(period==='week'||friendsOnly
+            ? locale==='tr' ? 'Bu filtre için sunucu kurulumu henüz tamamlanmamış olabilir. Tüm zamanlar ve herkes görünümünü kullanabilirsin.' : 'The server setup for this filter may still be pending. You can use All time and Everyone.'
+            : text.backendPending);
         })
         .finally(() => {
           if (!cancelled) setLoading(false);
@@ -876,7 +884,7 @@ function LeaderboardPanel({ locale }: { locale: Locale }) {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [level, questionMode, sessionType, text.backendPending]);
+  }, [level, questionMode, sessionType, text.backendPending, period, friendsOnly, appliedFriends, locale]);
 
   return (
     <div className="leaderboard-panel">
@@ -905,8 +913,25 @@ function LeaderboardPanel({ locale }: { locale: Locale }) {
             </ol>
           </div>
         ) : <p>{text.boardEmpty}</p>}
+        {!user && !loading && <div className="leaderboard-join"><p>{locale==='tr'?'Kendi gelişimini takip et; hazır olduğunda sen de katıl.':'Track your own progress and join when you feel ready.'}</p><button type="button" onClick={()=>openPanel('auth')}>{locale==='tr'?'Ücretsiz giriş yap':'Sign in for free'}</button></div>}
       </section>
       <aside className="leaderboard-controls">
+        <fieldset className="leaderboard-filter-group">
+          <legend>{locale==='tr'?'Dönem':'Period'}</legend>
+          <div className="leaderboard-segments leaderboard-segments--two">
+            <button type="button" aria-pressed={period==='all'} onClick={()=>setPeriod('all')}>{locale==='tr'?'Tüm zamanlar':'All time'}</button>
+            <button type="button" aria-pressed={period==='week'} onClick={()=>setPeriod('week')}>{locale==='tr'?'Bu hafta':'This week'}</button>
+          </div>
+          {period==='week'&&<p>{locale==='tr'?'Hafta pazartesi 00.00’da (İstanbul) başlar. Haftalık rekorlar özelliğin sunucuda açılmasından itibaren tutulur.':'Weeks begin Monday at 00:00 Istanbul time. Weekly records are collected after this feature is enabled on the server.'}</p>}
+        </fieldset>
+        <fieldset className="leaderboard-filter-group">
+          <legend>{locale==='tr'?'Katılımcılar':'Players'}</legend>
+          <div className="leaderboard-segments leaderboard-segments--two">
+            <button type="button" aria-pressed={!friendsOnly} onClick={()=>setFriendsOnly(false)}>{locale==='tr'?'Herkes':'Everyone'}</button>
+            <button type="button" aria-pressed={friendsOnly} onClick={()=>setFriendsOnly(true)}>{locale==='tr'?'Arkadaşlar':'Friends'}</button>
+          </div>
+          {friendsOnly&&<form className="leaderboard-friends" onSubmit={event=>{event.preventDefault();setAppliedFriends([...new Set(friends.split(/[,\s]+/).map(name=>name.replace(/^@/,'').toLowerCase()).filter(name=>/^[a-z0-9_]{3,7}$/.test(name)))].slice(0,50));}}><label>{locale==='tr'?'Kullanıcı adları (virgülle ayır)':'Usernames (comma-separated)'}<input value={friends} maxLength={450} onChange={event=>setFriends(event.target.value)} placeholder="alper, deniz" /></label><button type="submit">{locale==='tr'?'Filtrele':'Apply'}</button><p>{locale==='tr'?'Bu, herkese açık kullanıcı adlarıyla çalışan bir oturum filtresidir; arkadaşlık isteği göndermez.':'This session filter uses public usernames; it does not send friend requests.'}</p></form>}
+        </fieldset>
         <fieldset className="leaderboard-filter-group">
           <legend>{labels.session}</legend>
           <div className="leaderboard-segments leaderboard-segments--two">

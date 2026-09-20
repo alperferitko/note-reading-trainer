@@ -7,6 +7,7 @@ export type RhythmPresetId = "whole" | "half" | "quarter" | "dottedQuarter" | "e
 export type RhythmNoteState = "future" | "active" | "correct" | "wrong";
 
 export type RhythmScoreNote = {
+  accidental?: number;
   key: string;
   position: number;
   rhythm: RhythmScoreValue;
@@ -187,6 +188,7 @@ export function RhythmGroup({
               <path className="rhythm-flag" d={`M ${note.x + preset.stemOffset} ${note.y - 27} C ${note.x + 19} ${note.y - 21}, ${note.x + 17} ${note.y - 11}, ${note.x + 10} ${note.y - 7}`} />
             )}
             <NoteHead x={note.x} y={note.y} open={open} preset={preset} />
+            {note.accidental !== undefined && <text className="rhythm-accidental" x={note.x-29} y={note.y+9} fontSize="26" fill="currentColor">{note.accidental===1?'♯':note.accidental===-1?'♭':'♮'}</text>}
             {note.rhythm === "dottedQuarter" && <circle className="rhythm-augmentation-dot" cx={note.x + 17} cy={note.y} r="3.1" />}
           </g>
         );
@@ -221,7 +223,7 @@ function layoutScoreNotes(notes: RhythmScoreNote[], firstLineY: number, startX: 
       && candidate.length === preset.noteCount
       && candidate.every((note) => note.groupId === groupId && presetIdForRhythm(note.rhythm) === presetId);
     const sourceNotes = completeGroup ? candidate : [first];
-    const noteGap = completeGroup ? GROUP_NOTE_GAPS[presetId] : 0;
+    const noteGap = completeGroup ? Math.max(GROUP_NOTE_GAPS[presetId], sourceNotes.some(n=>n.accidental!==undefined)?48:0) : 0;
     const positioned = sourceNotes.map((note, offset) => {
       const index = cursor + offset;
       const x = nextX + offset * noteGap;
@@ -237,7 +239,8 @@ function layoutScoreNotes(notes: RhythmScoreNote[], firstLineY: number, startX: 
   return { groups, noteXs, width: Math.max(720, nextX + 26) };
 }
 
-export function RhythmScoreLine({ notes, activeIndex, activeNoteRef, className = "", ariaLabel }: {
+export function RhythmScoreLine({ notes, activeIndex, activeNoteRef, className = "", ariaLabel, clef = 'treble' }: {
+  clef?: 'treble'|'bass';
   notes: RhythmScoreNote[];
   activeIndex?: number;
   activeNoteRef?: RefObject<SVGGElement | null>;
@@ -263,7 +266,7 @@ export function RhythmScoreLine({ notes, activeIndex, activeNoteRef, className =
       <g className="rhythm-staff-lines">
         {[0, 1, 2, 3, 4].map((line) => <line key={line} x1="96" x2={width - 18} y1={firstLineY - line * 14} y2={firstLineY - line * 14} />)}
       </g>
-      <text className="rhythm-clef" x="18" y={firstLineY + 13}>𝄞</text>
+      <text className={`rhythm-clef ${clef==='bass'?'rhythm-clef--bass':''}`} x="18" y={firstLineY + (clef==='bass'?-12:13)}>{clef==='bass'?'𝄢':'𝄞'}</text>
       {groups.map((group) => (
         <RhythmGroup
           activeIndex={activeIndex}

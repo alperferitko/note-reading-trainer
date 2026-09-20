@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import "./globals.css";
+import "./learning-studio.css";
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
@@ -10,15 +11,17 @@ export async function generateMetadata(): Promise<Metadata> {
   const icon = `${protocol}://${host}/notanota-app-icon.svg?v=3`;
 
   return {
+    manifest: '/manifest.webmanifest',
     title: "NotaNota | Note Reading Trainer",
-    description: "Build fluent recognition of natural notes and read complete treble-clef lines with mixed rhythms in focused bilingual practice.",
+    description: "Learn music reading with short lessons, treble and bass notation, rhythm practice and note locations on guitar, piano and violin.",
     icons: {
       icon: [{ url: icon, type: "image/svg+xml" }],
       shortcut: icon,
+      apple: '/app-192.png',
     },
     openGraph: {
       title: "NotaNota | Note Reading Trainer",
-      description: "See the note, name it, then read complete staff lines with a steady pulse. Türkçe ve English.",
+      description: "Short lessons, focused music-reading practice and instrument note locations. Türkçe ve English.",
       type: "website",
       siteName: "NotaNota",
       locale: "tr_TR",
@@ -28,13 +31,13 @@ export async function generateMetadata(): Promise<Metadata> {
         type: "image/png",
         width: 1200,
         height: 630,
-        alt: "NotaNota treble-clef note-reading practice",
+        alt: "NotaNota music-reading studio",
       }],
     },
     twitter: {
       card: "summary_large_image",
       title: "NotaNota | Note Reading Trainer",
-      description: "See the note, name it, then read complete staff lines with a steady pulse. Türkçe ve English.",
+      description: "Short lessons, focused music-reading practice and instrument note locations. Türkçe ve English.",
       images: [image],
     },
   };

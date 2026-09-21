@@ -184,3 +184,13 @@
   .site-header .brand-mark img { width:40px; height:40px; margin:0; transform:none; }
   .site-header .header-actions { margin-left:auto; }
 }
+.studio-review-plan { padding:clamp(20px,4vw,32px); background:var(--surface); border:1px solid var(--border); border-radius:20px; scroll-margin-top:80px; }
+.studio-review-plan h2 { font-family:var(--serif); font-size:clamp(26px,4vw,36px); margin:12px 0; }
+.studio-review-plan p,.studio-recall-intro p { line-height:1.65; }
+.studio-review-plan small { display:block; font-size:12px; line-height:1.6; color:var(--foreground-muted); }
+.studio-review-plan summary { min-height:44px; padding:12px 0; cursor:pointer; }
+.studio-review-list { list-style:none; padding:0; display:grid; gap:12px; }
+.studio-review-list li { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding:16px; border-radius:12px; background:var(--background-deep); }
+.studio-review-list button,.studio-recall-intro button { min-height:44px; border:1px solid var(--border-strong); border-radius:10px; padding:10px 16px; background:var(--surface); color:var(--primary); }
+.studio-review-summary,.studio-review-next { font-weight:600; }
+.studio-recall-intro { padding:16px; border:1px solid var(--border); border-radius:12px; margin:16px 0; }

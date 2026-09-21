@@ -40,9 +40,17 @@ Yerel oturum özeti, belirli çizgi/oktav hatasını veya gerçek ritim sapması
 - Doğrulama: 47 otomatik test, 4 statik sayfa testi, TypeScript ve lint başarılı (kişisel output betiğinde önceden bulunan tek uyarı). Beş ekran genişliğinde 25 görünüm; üç mobil/yatay boyutta gitar/eser/piyano akışları ve ritim atölyesinin gerçek tarayıcı ses zamanlaması sınandı. Tarayıcıda JavaScript hatası yok.
 - Haftalık/arkadaş sıralamasının SQL kurulumu hâlâ dış bağımlılık: yönetim bağlantısı yok ve yerel Docker servisi çalışmıyor. Üretim veritabanına değişiklik yapılmadı; ayrıntılar `weekly-leaderboard-setup.md` içinde.
 
+## Üçüncü paket — dersler için aralıklı tekrar
+
+- Bilgi kontrollerine tarayıcıda saklanan tekrar takvimi eklendi. Zamanı gelen ders, günlük öneride öncelik alır; yaklaşan dersler ve tarihi bilinmeyen eski tamamlamalar ayrı gösterilir.
+- Tekrar modunda ders açıklaması başlangıçta kapalıdır. Açıklamayı açmak veya yanlış cevap vermek yardımlı tekrar olarak kaydedilir; ertesi güne planlanır. Yardımsız, zamanı gelmiş kontroller 1/3/7/14 günlük basit aralıklarla ilerler. Erken tekrar takvimi ileri taşımaz.
+- Bu plan, iki soruluk bilgi kontrolüne dayalı bir hatırlatıcıdır; ustalık/unutma olasılığı tahmini veya gerçek enstrüman performansı ölçümü değildir. Eski tamamlamalara tarih uydurulmaz. Gecikmiş tekrar bir ceza veya başarısızlık sayılmaz.
+- Bilgiler yalnız bu tarayıcıdadır; farklı cihazlar arasında hesap eşitlemesi yapılmaz. Tarihler cihaz saatine göre gösterilir.
+- Doğrulama: 55 otomatik test ve 4 statik sayfa testi, TypeScript, lint; tarayıcıda zamanı gelen dersin önerilmesi, açıklamasız kontrol, aralığın uzaması ve yardım sonrası sıfırlanması. Mevcut 25 görünüm ve mobil oturum kontrolleri de korundu.
+
 ## Sonraki ürün geliştirmeleri (henüz tamamlanmadı)
 
-Soru düzeyinde kanıta dayalı uyarlanabilir tekrar, aralıklı tekrar planı, işitme eğitimi, kontrollü müzikal etütler, MIDI/mikrofon değerlendirmesi ve öğretmen araçları ayrı geliştirmeler olarak kalır. Mevcut kısa dersler ve ritim atölyesi bunların tamamlandığı anlamına gelmez.
+Gerçek nota/enstrüman oturumlarında soru düzeyinde kanıta dayalı uyarlanabilir tekrar, işitme eğitimi, kontrollü müzikal etütler, MIDI/mikrofon değerlendirmesi ve öğretmen araçları ayrı geliştirmeler olarak kalır. Kısa derslerin tekrar takvimi bunların tamamlandığı anlamına gelmez.
 
 ## Doğrulama komutları
 

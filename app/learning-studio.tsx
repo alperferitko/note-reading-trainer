@@ -6,6 +6,7 @@ import { RhythmPatternPreview } from './rhythm-glyphs';
 import { MusicStaff } from './notation';
 import { LocalProgress } from './local-progress';
 import { PulsePractice } from './pulse-practice';
+import { EarTraining } from './ear-training';
 import { LessonReviewPlan, type LessonReview } from './lesson-review-plan';
 import { REVIEW_KEY, validReviews, recordReview, buildReviewPlan } from '@/lib/lesson-review.mjs';
 
@@ -63,6 +64,7 @@ export function LearningStudio({locale,onNavigate,initialLessonId}:{locale:Local
     <section id="learning-path" className="studio-learning-path"><p className="kicker">{tr?'GELİŞİM YOLU':'LEARNING PATH'}</p><h2>{tr?'Okumadan çalmaya,':'From reading to playing,'} <em>{tr?'adım adım.':'step by step.'}</em></h2><p>{tr?'İstediğin konuyu seç. Kısa açıklamayı oku, bilgi kontrolünü tamamla ve ilgili oturuma geç.':'Choose a topic. Read the short explanation, complete the knowledge check, then open the related practice.'}</p><div className="studio-lesson-list">{lessons.map((item,i)=><button key={item.id} onClick={()=>open(item.id)} aria-expanded={active===item.id}><span className="studio-lesson-number">{String(i+1).padStart(2,'0')}</span><span><strong>{item.title[locale]}</strong><small>{item.minutes} {tr?'dk':'min'} · {completed.includes(item.id)?(tr?'Bilgi kontrolü tamamlandı':'Knowledge check completed'):(tr?'Kısa ders ve uygulama':'Lesson and practice')}</small></span><span aria-hidden="true">{completed.includes(item.id)?'✓':'→'}</span></button>)}</div></section>
     <LessonReviewPlan locale={locale} records={reviews} completed={completed} now={now} onOpen={id=>open(id,true)}/>
     <PulsePractice locale={locale}/>
+    <EarTraining locale={locale}/>
     <div id="learning-history"><LocalProgress locale={locale}/></div>
   </section>;
 }

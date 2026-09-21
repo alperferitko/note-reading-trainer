@@ -24,6 +24,8 @@ export function PulsePractice({ locale }: { locale:'tr'|'en' }) {
   const starting=useRef(false);
   const tapButton=useRef<HTMLButtonElement>(null);
 
+  useEffect(()=>{const stop=()=>{release();setRunning(false);};window.addEventListener('notanota-stop-pulse',stop);return()=>window.removeEventListener('notanota-stop-pulse',stop);},[]);
+
   function release() {
     generation.current++;
     starting.current=false;
@@ -44,6 +46,7 @@ export function PulsePractice({ locale }: { locale:'tr'|'en' }) {
 
   async function start() {
     if(starting.current||run.current)return;
+    window.dispatchEvent(new Event('notanota-stop-ear'));
     starting.current=true;
     const id=++generation.current;
     let audio:AudioContext|undefined;

@@ -137,6 +137,28 @@ try {
   }
   await call('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
   await navigate('/','.pulse-practice');
+  await evaluate(`(()=>{const original=AudioContext.prototype.createOscillator;window.__earTones=[];window.__earContexts=[];AudioContext.prototype.createOscillator=function(){window.__earContexts.push(this);const node=original.call(this),start=node.start.bind(node);node.start=function(time){window.__earTones.push({frequency:node.frequency.value,time});start(time);};return node;};})()`);
+  await click('.ear-training button','8 soruluk çalışmaya başla');
+  assert.ok(await evaluate("[...document.querySelectorAll('.ear-answers button')].every(b=>b.disabled)"),'Cannot answer before listening');
+  for(let n=0;n<8;n++) {
+    await click('.ear-listen','İki sesi dinle');
+    await waitFor('.ear-answers button:not(:disabled)');
+    const tones=await evaluate('window.__earTones.slice(-2)');
+    assert.equal(tones.length,2);assert.ok(Math.abs(tones[1].time-tones[0].time-.8)<.00001,'Tones scheduled sequentially on audio clock');
+    const response=tones[1].frequency>tones[0].frequency?'Daha ince':tones[1].frequency<tones[0].frequency?'Daha kalın':'Aynı';
+    await click('.ear-answers button',n===0?(response==='Aynı'?'Daha ince':'Aynı'):response);
+    assert.ok(await evaluate("[...document.querySelectorAll('.ear-answers button')].every(b=>b.disabled)"),'One scored answer per question');
+    if(n===0){await click('.ear-listen','Tekrar dinle');await waitFor('.ear-listen:not(:disabled)');assert.ok(await evaluate("document.querySelector('.ear-feedback').textContent.includes('Birlikte karşılaştıralım')"),'Replay keeps original answer');}
+    await click('.ear-feedback button',n===7?'Sonucu gör':'Sonraki soru');
+  }
+  assert.ok(await evaluate("document.querySelector('.ear-result').textContent.includes('7 / 8')"),'Listening result counts actual first answers');
+  assert.ok(await evaluate("window.__earContexts.every(c=>c.state==='closed')"),'All listening audio contexts are closed');
+  await evaluate("document.querySelector('.ear-training').scrollIntoView({block:'start',behavior:'instant'})");await screenshot('ear-result-390');
+  await click('.ear-training button','8 soruluk çalışmaya başla');
+  await click('.ear-listen','İki sesi dinle');
+  await evaluate("Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));delete document.hidden");await settle();
+  assert.ok(await evaluate("[...document.querySelectorAll('.ear-answers button')].every(b=>b.disabled)"),'Interrupted playback does not unlock unanswered question');
+  await click('.ear-end','Çalışmayı bitir');
   await evaluate(`(()=>{const input=document.querySelector('.pulse-controls input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'120');input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));const original=AudioContext.prototype.createOscillator;window.__pulseStarts=[];AudioContext.prototype.createOscillator=function(){window.__pulseAudio=this;const node=original.call(this),start=node.start.bind(node);node.start=function(time){window.__pulseStarts.push(time);start(time);};return node;};document.querySelector('.pulse-practice').scrollIntoView({block:'start',behavior:'instant'});})()`);await settle();
   assert.ok(await evaluate("document.querySelector('.pulse-controls').textContent.includes('120 BPM')"));
   await click('.pulse-practice button','Vuruş çalışmasına başla');await waitFor('.pulse-live');
@@ -152,6 +174,14 @@ try {
   await click('.pulse-practice button','Vuruş çalışmasına başla');await waitFor('.pulse-live');
   await evaluate("Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));delete document.hidden");await settle();
   assert.ok(await evaluate("document.querySelector('.pulse-practice').textContent.includes('arka plana')"),'Hidden tab interrupts exercise without a score');
+  await click('.pulse-practice button','Vuruş çalışmasına başla');await waitFor('.pulse-live');
+  await click('.ear-training button','8 soruluk çalışmaya başla');
+  await click('.ear-listen','İki sesi dinle');
+  assert.equal(await evaluate("Boolean(document.querySelector('.pulse-live'))"),false,'Listening interrupts pulse audio');
+  await click('.pulse-practice button','Vuruş çalışmasına başla');await waitFor('.pulse-live');
+  assert.ok(await evaluate("!document.querySelector('.ear-listen').disabled"),'Pulse interrupts listening playback');
+  await click('.pulse-live button','Durdur');
+  await click('.ear-end','Çalışmayı bitir');
   assert.equal(errors.length,0,errors.join('\n'));
   await writeFile(join(output,'report.json'),JSON.stringify({report,errors},null,2));
   console.log(JSON.stringify({screens:report.length,errors,output},null,2));

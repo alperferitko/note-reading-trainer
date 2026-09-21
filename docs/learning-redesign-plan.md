@@ -50,7 +50,15 @@ Yerel oturum özeti, belirli çizgi/oktav hatasını veya gerçek ritim sapması
 
 ## Sonraki ürün geliştirmeleri (henüz tamamlanmadı)
 
-Gerçek nota/enstrüman oturumlarında soru düzeyinde kanıta dayalı uyarlanabilir tekrar, işitme eğitimi, kontrollü müzikal etütler, MIDI/mikrofon değerlendirmesi ve öğretmen araçları ayrı geliştirmeler olarak kalır. Kısa derslerin tekrar takvimi bunların tamamlandığı anlamına gelmez.
+Gerçek nota/enstrüman oturumlarında soru düzeyinde kanıta dayalı uyarlanabilir tekrar, kontrollü müzikal etütler, MIDI/mikrofon değerlendirmesi ve öğretmen araçları ayrı geliştirmeler olarak kalır. Kısa derslerin tekrar takvimi bunların tamamlandığı anlamına gelmez.
+
+## Dördüncü paket — işitme eğitimine giriş
+
+- Stüdyoya iki sesi sırayla dinleyip ikinci sesin daha ince, aynı veya daha kalın olduğunu seçme çalışması eklendi. Sekiz soru; geniş (5/7/12 yarım ses) ve yakın (1/2/3 yarım ses) farklar; açıklamalı geri bildirim ve tekrar dinleme.
+- Sesler yalnız kullanıcı Dinle düğmesine bastığında üretilir. İki ses tamamlanmadan cevap verilemez; tekrar dinlemek ilk cevabı veya puanı değiştirmez. Erken bitirmede yalnız gerçekten cevaplanan sorular sayılır.
+- Ritim ve işitme atölyeleri birbirinin sesini durdurur. Sekme gizlenince, oturum bitince ve bileşen kaldırılınca ses kaynakları kapatılır.
+- Mikrofon, kayıt veya sunucu aktarımı yoktur; özet bu ziyaret içindir. İşitme testi, mutlak kulak testi veya müzik yeteneği puanı değildir. Aralık adlandırma, akor tanıma ve melodik dikte bu ilk sürüme dahil değildir.
+- Doğrulama: 63 otomatik test, 4 statik sayfa testi, TypeScript ve lint (yalnız eski kişisel output betiğindeki uyarı). Tarayıcıda 8 soruluk akış, ilk cevap puanlaması, tekrar dinleme, ses zamanlaması ve kaynakların kapanması; 25 görünüm ve mevcut mobil oturum regresyonları başarılı.
 
 ## Doğrulama komutları
 

@@ -38,3 +38,23 @@ clients. Weekly storage has RLS enabled and no direct client access.
 Source-level regression checks cover the boundary and data-flow contracts.
 This environment did not contain a local PostgreSQL instance, so execution of
 the SQL and the staging checks above remain a database deployment prerequisite.
+
+### Local execution check — 2026-09-21
+
+An additional read-only environment check found a Docker CLI installation, but
+`docker info` and the image inventory both failed because the `docker_engine`
+named pipe does not exist. No running Docker/PostgreSQL process or registered
+service was found by the available queries. Neither `psql` nor the Supabase CLI
+was available on PATH. No daemon was started and no image was pulled.
+
+The repository contains Supabase linked-project metadata, but this alone is not
+management authorization or a database connection credential. No Supabase or
+PostgreSQL management environment-variable names or purpose-built management
+connector were available in this session. No secret values were printed and no
+production connection was attempted.
+
+Executable SQL behavior verification therefore remains blocked on an operator
+providing a running local/staging PostgreSQL environment (or starting Docker and
+making an approved PostgreSQL image available). Source-level checks are not a
+substitute for this execution test. The migration has not been marked deployed
+or runtime-verified.

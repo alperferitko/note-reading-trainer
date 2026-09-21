@@ -36,7 +36,7 @@ try {
   let sequence=0;const pending=new Map();
   ws.addEventListener('message',event=>{const m=JSON.parse(event.data);if(m.method==='Runtime.exceptionThrown')errors.push(m.params.exceptionDetails.text+': '+(m.params.exceptionDetails.exception?.description||''));if(pending.has(m.id)){const p=pending.get(m.id);pending.delete(m.id);clearTimeout(p.timeout);if(m.error)p.reject(new Error(JSON.stringify(m.error)));else p.resolve(m.result);}});
   const call=(method,params={})=>new Promise((resolve,reject)=>{const id=++sequence;const timeout=setTimeout(()=>{pending.delete(id);reject(new Error(`CDP timeout: ${method}`));},15000);pending.set(id,{resolve,reject,timeout});ws.send(JSON.stringify({id,method,params}));});
-  const evaluate=async expression=>{const r=await call('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw new Error(JSON.stringify(r.exceptionDetails));return r.result.value;};
+  const evaluate=async expression=>{const r=await call('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true,userGesture:true});if(r.exceptionDetails)throw new Error(JSON.stringify(r.exceptionDetails));return r.result.value;};
   const settle=()=>evaluate('new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))');
   const waitFor=async selector=>{for(let n=0;n<100;n++){if(await evaluate(`Boolean(document.querySelector(${JSON.stringify(selector)}))`))return;await pause(75);}throw Error(`Missing ${selector}`);};
   const click=async(selector,text)=>{await evaluate(`(()=>{const b=[...document.querySelectorAll(${JSON.stringify(selector)})].find(x=>x.textContent.includes(${JSON.stringify(text)}));if(!b)throw Error('Missing button: '+${JSON.stringify(text)});b.click();})()`);await settle();};
@@ -44,6 +44,7 @@ try {
   const screenshot=async name=>{const shot=await call('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(join(output,name+'.png'),Buffer.from(shot.data,'base64'));};
   const measure=()=>evaluate(`(()=>{const visible=e=>e.getBoundingClientRect().width>0&&e.getBoundingClientRect().height>0;return {title:document.title,lang:document.documentElement.lang,width:innerWidth,scrollWidth:document.documentElement.scrollWidth,h1:[...document.querySelectorAll('h1')].filter(visible).map(x=>x.textContent),smallTargets:[...document.querySelectorAll('button')].filter(visible).filter(x=>{const r=x.getBoundingClientRect();return r.width<43||r.height<43}).slice(0,12).map(x=>({text:x.textContent.slice(0,45),w:x.getBoundingClientRect().width,h:x.getBoundingClientRect().height}))}})()`);
   await call('Runtime.enable');
+  if(!process.argv.includes('--pulse-only')) {
   for(const [width,height] of [[1440,1000],[768,1024],[390,844],[320,568],[844,390]]) {
     await call('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<768});
     await navigate('/','.learning-studio');
@@ -116,6 +117,24 @@ try {
     await click('.session-guidance button','Kısa dersi aç');await waitFor('#active-lesson-title');
     assert.equal(await evaluate("document.querySelector('#active-lesson-title').textContent"),'Tuşlarda yön bul');
   }
+  }
+  await call('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+  await navigate('/','.pulse-practice');
+  await evaluate(`(()=>{const input=document.querySelector('.pulse-controls input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'120');input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));const original=AudioContext.prototype.createOscillator;window.__pulseStarts=[];AudioContext.prototype.createOscillator=function(){window.__pulseAudio=this;const node=original.call(this),start=node.start.bind(node);node.start=function(time){window.__pulseStarts.push(time);start(time);};return node;};document.querySelector('.pulse-practice').scrollIntoView({block:'start',behavior:'instant'});})()`);await settle();
+  assert.ok(await evaluate("document.querySelector('.pulse-controls').textContent.includes('120 BPM')"));
+  await click('.pulse-practice button','Vuruş çalışmasına başla');await waitFor('.pulse-live');
+  await evaluate(`new Promise(resolve=>{let n=0;const timer=setInterval(()=>{const first=window.__pulseStarts[0],audio=window.__pulseAudio;if(first!==undefined&&audio&&audio.currentTime>=first+2+n*.5){document.querySelector('.pulse-tap')?.click();n++;if(n===8){clearInterval(timer);resolve(true);}}},4);})`);
+  await waitFor('.pulse-result');
+  assert.ok(await evaluate("document.querySelector('.pulse-result').textContent.includes('8 / 8')"),'All eight timed taps matched');
+  assert.equal(await evaluate('window.__pulseStarts.length'),12,'Four count-in and eight exercise clicks scheduled');
+  assert.ok(await evaluate('window.__pulseStarts.slice(1).every((t,i)=>Math.abs(t-window.__pulseStarts[i]-.5)<.000001)'),'Audio clock schedules exact half-second intervals');
+  assert.equal(await evaluate('window.__pulseAudio.state'),'closed','Audio context closed after completion');
+  await evaluate("document.querySelector('.pulse-result').scrollIntoView({block:'center',behavior:'instant'})");await screenshot('pulse-result-390');
+  await click('.pulse-practice button','Vuruş çalışmasına başla');await waitFor('.pulse-live');
+  await click('.pulse-live button','Durdur');assert.equal(await evaluate('Boolean(document.querySelector(".pulse-live"))'),false,'Stop removes live exercise');
+  await click('.pulse-practice button','Vuruş çalışmasına başla');await waitFor('.pulse-live');
+  await evaluate("Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));delete document.hidden");await settle();
+  assert.ok(await evaluate("document.querySelector('.pulse-practice').textContent.includes('arka plana')"),'Hidden tab interrupts exercise without a score');
   assert.equal(errors.length,0,errors.join('\n'));
   await writeFile(join(output,'report.json'),JSON.stringify({report,errors},null,2));
   console.log(JSON.stringify({screens:report.length,errors,output},null,2));

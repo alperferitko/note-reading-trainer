@@ -29,8 +29,20 @@ Yerel oturum özeti, belirli çizgi/oktav hatasını veya gerçek ritim sapması
 - [x] 320/390/768/844/1440 px genişliklerde 25 kurulum/ana ekran kontrol edildi; gitar, eser ve piyano oturumları 3 mobil/yatay boyutta oynandı. Porte ve piyano için kontrollü yatay kaydırma korunuyor.
 - [x] TR/EN bağlantılar ve doğrudan sayfa açma çalışıyor; 24 statik rota doğrulandı.
 - [x] Dış sunucu gerektiren işler `weekly-leaderboard-setup.md` belgesinde ayrı raporlandı. SQL üretime uygulanmadı.
-- [ ] Yalnız ilgili dosyalar commit edildi; kişisel `output/`, `promo/`, `.serena/` dahil edilmedi.
-- [ ] Push ve dağıtım sonucu doğrulandı.
+- [x] İlk sürüm `a4aaf64` ile commit edildi; kişisel `output/`, `promo/`, `.serena/` dahil edilmedi.
+- [x] İlk sürümün push ve GitHub Pages dağıtımı (35539396505) doğrulandı.
+
+## İkinci paket — 21 Eylül 2026
+
+- Küçük etiketler ve mobil dokunma hedefleri büyütüldü; 320 px başlık alanında logo, giriş, ses ve dil kontrolleri birbirinden ayrıldı.
+- Stüdyoya bağımsız ritim atölyesi eklendi: 15–120 BPM, dört hazırlık vuruşu, sekiz dokunuş, açılıp kapanabilen metronom ve yaklaşık zamanlama geri bildirimi.
+- Ses, Web Audio saatine göre planlanır. Durdurma, sekmeyi gizleme ve bileşenden ayrılma ses kaynaklarını temizler. Dokunuşlar sunucuya gönderilmez; cihaz gecikmesinin ölçümü etkileyebileceği açıkça belirtilir.
+- Doğrulama: 47 otomatik test, 4 statik sayfa testi, TypeScript ve lint başarılı (kişisel output betiğinde önceden bulunan tek uyarı). Beş ekran genişliğinde 25 görünüm; üç mobil/yatay boyutta gitar/eser/piyano akışları ve ritim atölyesinin gerçek tarayıcı ses zamanlaması sınandı. Tarayıcıda JavaScript hatası yok.
+- Haftalık/arkadaş sıralamasının SQL kurulumu hâlâ dış bağımlılık: yönetim bağlantısı yok ve yerel Docker servisi çalışmıyor. Üretim veritabanına değişiklik yapılmadı; ayrıntılar `weekly-leaderboard-setup.md` içinde.
+
+## Sonraki ürün geliştirmeleri (henüz tamamlanmadı)
+
+Soru düzeyinde kanıta dayalı uyarlanabilir tekrar, aralıklı tekrar planı, işitme eğitimi, kontrollü müzikal etütler, MIDI/mikrofon değerlendirmesi ve öğretmen araçları ayrı geliştirmeler olarak kalır. Mevcut kısa dersler ve ritim atölyesi bunların tamamlandığı anlamına gelmez.
 
 ## Doğrulama komutları
 

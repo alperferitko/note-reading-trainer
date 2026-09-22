@@ -137,6 +137,16 @@ try {
   }
   await call('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
   await navigate('/','.pulse-practice');
+  await navigate('/eser-okuma/','.score-study-picker');
+  await evaluate("(()=>{const s=document.querySelector('.score-study-picker select');s.value='steps';s.dispatchEvent(new Event('change',{bubbles:true}));})()");await settle();
+  assert.equal(await evaluate("Boolean(document.querySelector('.score-range-grid'))"),false,'Fixed study does not advertise random range controls');
+  await click('.score-reading-start-card > button','başla');await waitFor('.score-reading-session');
+  assert.ok(await evaluate("document.querySelector('.score-reading-context').textContent.includes('Komşu notalar')"));
+  for(const name of ['Mi','Fa','Sol','La','Si','La','Sol','Fa','Mi']){await click('.score-answer-grid button',name);await pause(220);}
+  await waitFor('.score-reading-results');
+  assert.ok(await evaluate("document.querySelector('.score-reading-stats').textContent.includes('9 / 9')"),'All study pitches match treble staff coordinates');
+  await screenshot('study-result-390');
+  await navigate('/','.pulse-practice');
   await evaluate(`(()=>{const original=AudioContext.prototype.createOscillator;window.__earTones=[];window.__earContexts=[];AudioContext.prototype.createOscillator=function(){window.__earContexts.push(this);const node=original.call(this),start=node.start.bind(node);node.start=function(time){window.__earTones.push({frequency:node.frequency.value,time});start(time);};return node;};})()`);
   await click('.ear-training button','8 soruluk çalışmaya başla');
   assert.ok(await evaluate("[...document.querySelectorAll('.ear-answers button')].every(b=>b.disabled)"),'Cannot answer before listening');

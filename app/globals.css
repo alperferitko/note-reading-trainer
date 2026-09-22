@@ -5929,3 +5929,8 @@ footer,
 .score-reading-session-controls > button,
 .reading-session-summary-actions > button,
 .guitar-study-note-choices > button { min-height:44px; }
+.score-study-picker { grid-column:1 / -1; padding:24px; border:1px solid var(--border); border-radius:20px; background:var(--surface); }
+.score-study-picker label { display:grid; gap:10px; margin:16px 0; }
+.score-study-picker select { width:100%; max-width:500px; min-height:48px; padding:12px; border:1px solid var(--border-strong); border-radius:10px; color:var(--foreground); background:var(--background-deep); font:inherit; }
+.score-study-picker p,.score-study-picker small { line-height:1.65; }
+.score-study-picker small { font-size:12px; }

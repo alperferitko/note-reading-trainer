@@ -50,7 +50,13 @@ Yerel oturum özeti, belirli çizgi/oktav hatasını veya gerçek ritim sapması
 
 ## Sonraki ürün geliştirmeleri (henüz tamamlanmadı)
 
-Gerçek nota/enstrüman oturumlarında soru düzeyinde kanıta dayalı uyarlanabilir tekrar, kontrollü müzikal etütler, MIDI/mikrofon değerlendirmesi ve öğretmen araçları ayrı geliştirmeler olarak kalır. Kısa derslerin tekrar takvimi bunların tamamlandığı anlamına gelmez.
+Gerçek nota/enstrüman oturumlarında soru düzeyinde kanıta dayalı uyarlanabilir tekrar, kapsamlı ölçülü/suslu etütler, MIDI/mikrofon değerlendirmesi ve öğretmen araçları ayrı geliştirmeler olarak kalır. Kısa derslerin tekrar takvimi bunların tamamlandığı anlamına gelmez.
+
+## Beşinci paket — kontrollü okuma etütleri
+
+- Eser okuma ayarlarına üç özgün sabit satır eklendi: komşu notalar, ilk alt/üst ek çizgiler, sekizlik ve onaltılık gruplarda farklı notalar. Her birinde iki dilli çalışma ipucu bulunur.
+- Sabit etütler sol anahtarı ve doğal notalarla çalışır; ilgisiz rastgele aralık ve sonsuz oturum ayarları gizlenir. Serbest veya ritimli akış ve tempo seçimi korunur. Rastgele satır varsayılandır ve önceki seçenekleri korunur.
+- Aynı etüt yeniden çalışılabilir. Sonuç nota adı cevaplarına dayanır; enstrüman icrası veya ritim doğruluğu ölçümü olarak sunulmaz. Bunlar ölçü çizgili tam eserler ya da tanınmış eser alıntıları değildir.
 
 ## Dördüncü paket — işitme eğitimine giriş
 

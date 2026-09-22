@@ -3,6 +3,7 @@
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { beatDurationMs, buildRandomRhythmSequence, groupRhythmValues, RHYTHM_VALUES } from "@/lib/score-reading.mjs";
 import { RHYTHM_DEMO_PATTERNS, rhythmDemoStepDurationMs } from "@/lib/rhythm-presets.mjs";
+import { READING_STUDIES } from '@/lib/reading-studies.mjs';
 import { noteIdToMidi, playMetronomeClick, playPracticeNote, playRhythmPulse } from "@/lib/practice-audio";
 import { CommunityPracticeRecorder, CommunityPracticeStreak } from "./community";
 import { LocalResult } from './local-progress';
@@ -214,6 +215,8 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
   const text = COPY[locale];
   const [stage, setStage] = useState<Stage>("setup");
   const [scoreRange, setScoreRange] = useState<ScoreRangeId>("staff");
+  const [studyId,setStudyId]=useState('random');
+  const study=READING_STUDIES.find(item=>item.id===studyId);
   const [sessionType, setSessionType] = useState<ScoreSessionType>("standard");
   const [readingMode, setReadingMode] = useState<ReadingMode>("flow");
   const [bpm, setBpm] = useState(76);
@@ -341,7 +344,7 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
     sessionStartRef.current = performance.now();
     setElapsedMs(0);
     setAnswerAccidental('');
-    const nextLine = buildRandomLine(scoreRange,clef,accidentals);
+    const nextLine:ScoreEvent[] = study ? groupRhythmValues(study.rhythms,study.id).map((value:{id:string;groupId?:string},index:number)=>({key:`${study.id}-${index}`,note:pitchAt(study.positions[index],'treble',0) as ScoreNote,rhythm:RHYTHM_BY_ID[value.id as RhythmScoreValue],groupId:value.groupId})) : buildRandomLine(scoreRange,clef,accidentals);
     const key = Date.now();
     setLine(nextLine);
     setCurrentIndex(0);
@@ -411,16 +414,18 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
   if (stage === "setup") {
     return (
       <section className="score-reading-shell score-reading-setup">
-        <NotationOptions locale={locale} clef={clef} setClef={setClef} accidentals={accidentals} setAccidentals={setAccidentals} />
+        {!study&&<NotationOptions locale={locale} clef={clef} setClef={setClef} accidentals={accidentals} setAccidentals={setAccidentals} />}
         <header className="score-reading-hero">
           <div className="score-reading-hero-copy"><p className="kicker">{text.kicker}</p><h1>{text.title}</h1><p>{text.lead}</p></div>
           <div className="score-reading-hero-visual">
             <RhythmPatternPreview variant="mixed" className="score-reading-hero-score" />
-            <p><strong>{text.randomLine}</strong><span>{text.randomLineCopy}</span></p>
+            <p><strong>{study?study.title[locale]:text.randomLine}</strong><span>{study?study.tip[locale]:text.randomLineCopy}</span></p>
           </div>
         </header>
 
         <div className="score-reading-options">
+          <section className="score-study-picker"><p className="kicker">{locale==='tr'?'HEDEFLİ ÇALIŞMA':'FOCUSED PRACTICE'}</p><h2>{locale==='tr'?'Bir beceriye odaklan':'Focus on one skill'}</h2><label>{locale==='tr'?'Çalışma seç':'Choose a practice'}<select value={studyId} onChange={event=>{setStudyId(event.target.value);if(event.target.value!=='random'){setClef('treble');setAccidentals('natural');setSessionType('standard');}}}><option value="random">{text.randomLine}</option>{READING_STUDIES.map(item=><option key={item.id} value={item.id}>{item.title[locale]}</option>)}</select></label>{study&&<><p>{study.tip[locale]}</p><small>{locale==='tr'?'Özgün kısa etüt · Sol anahtarı · Doğal notalar · Sabit satır. Sonuç nota adı cevaplarını ölçer, enstrüman performansını değil.':'Original short study · Treble clef · Natural notes · Fixed line. Results measure note-name answers, not instrument performance.'}</small></>}</section>
+          {!study&&<>
           <section className="score-reading-range-section" aria-labelledby="score-range-title">
             <p className="kicker">{text.range}</p>
             <h2 id="score-range-title">{text.range}</h2>
@@ -452,6 +457,7 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
               </button>
             </div>
           </section>
+          </>}
           <section className="score-reading-mode-section" aria-labelledby="score-mode-title"><p className="kicker">{text.mode}</p><h2 id="score-mode-title">{text.mode}</h2><div className="score-option-grid">
             <button type="button" className={readingMode === "flow" ? "is-selected" : ""} onClick={() => setReadingMode("flow")} aria-pressed={readingMode === "flow"}><strong>{text.flow}</strong><span>{text.flowCopy}</span><i /></button>
             <button type="button" className={readingMode === "rhythm" ? "is-selected" : ""} onClick={() => setReadingMode("rhythm")} aria-pressed={readingMode === "rhythm"}><strong>{text.rhythm}</strong><span>{text.rhythmCopy}</span><i /></button>
@@ -505,7 +511,8 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
         <SessionGuidance locale={locale} module="score" wrong={mistakeCount} attempts={results.length} />
         <p className="kicker">{text.kicker}</p>
         <h1>{sessionType === "endless" ? text.endlessComplete : text.complete}</h1>
-        <p>{sessionType === "endless" ? text.endlessCompleteCopy(correctCount) : text.randomComplete(line.length)}</p>
+        <p>{study?`${study.title[locale]} · ${results.length} / ${line.length}`:sessionType === "endless" ? text.endlessCompleteCopy(correctCount) : text.randomComplete(line.length)}</p>
+        {study&&<p>{study.tip[locale]}</p>}
         <dl className="score-reading-stats"><div><dt>{text.correct}</dt><dd>{sessionType === "endless" ? correctCount : `${correctCount} / ${line.length}`}</dd></div><div><dt>{text.mistakes}</dt><dd>{mistakeCount}</dd></div><div><dt>{text.accuracy}</dt><dd>%{accuracy}</dd></div></dl>
         <section className="score-reading-review" aria-labelledby="score-review-title"><h2 id="score-review-title">{text.review}</h2>
           {mistakeCount === 0 ? <p>{text.noMistakes}</p> : <ol>{results.filter((result) => !result.correct).map((result) => <li key={result.index}><b>{result.index + 1}</b><span>{text.expected(noteName(result.expected, locale))}</span><small>{result.timedOut ? text.missed : text.answered(result.guessed ?? "")}</small></li>)}</ol>}
@@ -522,7 +529,7 @@ export function ScoreReadingTrainer({ locale, noteSoundEnabled, onSessionActiveC
       <h1 className="sr-only">{locale==='tr'?'Eser okuma oturumu':'Score reading session'}</h1>
       <div className="score-reading-session-top"><button type="button" onClick={finishLine}>← {text.exit}</button><div className="score-reading-session-progress"><span>{text.progress}</span><strong>{sessionType === "endless" ? currentIndex + 1 : `${Math.min(currentIndex + 1, line.length)} / ${line.length}`}</strong></div><div className="score-reading-session-controls">{readingMode === "rhythm" && <button type="button" className={`metronome-toggle metronome-toggle--session ${metronomeEnabled ? "is-active" : ""}`} onClick={toggleMetronome} role="switch" aria-checked={metronomeEnabled}><span className="metronome-icon" aria-hidden="true"><i /><i /><i /></span>{metronomeEnabled ? text.metronomeOff : text.metronomeOn}</button>}<button type="button" onClick={start}>{text.restart}</button></div></div>
       <div className="score-reading-card">
-        <div className="score-reading-context"><p className="kicker">{text.ranges[scoreRange].title}</p><span>{sessionType === "endless" ? text.endlessSession : text.ranges[scoreRange].count} · {text.range}</span></div>
+        <div className="score-reading-context"><p className="kicker">{study?study.title[locale]:text.ranges[scoreRange].title}</p><span>{study?(locale==='tr'?'Kontrollü etüt':'Focused study'):`${sessionType === "endless" ? text.endlessSession : text.ranges[scoreRange].count} · ${text.range}`}</span></div>
         <div className="score-line-scroll" role="region" aria-label={text.progress} tabIndex={0}>
           <RhythmScoreLine
             activeIndex={currentIndex}

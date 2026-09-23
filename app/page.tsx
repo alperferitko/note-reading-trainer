@@ -19,6 +19,8 @@ import { LEARNING_LESSONS } from '@/lib/learning-path.mjs';
 import { MusicStaff } from "./notation";
 import { NotationOptions, NavigationOptions, usePracticeNavigation, type Clef, type AccidentalMode } from "./practice-tools";
 import { LocalResult } from "./local-progress";
+import { buildTargetedPool, findWeakItems, saveEvidence, spreadRepeats } from "@/lib/practice-evidence.mjs";
+import { TargetedReviewCard, TargetedReviewResult, useEvidence, writtenNoteLabel } from "./targeted-review";
 import { AppearanceTools, InfoContent, SiteLinks, type InfoPage } from "./site-features";
 import type { ScoreSubmission, SessionType } from "@/lib/leaderboard";
 import {
@@ -707,6 +709,10 @@ export default function Home() {
   const readingSetupCloseRef = useRef<HTMLButtonElement>(null);
   const readingSetupReturnFocusRef = useRef<HTMLElement | null>(null);
   const questionKey = useRef(0);
+  const evidenceSerial = useRef(0);
+  const [sessionTotal, setSessionTotal] = useState(0);
+  const [targetedKeys, setTargetedKeys] = useState<string[]>([]);
+  const evidence = useEvidence();
   const copy = COPY[locale];
   const extra = EXTRA_COPY[locale];
   const shell = SHELL_COPY[locale];
@@ -715,7 +721,14 @@ export default function Home() {
   const levels = LEVELS[locale];
 
   const sessionNotes = useMemo(() => questionsFor(level, clef, accidentals), [level, clef, accidentals]);
-  const uniqueCount = sessionNotes.length;
+  // A targeted session repeats some notes, so progress counts its own queue length.
+  const uniqueCount = sessionTotal || sessionNotes.length;
+  const readingTask = mode === "porte" ? "staff-name" : "position-name";
+  const evidenceKey = (note: NoteQuestion) => `${clef}:${note.id}`;
+  const weakReading = useMemo(() => {
+    const keys = new Set(sessionNotes.map((note) => `${clef}:${note.id}`));
+    return findWeakItems(evidence, { module: "reading", clef, task: readingTask }).filter((item) => keys.has(item.item));
+  }, [evidence, sessionNotes, clef, readingTask]);
   const currentItem = queue[0];
   const current = currentItem?.note;
   const displayedNote = feedback?.note ?? current;
@@ -998,12 +1011,29 @@ export default function Home() {
   }
 
   function startSession() {
+    beginSession(false);
+  }
+
+  function startTargetedSession() {
+    // Repeated items only make sense in a queue that ends; endless mode is not persisted over.
+    setSessionType("standard");
+    beginSession(true);
+  }
+
+  function beginSession(targeted: boolean) {
     const startedAt = Date.now();
-    const initialQueue = shuffledWithoutRuns(sessionNotes).map((note) => ({
+    const plan = targeted
+      ? buildTargetedPool(sessionNotes, weakReading.map((item) => item.item), { itemKey: evidenceKey })
+      : { pool: sessionNotes, targeted: [] as NoteQuestion[] };
+    const ordered = targeted ? spreadRepeats(plan.pool, (note) => note.id) : shuffledWithoutRuns(sessionNotes);
+    const initialQueue = ordered.map((note) => ({
       key: questionKey.current++,
       misses: 0,
       note,
     }));
+    evidenceSerial.current = 0;
+    setSessionTotal(initialQueue.length);
+    setTargetedKeys(plan.targeted.map(evidenceKey));
     setQueue(initialQueue);
     setWrongByNote({});
     setConfusionByPair({});
@@ -1041,6 +1071,17 @@ export default function Home() {
     const correct = matchesPitch(nextAnswer, current);
     setAnswer(nextAnswer);
     setAnswerTimes((times) => [...times, elapsed]);
+    // A retry follows a shown correct answer, so it is stored as assisted evidence.
+    const written = pitchAt(current.position, clef, current.accidental ?? 0);
+    saveEvidence([{
+      id: `notes-${sessionStartedAt}-${evidenceSerial.current++}`, session: `notes-${sessionStartedAt}`,
+      module: "reading", task: readingTask, item: evidenceKey(current), clef,
+      midi: current.midi ?? noteIdToMidi(current.id), octave: written.octave, position: current.position,
+      accidental: current.accidental ?? 0, correct, firstAttempt: currentItem.misses === 0,
+      assisted: currentItem.misses > 0, timedOut: false, responseMs: elapsed, timeLimitMs: null,
+      answer: parsedGuess ? `${parsedGuess.letter}${parsedGuess.accidental === 1 ? "#" : parsedGuess.accidental === -1 ? "b" : ""}` : undefined,
+      at: new Date(answeredAt).toISOString(),
+    }]);
 
     if (correct) {
       playPracticeNote(current.midi ?? noteIdToMidi(current.id), noteSoundEnabled);
@@ -1118,7 +1159,7 @@ export default function Home() {
     correctCount,
     averageResponseMs,
   });
-  const leaderboardEligible = clef === 'treble' && accidentals === 'natural' && !endedEarly && (
+  const leaderboardEligible = targetedKeys.length === 0 && clef === 'treble' && accidentals === 'natural' && !endedEarly && (
     sessionType === "standard"
       ? totalWrong === 0 && correctCount === uniqueCount
       : totalWrong === 1 && correctCount > 0
@@ -1271,6 +1312,8 @@ export default function Home() {
               <button type="button" onClick={() => document.getElementById("reading-detailed-settings")?.scrollIntoView({ behavior: "smooth", block: "start" })}>{readingProfileCopy.details}</button>
             </div>
           </section>
+
+          <TargetedReviewCard locale={locale} weak={weakReading} label={(item) => writtenNoteLabel(item, locale)} onStart={startTargetedSession} />
 
           <div className="hero-copy">
             <p className="kicker">{copy.kicker}</p>
@@ -1479,6 +1522,7 @@ export default function Home() {
         <section className="results-shell">
           <CommunityPracticeRecorder active={completedDailyPractice} activityKey={`notes-${sessionStartedAt}`} />
           <LocalResult id={`notes-${sessionStartedAt}`} module={locale==='tr'?'Nota okuma':'Note reading'} correct={correctCount} wrong={totalWrong} milliseconds={totalResponseTimeMs} locale={locale} />
+          <TargetedReviewResult locale={locale} session={`notes-${sessionStartedAt}`} targeted={targetedKeys} evidence={evidence} label={(item) => writtenNoteLabel(item, locale)} />
           <div className="results-intro">
             <span className="brand-mark result-flourish" aria-hidden="true">
               <img src="./notanota-monogram-96.webp" alt="" />

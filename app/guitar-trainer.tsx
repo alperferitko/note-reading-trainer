@@ -7,6 +7,9 @@ import { CommunityPracticeRecorder, CommunityPracticeStreak } from "./community"
 import { LocalResult } from './local-progress';
 import { SessionGuidance } from './session-guidance';
 import { NavigationOptions, usePracticeNavigation } from './practice-tools';
+import { buildTargetedPool, findWeakItems, saveEvidence, spreadRepeats, type ItemSummary } from '@/lib/practice-evidence.mjs';
+import { pitchFromMidi, pitchName } from '@/lib/music-pitch.mjs';
+import { TargetedReviewCard, TargetedReviewResult, useEvidence } from './targeted-review';
 import './guitar-hero.css';
 
 type Locale = "tr" | "en";
@@ -500,6 +503,9 @@ export function GuitarTrainer({
   const [startedAt, setStartedAt] = useState(0);
   const [sessionKey, setSessionKey] = useState(0);
   const [initialCount, setInitialCount] = useState(0);
+  const [targetedKeys, setTargetedKeys] = useState<string[]>([]);
+  const evidenceSerial = useRef(0);
+  const evidence = useEvidence();
   const inputRef = useRef<HTMLInputElement>(null);
   const feedbackButtonRef = useRef<HTMLButtonElement>(null);
   const resultsHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -525,6 +531,36 @@ export function GuitarTrainer({
     .join(locale === "tr" ? ", " : "; ");
 
   const previewQuestions = useMemo(() => buildQuestions(maxFret), [maxFret]);
+  // Name questions are about one fret; written-pitch questions are about one sounding pitch.
+  const evidenceKey = (question: GuitarQuestion) => practiceMode === "name-note" ? `${question.stringNumber}-${question.fret}` : `m${question.midi}`;
+  const weakGuitar = useMemo(() => {
+    const keys = new Set((practiceMode === "name-note" ? buildQuestions(maxFret) : buildPitchQuestions(maxFret))
+      .map((question) => practiceMode === "name-note" ? `${question.stringNumber}-${question.fret}` : `m${question.midi}`));
+    return findWeakItems(evidence, { module: "guitar", task: practiceMode }).filter((item) => keys.has(item.item));
+  }, [evidence, maxFret, practiceMode]);
+  const evidenceLabel = (item: ItemSummary) => {
+    if (item.task === "name-note") {
+      const [stringNumber, fret] = item.item.split("-").map(Number);
+      return text.location(stringNumber, fret);
+    }
+    // Guitar notation is written an octave above the sounding pitch.
+    return `${pitchName(pitchFromMidi((item.midi ?? 40) + 12), locale, true)} (${locale === "tr" ? "yazılı nota" : "written note"})`;
+  };
+
+  function logAnswer(question: GuitarQuestion, correct: boolean, answerText?: string) {
+    const written = pitchFromMidi(question.midi + 12);
+    // Called only from answer handlers, never during render.
+    // eslint-disable-next-line react-hooks/purity
+    const answeredAt = Date.now();
+    saveEvidence([{
+      id: `guitar-${sessionKey}-${evidenceSerial.current++}`, session: `guitar-${sessionKey}`,
+      module: "guitar", task: practiceMode, item: evidenceKey(question), clef: "treble",
+      midi: question.midi, octave: written.octave, position: written.position, accidental: written.accidental,
+      correct, firstAttempt: question.misses === 0, assisted: question.misses > 0 || showNoteNames,
+      timedOut: false, responseMs: Math.max(100, answeredAt - startedAt), timeLimitMs: null,
+      answer: answerText, at: new Date(answeredAt).toISOString(),
+    }]);
+  }
 
   useEffect(() => {
     onSessionActiveChange?.(stage === "quiz");
@@ -543,8 +579,21 @@ export function GuitarTrainer({
   }, [feedback, practiceMode, stage]);
 
   function start() {
+    beginSession(false);
+  }
+
+  function startTargeted() {
+    setSessionType("standard");
+    beginSession(true);
+  }
+
+  function beginSession(targeted: boolean) {
     const sessionStartedAt = Date.now();
-    const questions = shuffle(readsWrittenPitch ? buildPitchQuestions(maxFret) : buildQuestions(maxFret));
+    const pool = readsWrittenPitch ? buildPitchQuestions(maxFret) : buildQuestions(maxFret);
+    const plan = targeted ? buildTargetedPool(pool, weakGuitar.map((item) => item.item), { itemKey: evidenceKey }) : { pool, targeted: [] as GuitarQuestion[] };
+    const questions = targeted ? spreadRepeats(plan.pool, (question) => question.id) : shuffle(pool);
+    evidenceSerial.current = 0;
+    setTargetedKeys(plan.targeted.map(evidenceKey));
     setInitialCount(questions.length);
     setQueue(questions);
     setFirstTry(0);
@@ -586,6 +635,7 @@ export function GuitarTrainer({
     setFeedbackQuestion(current);
     setAnswer(value);
     setTimes((items) => [...items, Math.max(100, Date.now() - startedAt)]);
+    logAnswer(current, guessed.letter === current.letter, guessed.letter);
     if (guessed.letter === current.letter) {
       finishCorrectAnswer(current);
     } else {
@@ -606,6 +656,7 @@ export function GuitarTrainer({
     if (position.midi !== current.midi) {
       setFeedbackQuestion(current);
       setTimes((items) => [...items, Math.max(100, Date.now() - startedAt)]);
+      logAnswer(current, false, `${position.stringNumber}-${position.fret}`);
       setWrong((count) => count + 1);
       setQueue((items) => sessionType === "standard"
         ? [...items.slice(1), { ...items[0], misses: items[0].misses + 1 }]
@@ -619,6 +670,7 @@ export function GuitarTrainer({
     if (requiredPositions.every((item) => selectedCorrectIds.has(item.id))) {
       setFeedbackQuestion(current);
       setTimes((items) => [...items, Math.max(100, Date.now() - startedAt)]);
+      logAnswer(current, true);
       finishCorrectAnswer(current);
     }
   }
@@ -634,6 +686,7 @@ export function GuitarTrainer({
     if (!matchingPosition || string.openMidi + selectedFret !== current.midi) {
       setFeedbackQuestion(current);
       setTimes((items) => [...items, Math.max(100, Date.now() - startedAt)]);
+      logAnswer(current, false, `${selectedStringNumber}-${selectedFret}`);
       setWrong((count) => count + 1);
       setQueue((items) => sessionType === "standard"
         ? [...items.slice(1), { ...items[0], misses: items[0].misses + 1 }]
@@ -652,6 +705,7 @@ export function GuitarTrainer({
     if (requiredPositions.every((position) => selectedCorrectIds.has(position.id))) {
       setFeedbackQuestion(current);
       setTimes((items) => [...items, Math.max(100, Date.now() - startedAt)]);
+      logAnswer(current, true);
       finishCorrectAnswer(current);
     }
   }
@@ -766,6 +820,7 @@ export function GuitarTrainer({
           </div>
           <Fretboard maxFret={maxFret} locale={locale} reveal studyLetter={studyLetter} orientationHint={text.orientationHint} />
         </div>
+        <TargetedReviewCard locale={locale} weak={weakGuitar} label={evidenceLabel} onStart={startTargeted} />
         <div className="guitar-start-panel">
           <div><strong>{selectedModeTitle}</strong><span>{selectedRange.title}. {text.startReady}</span></div>
           <button className="primary-button" type="button" onClick={start}>{text.start} <span aria-hidden="true">→</span></button>
@@ -780,6 +835,7 @@ export function GuitarTrainer({
         <CommunityPracticeRecorder active activityKey={`guitar-${practiceMode}-${sessionKey}`} />
         <LocalResult id={`guitar-${sessionKey}`} module={locale==='tr'?'Gitar':'Guitar'} correct={correctAnswers} wrong={wrong} milliseconds={times.reduce((sum,value)=>sum+value,0)} locale={locale} />
         <SessionGuidance locale={locale} module="guitar" wrong={wrong} attempts={correctAnswers + wrong} guitarMode={practiceMode} />
+        <TargetedReviewResult locale={locale} session={`guitar-${sessionKey}`} targeted={targetedKeys} evidence={evidence} label={evidenceLabel} />
         <p className="kicker">{text.kicker}</p>
         <h1 ref={resultsHeadingRef} tabIndex={-1}>{sessionType === "endless" ? text.endlessResult : text.complete}</h1>
         <p>{sessionType === "endless" ? text.endlessResultCopy(correctAnswers) : practiceMode === "name-note" ? text.completeCopy : usesLocationAnswer ? text.locationCompleteCopy : text.positionCompleteCopy}</p>

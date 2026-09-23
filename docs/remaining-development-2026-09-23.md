@@ -10,6 +10,23 @@ Kaynaklar: [danışmanlık planı](advisory-action-plan.md), [öğrenme uygulama
 
 Kullanıcının güncel kararı gereği PWA, uygulama yükleme ve bununla bağlantılı çevrimdışı uygulama paketi eksik iş listesine alınmamıştır.
 
+## Uygulama güncellemesi — 24 Eylül 2026
+
+Aşağıdaki denetim metni tarihsel kayıt olarak korunmuştur. Bu bölüm, 24 Eylül'de koda eklenenleri ve hâlâ açık olanları özetler. Doğrulama: `npm run lint`, `npm run typecheck`, `npm test` (derleme + 101 birim testi), `npm run build:pages`, `npm run test:pages` ve güncellenmiş `scripts/browser-smoke.mjs` tarayıcı testi. Canlı dağıtım yapılmadı.
+
+| Madde | Durum | Kanıt |
+|---|---|---|
+| P1 Soru düzeyinde uyarlanabilir tekrar | Uygulandı. Her cevap anahtar, oktav, konum, işaret, ilk deneme, yardım ve süre bağlamıyla yerelde saklanır (son 800). En az 3 yardımsız denemenin 2'si yanlış olmadan tanı konmaz. Hedefli oturum zayıf öğeleri en fazla %30 ek tekrarla ekler, bütün havuzu yine sorar ve sonuçta yeniden ölçer; gerekçe ekranda yazılır, kayıtlar silinebilir. Nota okuma, gitar, piyano ve kemanda var. | [kanıt kütüphanesi](../lib/practice-evidence.mjs), [hedefli tekrar arayüzü](../app/targeted-review.tsx), [testler](../tests/practice-evidence.test.mjs) |
+| P1 Ölçülü ve suslu etütler | Uygulandı. Nota/sus olayları ayrı modellenir, her ölçünün süre toplamı doğrulanır, donanım ve ölçü içi değiştirici taşınması hesaplanır. On kademeli özgün etüt (sus, 3/4, noktalı dörtlük, bir diyez/bir bemol donanım, değiştirici, fa anahtarı). Sonuçta nota adları, suslar ve ritimli modda zamanlama ayrı raporlanır. | [etüt modeli](../lib/reading-studies.mjs), [eser okuma](../app/score-reading-trainer.tsx), [testler](../tests/reading-studies.test.mjs) |
+| P1 Kademeli müfredat | Uygulandı. 24 ders (keman, piyano/gitar ileri adımlar, ritim, işitme dahil); her derste önkoşul, "tekrarda ölçülen" beceri, 4 soruluk havuzdan dönen 2 soru ve karışık seçenek sırası. "Açıklama okundu", "kontrol geçti" ve "uygulamada gösterildi" ayrı durumlardır; sonuncusu kontrolden sonraki yardımsız uygulama kanıtından hesaplanır. | [dersler](../lib/learning-path.mjs), [stüdyo](../app/learning-studio.tsx), [testler](../tests/learning-path.test.mjs) |
+| P2 Beceri haritası | Uygulandı. Modül bazında anahtar/oktav/konum satırları; örnek sayısı, yardımlı/yardımsız ayrımı, son görülme ve iki 14 günlük dönemin karşılaştırması (her birinde en az 10 yardımsız cevap yoksa gösterilmez). Hesap eşitlemesi yapılmadı. | [beceri haritası](../app/skill-map.tsx) |
+| P2 İşitme eğitimi | Uygulandı: aralık adlandırma (3 zorluk), akor türü (majör/minör, eksik/artık) ve kısa melodik dikte; sonuçlar yerel geçmişe yazılır. | [soru modeli](../lib/ear-training.mjs), [atölye](../app/ear-training.tsx) |
+| P2 Ritim atölyesi | Uygulandı: sus, sekizlik/onaltılık ve noktalı değer içeren beş iki ölçülük örüntü; her nota başlangıcı bir kez eşleşir, sus sırasındaki dokunuşlar ayrı sayılır, vuruş üstü/arası ve sus sonrası girişler ayrı raporlanır. Cihaz gecikmesi uyarısı korunur. | [değerlendirme](../lib/pulse-practice.mjs), [atölye](../app/pulse-practice.tsx) |
+| P2/P3 Enstrüman kapsamı | Kısmen: piyanoda eşzamanlı çift porte (iki eldeki iki notayı birlikte bulma) ve kemanda 3. pozisyon eklendi. Bağlama ve 3. pozisyonun üstü eklenmedi; ayrı kapsam gerekir. | [enstrüman çalışması](../app/instrument-trainer.tsx), [çift porte](../app/notation.tsx) |
+| P1 Haftalık sıralama veritabanı | Kısmen: kurulum belgesindeki altı doğrulama adımı yürütülebilir, sonunda geri alınan bir SQL testine dönüştürüldü (`npm run test:sql`). Docker motoru çalışmadığı için bu oturumda **çalıştırılmadı**; migration üretime uygulanmadı. | [SQL testi](../supabase/tests/weekly_leaderboards.test.sql), [kurulum belgesi](weekly-leaderboard-setup.md) |
+| P3 Gerçek enstrüman girdisi, öğretmen/sınıf araçları, do anahtarları | Uygulanmadı. Belgedeki önerilen sıraya uygun olarak ayrı ürün kararı ve kapsamlandırma bekliyor. | — |
+| Operasyonel takip (KVKK, Search Console, OTP/bot koruması) | Koddan yapılamaz; sorumlu kişiden güncel kanıt gerekir. | [eski eylem planı](advisory-action-plan.md) |
+
 ## Tamamlanan, tekrar eksik sayılmaması gerekenler
 
 - Sol ve fa anahtarı; doğal, diyez ve bemol nota seçenekleri uygulanmış durumda. Eski plandaki “bas anahtarı” maddesi artık sıfırdan yapılacak iş değil. Kanıt: [anahtar seçenekleri](../app/practice-tools.tsx), [nota hesabı](../lib/music-pitch.mjs), [porte çizimi](../app/notation.tsx).

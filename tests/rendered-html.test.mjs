@@ -457,7 +457,8 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
   assert.match(migration, /p_wrong_count <> 0/i);
   assert.match(page, /sessionType === "standard"[\s\S]*totalWrong === 0 && correctCount === uniqueCount[\s\S]*totalWrong === 1 && correctCount > 0/);
-  assert.match(page, /const leaderboardEligible = clef === 'treble' && accidentals === 'natural' && !endedEarly/);
+  // Targeted review repeats chosen notes, so those sessions are never ranked.
+  assert.match(page, /const leaderboardEligible = targetedKeys\.length === 0 && clef === 'treble' && accidentals === 'natural' && !endedEarly/);
   assert.match(endlessEligibilityMigration, /p_session_type = 'endless' and p_wrong_count <> 1/i);
   assert.match(endlessEligibilityMigration, /p_session_type = 'standard' and \(p_wrong_count <> 0 or p_correct_count <> v_expected_count\)/i);
   assert.match(noteRangeCountMigration, /when 'yakin' then 17[\s\S]*when 'tam' then 25[\s\S]*else 29/i);

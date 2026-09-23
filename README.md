@@ -17,7 +17,7 @@
 
 ## About
 
-**NotaNota** is a bilingual, mobile-friendly trainer for learning natural notes on the treble clef. It combines focused practice, immediate feedback, session statistics, daily streaks, and optional community rankings.
+**NotaNota** is a bilingual, mobile-friendly music-reading studio for learners who want to improve steadily. It combines short lessons, note and score reading, rhythm and listening practice, instrument mapping, question-level review, daily streaks and optional community rankings.
 
 ## Development status
 
@@ -27,8 +27,13 @@ Practice runs in the browser. Passwordless accounts, private streaks, and leader
 
 ## Features
 
-- Four progressive treble-clef practice ranges
-- An optional guitar-fretboard trainer grouped under Musical instruments
+- Four progressive practice ranges in treble and bass clef, with natural, sharp and flat notes
+- Ten graded score-reading studies with bars, rests, 3/4 time, key signatures and bass clef; note names, rests and timing are reported separately
+- Guitar, piano (single staff or both hands on the grand staff) and violin (first and third position)
+- 24 short lessons with prerequisites, rotating knowledge checks, spaced review and a separate “shown in practice” status
+- Question-level targeted review and a skill map, stored only in the browser and deletable
+- Listening practice: pitch direction, intervals, chord quality and short melodic dictation
+- Rhythm workshop: steady pulse and tapped patterns with rests and subdivisions
 - Visual staff and written-position question modes
 - Turkish solfege and English letter names
 - Normal and endless practice modes
@@ -39,7 +44,6 @@ Practice runs in the browser. Passwordless accounts, private streaks, and leader
 - Private, account-backed daily practice streaks with a Monday-to-Sunday activity view
 - Separate, privacy-conscious leaderboards for each mode, range, and question style
 - Turkish and English privacy information
-- Original, low-volume piano ambience and a matching set of interface sounds
 
 ## Practice modes
 
@@ -97,6 +101,7 @@ npm test
 npm run build
 npm run build:pages
 npm run test:pages
+npm run test:sql   # leaderboard SQL checks in a disposable Docker database
 ```
 
 The only audio feedback is the pitch played after a correct answer. It is

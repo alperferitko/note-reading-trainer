@@ -82,3 +82,54 @@ test('MIDI frequencies reject values outside the finite integer MIDI domain', ()
     assert.throws(() => midiFrequency(midi), RangeError);
   }
 });
+
+test('interval questions name the heard semitone distance and stay in range', async () => {
+  const { INTERVALS, INTERVAL_SETS, makeIntervalQuestion } = await import('../lib/ear-training.mjs');
+  const random = seededRandom(9);
+  for (const set of Object.keys(INTERVAL_SETS)) {
+    const seen = new Set();
+    for (let index = 0; index < 2000; index += 1) {
+      const question = makeIntervalQuestion(set, random);
+      assert.equal(question.top - question.root, INTERVALS[question.answer]);
+      assert.ok(question.options.includes(question.answer));
+      assert.ok(question.root >= 55 && question.top <= 84);
+      seen.add(question.answer);
+    }
+    assert.deepEqual([...seen].sort(), [...INTERVAL_SETS[set]].sort(), `${set} reaches every option`);
+  }
+  assert.throws(() => makeIntervalQuestion('huge', random), RangeError);
+});
+
+test('chord questions build the named triad above the root', async () => {
+  const { CHORDS, CHORD_SETS, makeChordQuestion } = await import('../lib/ear-training.mjs');
+  assert.deepEqual(CHORDS.major, [0, 4, 7]);
+  assert.deepEqual(CHORDS.minor, [0, 3, 7]);
+  assert.deepEqual(CHORDS.diminished, [0, 3, 6]);
+  assert.deepEqual(CHORDS.augmented, [0, 4, 8]);
+  const random = seededRandom(4);
+  const seen = new Set();
+  for (let index = 0; index < 1000; index += 1) {
+    const question = makeChordQuestion('all', random);
+    assert.deepEqual(question.notes.map(note => note - question.root), CHORDS[question.answer]);
+    assert.ok(question.notes.every(note => note >= 53 && note <= 72));
+    seen.add(question.answer);
+  }
+  assert.deepEqual([...seen].sort(), [...CHORD_SETS.all].sort());
+  assert.throws(() => makeChordQuestion('jazz', random), RangeError);
+});
+
+test('dictation melodies start on the reference C4 and move by small steps', async () => {
+  const { evaluateDictation, makeDictationQuestion } = await import('../lib/ear-training.mjs');
+  const random = seededRandom(21);
+  for (let index = 0; index < 500; index += 1) {
+    const { notes, letters } = makeDictationQuestion(4, random);
+    assert.equal(notes.length, 4);
+    assert.equal(notes[0], 60);
+    assert.equal(letters[0], 'C');
+    assert.ok(notes.every(note => note >= 60 && note <= 72));
+    assert.ok(notes.slice(1).every((note, i) => Math.abs(note - notes[i]) <= 4 && note !== notes[i]));
+  }
+  assert.deepEqual(evaluateDictation(['C', 'D', 'E'], ['D', 'E']), { correct: 2, total: 2, perNote: [true, true], allCorrect: true });
+  assert.deepEqual(evaluateDictation(['C', 'D', 'E'], ['D', 'F']), { correct: 1, total: 2, perNote: [true, false], allCorrect: false });
+  assert.throws(() => makeDictationQuestion(1, random), RangeError);
+});

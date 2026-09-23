@@ -58,3 +58,27 @@ providing a running local/staging PostgreSQL environment (or starting Docker and
 making an approved PostgreSQL image available). Source-level checks are not a
 substitute for this execution test. The migration has not been marked deployed
 or runtime-verified.
+
+### Executable checks — 2026-09-24
+
+The six staging steps above are now an executable SQL test,
+`supabase/tests/weekly_leaderboards.test.sql`. It runs in a single transaction
+and ends with `rollback`, so it leaves no users, profiles or scores behind.
+
+- `npm run test:sql` starts a disposable `postgres:16` container, applies every
+  migration in order on top of `supabase/tests/auth-stub.sql` (a minimal
+  stand-in for `auth.users`, `auth.uid()` and the Supabase roles, never to be
+  run against a real project), runs the checks and stops the container. It
+  needs a running Docker engine; the first run pulls the image.
+- `STAGING_DATABASE_URL=… npm run test:sql -- --staging` runs only the checks
+  against a staging database where the migration was already applied through
+  the normal workflow. It needs `psql` on PATH.
+
+`tests/sql-checks.test.mjs` fails if a new migration is not added to
+`supabase/tests/run-local.sql` or if a verification step loses its assertion.
+
+Status: the checks were written but **not executed** in this session. The
+Docker engine was not running (`dockerDesktopLinuxEngine` pipe missing), so no
+container was started and no image was pulled. The migration remains
+unapplied and runtime-unverified until an operator runs one of the commands
+above and records the result here.

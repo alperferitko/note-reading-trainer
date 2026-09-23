@@ -42,6 +42,8 @@ try {
   const click=async(selector,text)=>{await evaluate(`(()=>{const b=[...document.querySelectorAll(${JSON.stringify(selector)})].find(x=>x.textContent.includes(${JSON.stringify(text)}));if(!b)throw Error('Missing button: '+${JSON.stringify(text)});b.click();})()`);await settle();};
   const navigate=async(path,selector)=>{await call('Page.navigate',{url:`http://127.0.0.1:${server.address().port}${path}`});await waitFor(selector);await settle();};
   const screenshot=async name=>{const shot=await call('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(join(output,name+'.png'),Buffer.from(shot.data,'base64'));};
+  const STAFF_BASICS={'Porte kaç çizgiden oluşur?':'Beş','Bir notanın portedeki yerini hangi bölüm belirler?':'Nota başının merkezi','Porte çizgilerinin arasında kaç aralık vardır?':'Dört','Sol anahtarında portede yukarı doğru ilerleyen doğal notalar nasıl sesler gösterir?':'Daha ince sesler'};
+  const answerCheck=async()=>{for(let q=0;q<2;q++){const prompt=await evaluate("document.querySelector('.studio-question legend').textContent");assert.ok(STAFF_BASICS[prompt],'Known staff-basics question: '+prompt);await click('.studio-question button',STAFF_BASICS[prompt]);await click('.studio-question button','Devam et');}};
   const measure=()=>evaluate(`(()=>{const visible=e=>e.getBoundingClientRect().width>0&&e.getBoundingClientRect().height>0;return {title:document.title,lang:document.documentElement.lang,width:innerWidth,scrollWidth:document.documentElement.scrollWidth,h1:[...document.querySelectorAll('h1')].filter(visible).map(x=>x.textContent),smallTargets:[...document.querySelectorAll('button')].filter(visible).filter(x=>{const r=x.getBoundingClientRect();return r.width<43||r.height<43}).slice(0,12).map(x=>({text:x.textContent.slice(0,45),w:x.getBoundingClientRect().width,h:x.getBoundingClientRect().height}))}})()`);
   await call('Runtime.enable');
   await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
@@ -70,8 +72,7 @@ try {
   await call('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
   await navigate('/','.learning-studio');
   await click('.studio-daily button','Önerilen dersi aç');await waitFor('.studio-question');
-  await click('.studio-question button','Beş');await click('.studio-question button','Devam et');
-  await click('.studio-question button','Nota başının merkezi');await click('.studio-question button','Devam et');
+  await answerCheck();
   assert.ok(await evaluate("JSON.parse(localStorage.getItem('notanota-learning-v1')).includes('staff-basics')"),'Lesson completion saved');
   await screenshot('lesson-complete');
   assert.equal(await evaluate("JSON.parse(localStorage.getItem('notanota-lesson-reviews-v1'))[0].assisted"),true,'Reading the lesson schedules an assisted review');
@@ -80,15 +81,13 @@ try {
   assert.ok(await evaluate("document.querySelector('.studio-daily').textContent.includes('tekrar zamanı')"),'Due review takes priority in daily plan');
   await click('.studio-daily button','Önerilen dersi aç');await waitFor('.studio-recall-intro');
   assert.equal(await evaluate("Boolean(document.querySelector('.studio-lesson aside'))"),false,'Recall starts without lesson explanation');
-  await click('.studio-question button','Beş');await click('.studio-question button','Devam et');
-  await click('.studio-question button','Nota başının merkezi');await click('.studio-question button','Devam et');
+  await answerCheck();
   assert.equal(await evaluate("JSON.parse(localStorage.getItem('notanota-lesson-reviews-v1'))[0].streak"),2,'Unaided due review extends schedule');
   await evaluate("document.querySelector('.studio-review-plan details').open=true");
   await click('.studio-review-plan button','Erken tekrar');await waitFor('.studio-recall-intro');
   await click('.studio-recall-intro button','Açıklamayı göster');
   assert.ok(await evaluate("Boolean(document.querySelector('.studio-lesson aside'))"),'Help opens explanation');
-  await click('.studio-question button','Beş');await click('.studio-question button','Devam et');
-  await click('.studio-question button','Nota başının merkezi');await click('.studio-question button','Devam et');
+  await answerCheck();
   assert.equal(await evaluate("JSON.parse(localStorage.getItem('notanota-lesson-reviews-v1'))[0].streak"),0,'Help resets interval without claiming independent recall');
   await evaluate("document.querySelector('.studio-review-plan').scrollIntoView({block:'start',behavior:'instant'})");await screenshot('review-plan-390');
   await click('.studio-lesson-complete button','Uygulama oturumuna geç');await waitFor('.setup-shell');
@@ -137,6 +136,7 @@ try {
     await click('.session-guidance button','Kısa dersi aç');
     await waitFor('#active-lesson-title');
     assert.equal(await evaluate("document.querySelector('#active-lesson-title').textContent"),'Vuruşu sabit tut');
+    assert.ok(await evaluate("Boolean(document.querySelector('.studio-question legend'))"),'A lesson opened from results starts its knowledge check');
     await navigate('/muzik-aletleri/piyano/','.instrument-practice');
     await click('.instrument-practice button','Çalışmaya başla');
     await waitFor('.instrument-practice-top');
@@ -156,10 +156,55 @@ try {
   assert.equal(await evaluate("Boolean(document.querySelector('.score-range-grid'))"),false,'Fixed study does not advertise random range controls');
   await click('.score-reading-start-card > button','başla');await waitFor('.score-reading-session');
   assert.ok(await evaluate("document.querySelector('.score-reading-context').textContent.includes('Komşu notalar')"));
-  for(const name of ['Mi','Fa','Sol','La','Si','La','Sol','Fa','Mi']){await click('.score-answer-grid button',name);await pause(220);}
+  assert.ok(await evaluate("document.querySelectorAll('.rhythm-barline').length")>=4,'Measured study draws bar lines');
+  for(const name of ['Mi','Fa','Sol','La','Si','La','Sol','Fa','Sol','Fa','Mi','Mi']){await click('.score-answer-grid button',name);await pause(220);}
   await waitFor('.score-reading-results');
-  assert.ok(await evaluate("document.querySelector('.score-reading-stats').textContent.includes('9 / 9')"),'All study pitches match treble staff coordinates');
+  assert.ok(await evaluate("document.querySelector('.score-reading-stats').textContent.includes('12 / 12')"),'All study pitches match treble staff coordinates');
   await screenshot('study-result-390');
+  // Rests are drawn, answered with the rest control and reported apart from note names.
+  await navigate('/eser-okuma/','.score-study-picker');
+  await evaluate("(()=>{const s=document.querySelector('.score-study-picker select');s.value='quarter-rests';s.dispatchEvent(new Event('change',{bubbles:true}));})()");await settle();
+  assert.ok(await evaluate("document.querySelector('.score-study-details').textContent.includes('sus')"),'Study details list rests');
+  await click('.score-reading-start-card > button','başla');await waitFor('.score-reading-session');
+  assert.ok(await evaluate("document.querySelectorAll('.rhythm-score-rest').length")===6,'Six rests drawn');
+  assert.ok(await evaluate("Boolean(document.querySelector('.rhythm-time-signature'))"),'Time signature drawn');
+  await screenshot('rest-study-390');
+  for(const name of ['Mi','Sus','Sol','Sus','Si','La','Sus','Sol','Sus','Fa','Sus','Mi','Sus']){await click('.score-answer-grid button',name);await pause(220);}
+  await waitFor('.score-study-report');
+  assert.ok(await evaluate("document.querySelector('.score-study-report').textContent.includes('6 / 6')&&document.querySelector('.score-study-report').textContent.includes('7 / 7')"),'Notes and rests reported separately');
+  assert.ok(await evaluate("JSON.parse(localStorage.getItem('notanota-study-progress-v1')).some(r=>r.id==='quarter-rests'&&r.rests===6&&r.restsKept===6&&r.notes===7)"),'Study completion saved');
+  assert.ok(await evaluate("JSON.parse(localStorage.getItem('notanota-question-evidence-v1')).some(r=>r.module==='score'&&r.task==='rest-flow')"),'Rest answers stored as question evidence');
+  // Key signatures are drawn and require the accidental choice.
+  await navigate('/eser-okuma/','.score-study-picker');
+  await evaluate("(()=>{const s=document.querySelector('.score-study-picker select');s.value='key-g';s.dispatchEvent(new Event('change',{bubbles:true}));})()");await settle();
+  await click('.score-reading-start-card > button','başla');await waitFor('.score-reading-session');
+  assert.equal(await evaluate("document.querySelectorAll('.rhythm-key-signature').length"),1,'One sharp in the key signature');
+  assert.ok(await evaluate("Boolean(document.querySelector('.accidental-choices'))"),'Accidental choice offered for a key signature');
+  await click('.score-reading-session-top > button','Oturumu bitir');await waitFor('.score-reading-results');
+  // Repeated unaided errors produce a targeted session with the reason shown.
+  await evaluate(`(()=>{const now=Date.now();const rows=[0,1,2].map(i=>({id:'seed-'+i,session:'seed',module:'reading',task:'staff-name',item:'treble:f4',clef:'treble',midi:65,octave:4,position:1,accidental:0,correct:false,firstAttempt:true,assisted:false,timedOut:false,responseMs:900,timeLimitMs:null,answer:'E',at:new Date(now-60000*(3-i)).toISOString()}));localStorage.setItem('notanota-question-evidence-v1',JSON.stringify(rows));})()`);
+  await navigate('/nota-oku/','.setup-shell');
+  if(await evaluate("Boolean(document.querySelector('.reading-setup-dialog'))")){await click('.reading-setup-dialog button','Şimdilik kapat');await settle();}
+  await waitFor('.targeted-review-list');
+  assert.ok(await evaluate("document.querySelector('.targeted-review-list').textContent.includes('Fa4')&&document.querySelector('.targeted-review-list').textContent.includes('en sık cevabın Mi')"),'Targeted review explains the item and the common wrong answer');
+  await evaluate("document.querySelector('.targeted-review').scrollIntoView({block:'start',behavior:'instant'})");await screenshot('targeted-review-390');
+  await click('.targeted-review button','Hedefli oturumu başlat');await waitFor('.quiz-shell');
+  assert.ok(await evaluate("document.querySelector('.progress-row').textContent.includes('/ 10')"),'Targeted session adds one extra repetition');
+  await click('.quiz-shell button','Oturumu bitir').catch(()=>{});
+  await navigate('/','.skill-map');
+  assert.ok(await evaluate("document.querySelector('.skill-map').textContent.includes('Nota okuma')&&document.querySelector('.skill-map').textContent.includes('Tekrar gerekiyor')"),'Skill map lists the weak note');
+  await evaluate("document.querySelector('.skill-map').scrollIntoView({block:'start',behavior:'instant'})");await screenshot('skill-map-390');
+  // Grand staff asks for two keys at once; third position has no open strings.
+  await navigate('/muzik-aletleri/piyano/','.instrument-practice');
+  await evaluate("(()=>{const s=[...document.querySelectorAll('.instrument-practice select')].find(x=>[...x.options].some(o=>o.value==='grand'));s.value='grand';s.dispatchEvent(new Event('change',{bubbles:true}));})()");await settle();
+  await click('.instrument-practice button','Çalışmaya başla');await waitFor('.music-staff--grand');
+  assert.ok(await evaluate("document.querySelector('.instrument-practice').textContent.includes('0 / 2')"),'Grand staff question needs two keys');
+  assert.ok((await measure()).scrollWidth<=391,'Grand keyboard scrolls inside its region');
+  await screenshot('grand-staff-390');
+  await navigate('/muzik-aletleri/keman/','.instrument-practice');
+  await evaluate("(()=>{const s=[...document.querySelectorAll('.instrument-practice select')].find(x=>[...x.options].some(o=>o.value==='third'));s.value='third';s.dispatchEvent(new Event('change',{bubbles:true}));})()");await settle();
+  assert.equal(await evaluate("[...document.querySelectorAll('.violin-string button')].filter(b=>b.textContent.startsWith('Boş')).length"),0,'Third position has no open strings');
+  assert.ok(await evaluate("[...document.querySelectorAll('.violin-string button')].some(b=>b.getAttribute('aria-label').includes('3. parmak (düşük)'))"),'Low third finger labelled in third position');
   await navigate('/','.pulse-practice');
   await evaluate(`(()=>{const original=AudioContext.prototype.createOscillator;window.__earTones=[];window.__earContexts=[];AudioContext.prototype.createOscillator=function(){window.__earContexts.push(this);const node=original.call(this),start=node.start.bind(node);node.start=function(time){window.__earTones.push({frequency:node.frequency.value,time});start(time);};return node;};})()`);
   await click('.ear-training button','8 soruluk çalışmaya başla');
@@ -178,6 +223,14 @@ try {
   assert.ok(await evaluate("document.querySelector('.ear-result').textContent.includes('7 / 8')"),'Listening result counts actual first answers');
   assert.ok(await evaluate("window.__earContexts.every(c=>c.state==='closed')"),'All listening audio contexts are closed');
   await evaluate("document.querySelector('.ear-training').scrollIntoView({block:'start',behavior:'instant'})");await screenshot('ear-result-390');
+  await click('.ear-modes button','Aralık');
+  await click('.ear-training button','8 soruluk çalışmaya başla');
+  await click('.ear-listen','Dinle');await waitFor('.ear-answers button:not(:disabled)');
+  const intervalTones=await evaluate('window.__earTones.slice(-4)');
+  assert.equal(intervalTones.length,4);assert.ok(Math.abs(intervalTones[2].time-intervalTones[3].time)<1e-6,'Interval also plays both tones together');
+  assert.equal(await evaluate("document.querySelectorAll('.ear-answers button').length"),3,'Beginner interval set offers three answers');
+  await click('.ear-end','Çalışmayı bitir');
+  await click('.ear-modes button','Perde yönü');
   await click('.ear-training button','8 soruluk çalışmaya başla');
   await click('.ear-listen','İki sesi dinle');
   await evaluate("Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));delete document.hidden");await settle();
@@ -185,6 +238,9 @@ try {
   await click('.ear-end','Çalışmayı bitir');
   await evaluate(`(()=>{const input=document.querySelector('.pulse-controls input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'120');input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));const original=AudioContext.prototype.createOscillator;window.__pulseStarts=[];AudioContext.prototype.createOscillator=function(){window.__pulseAudio=this;const node=original.call(this),start=node.start.bind(node);node.start=function(time){window.__pulseStarts.push(time);start(time);};return node;};document.querySelector('.pulse-practice').scrollIntoView({block:'start',behavior:'instant'});})()`);await settle();
   assert.ok(await evaluate("document.querySelector('.pulse-controls').textContent.includes('120 BPM')"));
+  await evaluate("(()=>{const s=document.querySelector('.pulse-pattern select');s.value='quarters-rests';s.dispatchEvent(new Event('change',{bubbles:true}));})()");await settle();
+  assert.ok(await evaluate("document.querySelectorAll('.pulse-pattern-score .rhythm-score-rest').length")>=3,'Pattern shows its rests');
+  await evaluate("(()=>{const s=document.querySelector('.pulse-pattern select');s.value='steady';s.dispatchEvent(new Event('change',{bubbles:true}));})()");await settle();
   await click('.pulse-practice button','Vuruş çalışmasına başla');await waitFor('.pulse-live');
   await evaluate(`new Promise(resolve=>{let n=0;const timer=setInterval(()=>{const first=window.__pulseStarts[0],audio=window.__pulseAudio;if(first!==undefined&&audio&&audio.currentTime>=first+2+n*.5){document.querySelector('.pulse-tap')?.click();n++;if(n===8){clearInterval(timer);resolve(true);}}},4);})`);
   await waitFor('.pulse-result');

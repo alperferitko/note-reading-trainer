@@ -1,5 +1,6 @@
 import type { CSSProperties, RefObject } from "react";
 import { RHYTHM_GLYPH_VIEWBOX, RHYTHM_PRESETS, RHYTHM_PRESET_BY_VALUE } from "@/lib/rhythm-presets.mjs";
+import { keySignaturePositions } from "@/lib/reading-studies.mjs";
 
 export type RhythmId = "whole" | "half" | "quarter" | "eighth" | "sixteenth" | "triplet";
 export type RhythmScoreValue = RhythmId | "dottedQuarter";
@@ -8,6 +9,7 @@ export type RhythmNoteState = "future" | "active" | "correct" | "wrong";
 
 export type RhythmScoreNote = {
   accidental?: number;
+  rest?: boolean;
   key: string;
   position: number;
   rhythm: RhythmScoreValue;
@@ -117,6 +119,28 @@ export function RhythmGlyph({ id, className = "", title }: { id: RhythmId | Rhyt
   );
 }
 
+// Rests are drawn as shapes so they do not depend on a music font being installed.
+function RestGlyph({ x, rhythm, firstLineY }: { x: number; rhythm: RhythmScoreValue; firstLineY: number }) {
+  const middle = firstLineY - 28;
+  if (rhythm === "whole") return <rect className="rhythm-rest" x={x - 9} y={firstLineY - 42} width="18" height="7" />;
+  if (rhythm === "half") return <rect className="rhythm-rest" x={x - 9} y={middle - 7} width="18" height="7" />;
+  if (rhythm === "quarter" || rhythm === "dottedQuarter") {
+    const top = middle - 20;
+    return <g className="rhythm-rest">
+      <path className="rhythm-rest-stroke" d={`M ${x - 4} ${top} L ${x + 5} ${top + 10} L ${x - 2} ${top + 18} L ${x + 6} ${top + 27} C ${x - 4} ${top + 23}, ${x - 6} ${top + 31}, ${x} ${top + 37}`} />
+      {rhythm === "dottedQuarter" && <circle cx={x + 14} cy={middle - 7} r="3.1" />}
+    </g>;
+  }
+  const flags = rhythm === "sixteenth" ? 2 : 1;
+  return <g className="rhythm-rest">
+    {Array.from({ length: flags }, (_, flag) => <g key={flag}>
+      <circle cx={x - 4 - flag * 3} cy={middle - 8 + flag * 12} r="3.4" />
+      <path className="rhythm-rest-stroke" d={`M ${x - 4 - flag * 3} ${middle - 6 + flag * 12} Q ${x + 1} ${middle - 5 + flag * 12} ${x + 6 - flag * 3} ${middle - 11 + flag * 12}`} />
+    </g>)}
+    <path className="rhythm-rest-stroke" d={`M ${x + 6} ${middle - 11} L ${x - 2} ${middle + 14 + (flags - 1) * 12}`} />
+  </g>;
+}
+
 function LedgerLines({ x, position, firstLineY }: { x: number; position: number; firstLineY: number }) {
   const ledgers: number[] = [];
   if (position <= -2) for (let ledger = -2; ledger >= position; ledger -= 2) ledgers.push(ledger);
@@ -159,6 +183,16 @@ export function RhythmGroup({
       ))}
       {notes.map((note) => {
         const open = note.rhythm === "whole" || note.rhythm === "half";
+        if (note.rest) return (
+          <g
+            className={`rhythm-score-note rhythm-score-rest is-${note.state ?? "future"}`}
+            data-event-index={note.index}
+            key={note.key}
+            ref={note.index === activeIndex ? activeNoteRef : undefined}
+          >
+            <RestGlyph x={note.x} rhythm={note.rhythm} firstLineY={firstLineY} />
+          </g>
+        );
         return (
           <g
             className={`rhythm-score-note is-${note.state ?? "future"}`}
@@ -235,19 +269,26 @@ function layoutScoreNotes(notes: RhythmScoreNote[], firstLineY: number, startX: 
   return { groups, noteXs, width: Math.max(720, nextX + 26) };
 }
 
-export function RhythmScoreLine({ notes, activeIndex, activeNoteRef, className = "", ariaLabel, clef = 'treble' }: {
+export function RhythmScoreLine({ notes, activeIndex, activeNoteRef, className = "", ariaLabel, clef = 'treble', keySignature = 0, timeSignature }: {
   clef?: 'treble'|'bass';
+  keySignature?: number;
+  timeSignature?: [number, number];
   notes: RhythmScoreNote[];
   activeIndex?: number;
   activeNoteRef?: RefObject<SVGGElement | null>;
   className?: string;
   ariaLabel?: string;
 }) {
-  const highestPosition = notes.length ? Math.max(...notes.map((note) => note.position)) : 8;
-  const lowestPosition = notes.length ? Math.min(...notes.map((note) => note.position)) : 0;
+  const pitched = notes.filter((note) => !note.rest);
+  const highestPosition = pitched.length ? Math.max(8, ...pitched.map((note) => note.position)) : 8;
+  const lowestPosition = pitched.length ? Math.min(0, ...pitched.map((note) => note.position)) : 0;
+  const keyPositions = keySignaturePositions(clef, keySignature);
   const firstLineY = Math.max(118, 52 + highestPosition * 7);
   const scoreHeight = Math.max(184, firstLineY - lowestPosition * 7 + 20);
-  const startX = 126;
+  // Key and time signatures sit between the clef and the first note.
+  const keyWidth = keyPositions.length ? keyPositions.length * 13 + 8 : 0;
+  const timeX = 104 + keyWidth;
+  const startX = 126 + keyWidth + (timeSignature ? 30 : 0);
   const { groups, noteXs, width } = layoutScoreNotes(notes, firstLineY, startX);
   return (
     <svg
@@ -263,6 +304,13 @@ export function RhythmScoreLine({ notes, activeIndex, activeNoteRef, className =
         {[0, 1, 2, 3, 4].map((line) => <line key={line} x1="96" x2={width - 18} y1={firstLineY - line * 14} y2={firstLineY - line * 14} />)}
       </g>
       <text className={`rhythm-clef ${clef==='bass'?'rhythm-clef--bass':''}`} x="18" y={firstLineY + (clef==='bass'?-12:13)}>{clef==='bass'?'𝄢':'𝄞'}</text>
+      {keyPositions.map((position, index) => (
+        <text className="rhythm-accidental rhythm-key-signature" key={`key-${index}`} x={100 + index * 13} y={firstLineY - position * 7 + (keySignature > 0 ? 9 : 5)} fontSize="26" fill="currentColor">{keySignature > 0 ? "♯" : "♭"}</text>
+      ))}
+      {timeSignature && <g className="rhythm-time-signature" aria-hidden="true">
+        <text x={timeX + 8} y={firstLineY - 30} textAnchor="middle">{timeSignature[0]}</text>
+        <text x={timeX + 8} y={firstLineY - 2} textAnchor="middle">{timeSignature[1]}</text>
+      </g>}
       {groups.map((group) => (
         <RhythmGroup
           activeIndex={activeIndex}

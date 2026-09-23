@@ -11,3 +11,15 @@
 .ear-training .ear-listen { background:var(--primary); color:var(--primary-foreground); }
 .ear-feedback,.ear-result { padding:20px; border-radius:12px; background:var(--background-deep); margin:20px 0; }
 .ear-end { margin-top:16px; }
+.ear-modes { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr)); gap:10px; margin:18px 0; }
+.ear-training .ear-modes button { display:grid; gap:4px; text-align:left; padding:14px 16px; }
+.ear-training .ear-modes button[aria-pressed="true"] { border-color:var(--primary); box-shadow:inset 0 0 0 1px var(--primary); background:var(--surface); }
+.ear-modes small { margin:0; font-size:13px; }
+.ear-dictation ol { list-style:none; display:flex; flex-wrap:wrap; gap:8px; padding:0; margin:16px 0; }
+.ear-dictation li { min-width:56px; min-height:48px; display:grid; place-items:center; padding:0 10px; border-radius:10px; border:1px dashed var(--border-strong); font-family:var(--serif); font-size:18px; }
+.ear-dictation li:first-child { border-style:solid; background:var(--background-deep); }
+.ear-dictation li.is-correct { border:1px solid var(--success); background:var(--success-soft); }
+.ear-dictation li.is-wrong { border:1px solid var(--danger); background:var(--danger-soft); }
+.ear-history { margin-top:18px; }
+.ear-history summary { min-height:44px; padding:12px 0; cursor:pointer; }
+.ear-history ul { padding-left:18px; line-height:1.8; }

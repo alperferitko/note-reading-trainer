@@ -5942,3 +5942,11 @@ footer,
   background:repeating-linear-gradient(to bottom, var(--foreground-muted) 0 1px, transparent 1px 6px);
   opacity:.5;
 }
+
+/* Rests, key signatures and time signatures in score lines. */
+.rhythm-rest { fill: currentColor; }
+.rhythm-rest-stroke { fill: none; stroke: currentColor; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+.rhythm-key-signature { fill: var(--foreground); }
+.rhythm-time-signature text { fill: var(--foreground); font-family: var(--serif); font-size: 30px; font-weight: 700; }
+.music-staff--grand { max-height: 320px; }
+.piano-key--middle-c:not(.piano-key--black) { box-shadow: inset 0 -4px 0 var(--accent); }

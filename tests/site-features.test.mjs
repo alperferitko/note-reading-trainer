@@ -16,13 +16,11 @@ test('all public pages have reversible bilingual clean routes', () => {
   assert.equal(pageRoute('quiz'),pageRoute('setup'));
 });
 
-test('install icons exist at the dimensions declared by the manifest',async()=>{
-  const manifest=JSON.parse(await readFile(new URL('../public/manifest.webmanifest',import.meta.url),'utf8'));
-  assert.equal(manifest.scope,'./');
-  for(const icon of manifest.icons){
-    const data=await readFile(new URL(`../public/${icon.src.replace(/^\.\//,'')}`,import.meta.url));
-    if(icon.type==='image/png') assert.equal(`${data.readUInt32BE(16)}x${data.readUInt32BE(20)}`,icon.sizes);
-  }
+test('site stays web-only and keeps its optimized logo',async()=>{
+  const template=await readFile(new URL('../github-pages/index.html',import.meta.url),'utf8');
+  const features=await readFile(new URL('../app/site-features.tsx',import.meta.url),'utf8');
+  assert.doesNotMatch(template,/rel="manifest"/);
+  assert.doesNotMatch(features,/beforeinstallprompt|Install app|Uygulamayı yükle/);
   const logo=await readFile(new URL('../public/notanota-monogram-96.webp',import.meta.url));
   assert.ok(logo.length<12000);
   assert.equal(logo.toString('ascii',8,12),'WEBP');

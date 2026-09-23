@@ -91,7 +91,8 @@ test("ana kart, değer göstergesi ve çalışma ekranı aynı SVG bileşenlerin
   ]);
 
   assert.match(glyphs, /preserveAspectRatio=\{RHYTHM_GLYPH_VIEWBOX\.preserveAspectRatio\}/);
-  assert.match(glyphs, /className="rhythm-triplet-mark"[\s\S]*>3<\/text>/);
+  assert.doesNotMatch(glyphs, /className="rhythm-triplet-mark"/);
+  assert.doesNotMatch(glyphs, />3<\/text>/);
   assert.match(glyphs, /export function RhythmGlyph/);
   assert.match(glyphs, /export function RhythmGroup/);
   assert.match(glyphs, /export function RhythmPatternPreview/);

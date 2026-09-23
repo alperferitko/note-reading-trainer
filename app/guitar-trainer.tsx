@@ -7,6 +7,7 @@ import { CommunityPracticeRecorder, CommunityPracticeStreak } from "./community"
 import { LocalResult } from './local-progress';
 import { SessionGuidance } from './session-guidance';
 import { NavigationOptions, usePracticeNavigation } from './practice-tools';
+import './guitar-hero.css';
 
 type Locale = "tr" | "en";
 type GuitarStage = "setup" | "quiz" | "done";
@@ -310,6 +311,38 @@ function pickRandomQuestion(pool: GuitarQuestion[], avoidId = "") {
 
 function noteName(letter: Letter, locale: Locale) {
   return locale === "tr" ? SOLFEGE[letter] : letter;
+}
+
+function GuitarHeroFretboard({ locale }: { locale: Locale }) {
+  const frets = [0, 1, 2, 3, 4, 5];
+  return (
+    <figure className="guitar-hero-fretboard">
+      <svg viewBox="0 0 520 240" role="img" aria-label={locale === 'tr' ? 'Altı tel ve ilk beş perdede doğal notalar' : 'Natural notes on six strings and the first five frets'}>
+        <rect className="guitar-hero-wood" x="100" y="40" width="390" height="160" rx="8" />
+        {[1, 2, 3, 4, 5].map(fret => <line className="guitar-hero-fret" key={fret} x1={100 + fret * 78} x2={100 + fret * 78} y1="40" y2="200" />)}
+        <line className="guitar-hero-nut" x1="100" x2="100" y1="40" y2="200" />
+        {[3, 5].map(fret => <circle className="guitar-hero-inlay" key={fret} cx={100 + (fret - .5) * 78} cy="120" r="6" />)}
+        {frets.map(fret => <text className="guitar-hero-fret-label" key={fret} x={fret === 0 ? 70 : 100 + (fret - .5) * 78} y="225">{fret}</text>)}
+        {STRINGS.map((string, index) => {
+          const y = 50 + index * 28;
+          return <g key={string.id}>
+            <text className="guitar-hero-string-label" x="26" y={y + 4}>{string.label}</text>
+            <line className="guitar-hero-string" x1="52" x2="490" y1={y} y2={y} strokeWidth={1 + index * .3} />
+            {frets.map(fret => {
+              const letter = noteAt(string.open, fret) as Letter;
+              if (!NATURAL.has(letter)) return null;
+              const x = fret === 0 ? 70 : 100 + (fret - .5) * 78;
+              return <g key={fret} className={letter === 'C' ? 'guitar-hero-note is-root' : 'guitar-hero-note'}>
+                <circle cx={x} cy={y} r="11" />
+                <text x={x} y={y + 4}>{noteName(letter, locale)}</text>
+              </g>;
+            })}
+          </g>;
+        })}
+      </svg>
+      <figcaption>{locale === 'tr' ? '6 tel, İlk 5 perde, Doğal notalar' : '6 strings, First 5 frets, Natural notes'}</figcaption>
+    </figure>
+  );
 }
 
 function Fretboard({
@@ -656,11 +689,11 @@ export function GuitarTrainer({
             <h1>{text.title}</h1>
             <p>{text.lead}</p>
           </div>
-          <div className="guitar-neck-art" aria-hidden="true"><span>6</span><i /><i /><i /><i /><i /><i /><b>12</b></div>
+          <GuitarHeroFretboard locale={locale} />
         </div>
 
         <div className="guitar-range-heading">
-          <div><p className="kicker" aria-hidden="true">⚬</p><h2>{text.range}</h2></div>
+          <div><h2>{text.range}</h2></div>
           <aside><strong>{text.terminology}</strong><span>{text.terminologyCopy}</span></aside>
         </div>
         <div className="guitar-range-grid">
@@ -673,7 +706,7 @@ export function GuitarTrainer({
 
         <div className="guitar-session-section">
           <div className="guitar-range-heading">
-            <div><p className="kicker" aria-hidden="true">⚬</p><h2>{text.session}</h2></div>
+            <div><h2>{text.session}</h2></div>
           </div>
           <div className="mode-grid guitar-session-grid" role="group" aria-label={text.session}>
             <button className={`mode-card ${sessionType === "standard" ? "is-selected" : ""}`} type="button" onClick={() => setSessionType("standard")} aria-pressed={sessionType === "standard"}>
@@ -691,7 +724,7 @@ export function GuitarTrainer({
 
         <div className="guitar-mode-section">
           <div className="guitar-range-heading">
-            <div><p className="kicker" aria-hidden="true">⚬</p><h2>{text.mode}</h2></div>
+            <div><h2>{text.mode}</h2></div>
           </div>
           <div className="mode-grid guitar-mode-grid" role="group" aria-label={text.modeChoices}>
             <button className={`mode-card ${practiceMode === "name-note" ? "is-selected" : ""}`} type="button" onClick={() => setPracticeMode("name-note")} aria-pressed={practiceMode === "name-note"}>
@@ -714,7 +747,7 @@ export function GuitarTrainer({
 
         <div className="fretboard-card">
           <div className="fretboard-card-heading">
-            <div><p className="kicker" aria-hidden="true">⚬</p><h2>{text.map}</h2></div>
+            <div><h2>{text.map}</h2></div>
             <aside>
               <small>{text.selectedRange}</small>
               <strong>{selectedRange.title}</strong>
@@ -734,7 +767,7 @@ export function GuitarTrainer({
           <Fretboard maxFret={maxFret} locale={locale} reveal studyLetter={studyLetter} orientationHint={text.orientationHint} />
         </div>
         <div className="guitar-start-panel">
-          <div><p className="kicker" aria-hidden="true">⚬</p><strong>{selectedModeTitle}</strong><span>{selectedRange.title}. {text.startReady}</span></div>
+          <div><strong>{selectedModeTitle}</strong><span>{selectedRange.title}. {text.startReady}</span></div>
           <button className="primary-button" type="button" onClick={start}>{text.start} <span aria-hidden="true">→</span></button>
         </div>
       </section>

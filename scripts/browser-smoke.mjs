@@ -44,13 +44,27 @@ try {
   const screenshot=async name=>{const shot=await call('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(join(output,name+'.png'),Buffer.from(shot.data,'base64'));};
   const measure=()=>evaluate(`(()=>{const visible=e=>e.getBoundingClientRect().width>0&&e.getBoundingClientRect().height>0;return {title:document.title,lang:document.documentElement.lang,width:innerWidth,scrollWidth:document.documentElement.scrollWidth,h1:[...document.querySelectorAll('h1')].filter(visible).map(x=>x.textContent),smallTargets:[...document.querySelectorAll('button')].filter(visible).filter(x=>{const r=x.getBoundingClientRect();return r.width<43||r.height<43}).slice(0,12).map(x=>({text:x.textContent.slice(0,45),w:x.getBoundingClientRect().width,h:x.getBoundingClientRect().height}))}})()`);
   await call('Runtime.enable');
+  await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
   if(!process.argv.includes('--pulse-only')) {
   for(const [width,height] of [[1440,1000],[768,1024],[390,844],[320,568],[844,390]]) {
     await call('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<768});
     await navigate('/','.learning-studio');
+    assert.equal(await evaluate("Boolean(document.querySelector('link[rel=manifest]'))"),false,'Website no longer advertises app installation');
+    assert.equal(await evaluate("document.querySelectorAll('.site-header .appearance-tools').length"),1,'Theme is in navigation header');
+    await evaluate("document.querySelector('.appearance-tools').open=true");await settle();
+    const themeBounds=await evaluate("(()=>{const r=document.querySelector('.appearance-tools select').getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}})()");
+    assert.ok(themeBounds.left>=0&&themeBounds.right<=width+1,'Theme selector fits viewport');
+    await evaluate("(()=>{const s=document.querySelector('.appearance-tools select');s.value='dark';s.dispatchEvent(new Event('change',{bubbles:true}));})()");await settle();
+    assert.equal(await evaluate('document.documentElement.dataset.theme'),'dark');
+    await screenshot(`theme-dark-${width}`);
+    await evaluate("(()=>{const s=document.querySelector('.appearance-tools select');s.value='light';s.dispatchEvent(new Event('change',{bubbles:true}));document.querySelector('.appearance-tools').open=false;})()");await settle();
+    if(width===1440){await click('.sound-toggle','');await waitFor('.audio-settings-panel');await screenshot('audio-settings-centered');await click('.sound-toggle','');}
     const info=await measure();assert.ok(info.scrollWidth<=width+1,`Studio overflow at ${width}: ${info.scrollWidth}`);report.push({screen:'studio',...info});await screenshot(`studio-${width}`);
     for(const [path,selector,label] of [['/nota-oku/','.setup-shell','notes'],['/eser-okuma/','.score-reading-setup','score'],['/muzik-aletleri/gitar/','.guitar-setup','guitar'],['/muzik-aletleri/piyano/','.instrument-practice','piano']]) {
-      await navigate(path,selector);const state=await measure();assert.ok(state.scrollWidth<=width+1,`${label} overflow at ${width}: ${state.scrollWidth}`);report.push({screen:label,...state});await screenshot(`${label}-${width}`);
+      await navigate(path,selector);if(label==='notes'&&await evaluate("Boolean(document.querySelector('.reading-setup-dialog'))")){await click('.reading-setup-dialog button','Şimdilik kapat');await settle();}const state=await measure();assert.ok(state.scrollWidth<=width+1,`${label} overflow at ${width}: ${state.scrollWidth}`);report.push({screen:label,...state});await screenshot(`${label}-${width}`);
+      assert.equal(await evaluate("document.querySelectorAll('.rhythm-triplet-mark').length"),0,'No triplet numerals');
+      assert.ok(await evaluate("[...document.querySelectorAll('.step-heading>span[aria-hidden=true],.guitar-shell .kicker[aria-hidden=true]')].every(e=>getComputedStyle(e).display==='none')"),'Decorative dots hidden');
+      if(label==='guitar')assert.equal(await evaluate("document.querySelectorAll('.guitar-hero-string').length"),6,'Guitar hero shows all six strings');
     }
   }
   await call('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});

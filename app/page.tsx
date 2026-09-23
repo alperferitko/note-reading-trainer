@@ -1172,6 +1172,7 @@ export default function Home() {
           </a>
         </nav>
         <div className="header-actions">
+          <AppearanceTools locale={locale} />
           <CommunityHeader />
           <div className="audio-settings" ref={audioSettingsRef}>
             <button
@@ -1292,7 +1293,6 @@ export default function Home() {
 
           <div className="setup-panel" id="reading-detailed-settings">
             <div className="step-heading">
-              <span aria-hidden="true">⚬</span>
               <div><p>{copy.rangeEyebrow}</p><h2>{copy.chooseRange}</h2></div>
             </div>
             <div className="level-grid">
@@ -1315,7 +1315,6 @@ export default function Home() {
 
             <div className="divider" />
             <div className="step-heading compact-heading">
-              <span aria-hidden="true">⚬</span>
               <div><p>{copy.questionStyle}</p><h2>{copy.chooseMode}</h2></div>
             </div>
             <div className="mode-grid">
@@ -1333,7 +1332,6 @@ export default function Home() {
 
             <div className="divider" />
             <div className="step-heading compact-heading">
-              <span aria-hidden="true">⚬</span>
               <div><p>{extra.sessionEyebrow}</p><h2>{extra.chooseSession}</h2></div>
             </div>
             <NotationOptions locale={locale} clef={clef} setClef={setClef} accidentals={accidentals} setAccidentals={setAccidentals} />
@@ -1636,7 +1634,7 @@ export default function Home() {
         </div>
       )}
 
-      <div hidden={immersiveSession} className="site-extras"><AppearanceTools locale={locale} /><SiteLinks locale={locale} onNavigate={navigateTo} /></div>
+      <div hidden={immersiveSession} className="site-extras"><SiteLinks locale={locale} onNavigate={navigateTo} /></div>
       {!immersiveSession && <footer><span>NotaNota</span><p>{copy.footer}</p><CommunityLegalLink /><a className="brand-mark brand-mark--footer" href={STAGE_ROUTES.landing} onClick={(event) => { event.preventDefault(); navigateTo("landing"); }} aria-label={copy.homeLabel}><img src="./notanota-monogram-96.webp" alt="" /></a></footer>}
     </main>
     </CommunityProvider>

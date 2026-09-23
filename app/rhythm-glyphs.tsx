@@ -79,7 +79,6 @@ function StaticRhythmDrawing({ presetId }: { presetId: RhythmPresetId }) {
           rx="1"
         />
       ))}
-      {preset.tripletMark && <text className="rhythm-triplet-mark" x="48" y={preset.tripletY!} textAnchor="middle">3</text>}
       {xs.map((x, index) => (
         <g className="rhythm-note" data-rhythm-note={index + 1} key={x}>
           {presetId !== "whole" && (
@@ -158,9 +157,6 @@ export function RhythmGroup({
           rx="1"
         />
       ))}
-      {hasCompleteBeam && preset.tripletMark && (
-        <text className="rhythm-triplet-mark" x={(beamStart + beamEnd) / 2} y={beamY - 9} textAnchor="middle">3</text>
-      )}
       {notes.map((note) => {
         const open = note.rhythm === "whole" || note.rhythm === "half";
         return (

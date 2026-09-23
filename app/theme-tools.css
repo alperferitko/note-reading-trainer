@@ -1,0 +1,12 @@
+.site-header .appearance-tools { display:block; padding:0; margin:0; background:transparent; }
+.site-header .appearance-tools summary { cursor:pointer; list-style:none; min-height:44px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:var(--background-deep); padding:10px 12px; font-size:12px; }
+.site-header .appearance-tools summary::-webkit-details-marker { display:none; }
+.site-header .appearance-tools label { padding:12px; background:var(--surface); border:1px solid var(--border); border-radius:12px; color:var(--foreground); }
+.site-header .appearance-tools:not([open]) > label { display:none; }
+html[data-theme=dark] .site-header .sound-toggle { background:var(--background-deep); color:var(--foreground); }
+@media(min-width:821px) { .site-header .appearance-tools { width:100%; } .site-header .appearance-tools label { margin-top:8px; } }
+@media(max-width:820px) {
+  .site-header .appearance-tools label { position:fixed; z-index:110; right:12px; top:72px; box-shadow:0 8px 24px var(--shadow-color); }
+  .site-header .appearance-tools summary { padding:8px; }
+}
+@media(max-width:360px) { .site-header .header-actions { gap:2px; } .site-header .appearance-tools summary { padding-inline:5px; } }

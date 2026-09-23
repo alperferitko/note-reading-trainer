@@ -11,7 +11,6 @@ export async function generateMetadata(): Promise<Metadata> {
   const icon = `${protocol}://${host}/notanota-app-icon.svg?v=3`;
 
   return {
-    manifest: '/manifest.webmanifest',
     title: "NotaNota | Note Reading Trainer",
     description: "Learn music reading with short lessons, treble and bass notation, rhythm practice and note locations on guitar, piano and violin.",
     icons: {

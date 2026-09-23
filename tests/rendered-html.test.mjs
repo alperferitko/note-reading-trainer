@@ -155,7 +155,8 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(scoreReading, /Rastgele satır/);
   assert.match(scoreReading, /groupRhythmValues\(rhythms, lineId\)/);
   assert.match(scoreReading, /RhythmGlyph[\s\S]*RhythmPatternPreview[\s\S]*RhythmScoreLine/);
-  assert.match(rhythmGlyphs, /eighthTriplet[\s\S]*rhythm-triplet-mark/);
+  assert.match(rhythmGlyphs, /eighthTriplet/);
+  assert.doesNotMatch(rhythmGlyphs, /rhythm-triplet-mark/);
   assert.match(scoreReadingLogic, /chooseUnrecentPiece/);
   assert.match(studio, /'guitar','piano','violin'/);
   assert.match(page, /function InstrumentHub/);
@@ -319,7 +320,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.doesNotMatch(scoreReading, /score-repertoire-card|Her oturumda tanıdık bir ezgi/);
   assert.doesNotMatch(scoreReading, /Neşeye Övgü|Ludwig van Beethoven/);
   assert.match(page, /title: "Geniş aralık"[\s\S]*Altta ve üstte beşer ek çizgiye kadar/);
-  assert.match(rhythmGlyphs, /rhythm-triplet-mark[\s\S]*>3<\/text>/);
+  assert.doesNotMatch(rhythmGlyphs, /rhythm-triplet-mark[\s\S]*>3<\/text>/);
   assert.doesNotMatch(page, /module-score-note--/);
   assert.doesNotMatch(scoreReading, /function RhythmSymbol|function ScoreGlyph|score-note-triplet/);
   assert.match(styles, /\.app-navigation a > b \{[\s\S]*overflow-wrap: normal;[\s\S]*white-space: nowrap;/);

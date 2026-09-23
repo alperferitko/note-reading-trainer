@@ -1,0 +1,24 @@
+.guitar-hero .guitar-hero-fretboard {
+  min-width: 0;
+  margin: 0;
+  padding: 12px 8px 18px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface-elevated);
+}
+.guitar-hero-fretboard svg { display: block; width: 100%; height: auto; overflow: visible; }
+.guitar-hero-fretboard .guitar-hero-wood { fill: #70533b; stroke: #493625; stroke-width: 2; }
+.guitar-hero-fretboard .guitar-hero-fret { stroke: #c4b39c; stroke-width: 3; }
+.guitar-hero-fretboard .guitar-hero-nut { stroke: #e9ddbd; stroke-width: 7; }
+.guitar-hero-fretboard .guitar-hero-string { stroke: #dfd2b8; }
+.guitar-hero-fretboard .guitar-hero-inlay { fill: #bba17e; }
+.guitar-hero-fretboard text { text-anchor: middle; font-family: var(--sans), sans-serif; }
+.guitar-hero-fretboard .guitar-hero-fret-label,
+.guitar-hero-fretboard .guitar-hero-string-label { fill: var(--foreground); font-size: 13px; font-weight: 600; }
+.guitar-hero-fretboard .guitar-hero-note circle { fill: #faf4e6; stroke: #493625; stroke-width: 1; }
+.guitar-hero-fretboard .guitar-hero-note text { fill: #30291f; font-size: 10px; font-weight: 700; }
+.guitar-hero-fretboard .guitar-hero-note.is-root circle { fill: #e8b969; }
+.guitar-hero-fretboard figcaption { text-align: center; color: var(--foreground-muted); font-size: 12px; line-height: 1.5; }
+@media (max-width: 600px) {
+  .guitar-hero .guitar-hero-fretboard { margin-inline: -8px; padding-inline: 0; }
+}

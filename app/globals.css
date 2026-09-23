@@ -526,7 +526,6 @@ textarea:focus-visible {
 
 .setup-panel {
   padding: clamp(30px, 4vw, 48px) clamp(4px, 2vw, 24px) 8px;
-  border-top: 1px solid rgba(18, 52, 45, .13);
 }
 
 .step-heading { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 20px; }
@@ -1979,6 +1978,12 @@ button.instrument-card {
 .audio-settings-panel > button span { display: grid; gap: 4px; font-size: 11px; font-weight: 750; }
 .audio-settings-panel > button small { color: var(--foreground-muted); font-size: 9px; font-weight: 500; line-height: 1.4; }
 .audio-settings-panel > button b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-height: 32px;
+  line-height: 1;
   min-width: 48px;
   padding: 7px 9px;
   border-radius: 999px;
@@ -2283,7 +2288,6 @@ footer {
   padding: 22px 18px 32px;
   grid-template-columns: minmax(0, 1fr) 360px;
   column-gap: 36px;
-  border-bottom: 1px solid var(--border);
 }
 .hero-copy h1 { font-size: clamp(54px, 6vw, 78px); line-height: .9; }
 .hero-copy h1 em { color: var(--primary); }
@@ -2333,8 +2337,6 @@ footer {
   min-height: 132px;
   display: grid;
   place-items: center;
-  border-top: 1px solid rgba(213, 202, 186, .72);
-  border-bottom: 1px solid rgba(213, 202, 186, .72);
   background: linear-gradient(90deg, transparent, rgba(255, 253, 248, .72), transparent);
 }
 .hero-staff .staff--compact { margin: 0 auto; transform: scale(1.04); }
@@ -5934,3 +5936,9 @@ footer,
 .score-study-picker select { width:100%; max-width:500px; min-height:48px; padding:12px; border:1px solid var(--border-strong); border-radius:10px; color:var(--foreground); background:var(--background-deep); font:inherit; }
 .score-study-picker p,.score-study-picker small { line-height:1.65; }
 .score-study-picker small { font-size:12px; }
+
+/* Keep the wordmark on its staff in either color scheme. */
+.site-header .brand::before {
+  background:repeating-linear-gradient(to bottom, var(--foreground-muted) 0 1px, transparent 1px 6px);
+  opacity:.5;
+}

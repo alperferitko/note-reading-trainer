@@ -85,15 +85,15 @@
   .app-shell:not(.app-shell--session) { grid-template-columns:248px minmax(0,1fr); }
   .site-header { width:248px; padding:32px 20px 24px; gap:24px; background:var(--surface-elevated); border-right:1px solid var(--border); }
   .site-header .brand { justify-content:flex-start; gap:8px; min-height:48px; padding:0 8px; }
-  .site-header .brand::before { display:none; }
+  .site-header .brand::before { display:block; }
   .site-header .brand-name { font-size:27px; font-weight:600; margin:0; padding:0; background:none; }
   .site-header .brand-mark { width:40px; height:40px; }
   .site-header .brand-mark img { width:40px; height:40px; }
   .site-header .brand-ornament { width:calc(100% - 16px); height:1px; min-height:1px; background:var(--accent); opacity:.55; margin:0 8px; }
   .site-header .brand-ornament>* { display:none; }
-  .site-header .app-navigation { display:flex; flex-direction:column; gap:6px; width:100%; margin:0; flex:0 0 auto; counter-reset:studio-nav -1; }
+  .site-header .app-navigation { display:flex; flex-direction:column; gap:6px; width:100%; margin:0; flex:0 0 auto; }
   .site-header .app-navigation a { min-height:48px; height:auto; padding:12px 14px; display:flex; align-items:center; justify-content:flex-start; gap:14px; border-radius:12px; background:transparent; box-shadow:none; color:var(--foreground); }
-  .site-header .app-navigation a::before { counter-increment:studio-nav; content:'0' counter(studio-nav); font-family:var(--serif); font-size:13px; color:var(--foreground-muted); }
+  .site-header .app-navigation a::before { content:none; }
   .site-header .app-navigation a>b { display:block; width:auto; min-width:0; font-size:15px; line-height:1.4; white-space:normal; word-break:normal; overflow-wrap:normal; }
   .site-header .app-navigation a.is-active { background:#8b2f3c; color:#fffdf8; box-shadow:0 8px 18px rgba(139,47,60,.18); }
   .site-header .app-navigation a.is-active::before { color:#e7d7b6; }
@@ -166,7 +166,7 @@
 @media(min-width:821px) {
   .site-header > * { min-width:0; max-width:100%; flex-shrink:0; }
   .site-header .brand-mark { display:grid; flex:0 0 40px; }
-  .site-header .brand-name { text-shadow:none; }
+  .site-header .brand-name { text-shadow:-2px -2px 0 var(--surface-elevated),2px -2px 0 var(--surface-elevated),-2px 2px 0 var(--surface-elevated),2px 2px 0 var(--surface-elevated); }
 }
 @media(max-width:820px) {
   .site-header { gap:8px; }

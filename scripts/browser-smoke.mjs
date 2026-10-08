@@ -61,8 +61,10 @@ try {
     await screenshot(`theme-dark-${width}`);
     await evaluate("(()=>{const s=document.querySelector('.appearance-tools select');s.value='light';s.dispatchEvent(new Event('change',{bubbles:true}));document.querySelector('.appearance-tools').open=false;})()");await settle();
     if(width===1440){await click('.sound-toggle','');await waitFor('.audio-settings-panel');await screenshot('audio-settings-centered');await click('.sound-toggle','');}
-    const info=await measure();assert.ok(info.scrollWidth<=width+1,`Studio overflow at ${width}: ${info.scrollWidth}`);report.push({screen:'studio',...info});await screenshot(`studio-${width}`);
-    for(const [path,selector,label] of [['/nota-oku/','.setup-shell','notes'],['/eser-okuma/','.score-reading-setup','score'],['/muzik-aletleri/gitar/','.guitar-setup','guitar'],['/muzik-aletleri/piyano/','.instrument-practice','piano']]) {
+    const info=await measure();assert.ok(info.scrollWidth<=width+1,`Studio overflow at ${width}: ${info.scrollWidth}`);
+    if(width===390)assert.ok(await evaluate('document.documentElement.scrollHeight')<3600,'Studio stays a short dashboard on phones');
+    assert.equal(await evaluate("Boolean(document.querySelector('.studio-progress-line'))"),false,'No empty progress summary for a new visitor');report.push({screen:'studio',...info});await screenshot(`studio-${width}`);
+    for(const [path,selector,label] of [['/nota-oku/','.setup-shell','notes'],['/eser-okuma/','.score-reading-setup','score'],['/muzik-aletleri/gitar/','.guitar-setup','guitar'],['/muzik-aletleri/piyano/','.instrument-practice','piano'],['/dersler/','.learning-studio--lessons','lessons'],['/ilerleme/','.learning-studio--progress','progress'],['/ritim/','.pulse-practice','rhythm'],['/isitme/','.ear-training','listening']]) {
       await navigate(path,selector);if(label==='notes'&&await evaluate("Boolean(document.querySelector('.reading-setup-dialog'))")){await click('.reading-setup-dialog button','Şimdilik kapat');await settle();}const state=await measure();assert.ok(state.scrollWidth<=width+1,`${label} overflow at ${width}: ${state.scrollWidth}`);report.push({screen:label,...state});await screenshot(`${label}-${width}`);
       assert.equal(await evaluate("document.querySelectorAll('.rhythm-triplet-mark').length"),0,'No triplet numerals');
       assert.ok(await evaluate("[...document.querySelectorAll('.step-heading>span[aria-hidden=true],.guitar-shell .kicker[aria-hidden=true]')].every(e=>getComputedStyle(e).display==='none')"),'Decorative dots hidden');
@@ -70,19 +72,27 @@ try {
     }
   }
   await call('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+  await navigate('/ilerleme/','.studio-empty');
+  assert.equal(await evaluate("Boolean(document.querySelector('.skill-map'))"),false,'Skill map waits for data');
+  await navigate('/dersler/','.studio-track-tabs');
+  assert.equal(await evaluate("document.querySelectorAll('.studio-lesson-list > button').length"),7,'Reading track lists its seven lessons');
+  await click('.studio-track-tabs button','Keman');
+  assert.ok(await evaluate("document.querySelector('.studio-lesson-list').textContent.includes('Kemanın boş telleri')"),'Track tabs switch the lesson list');
   await navigate('/','.learning-studio');
-  await click('.studio-daily button','Önerilen dersi aç');await waitFor('.studio-question');
+  await click('.studio-focus button','Bugünkü dersi başlat');await waitFor('.studio-question');
   await answerCheck();
   assert.ok(await evaluate("JSON.parse(localStorage.getItem('notanota-learning-v1')).includes('staff-basics')"),'Lesson completion saved');
   await screenshot('lesson-complete');
   assert.equal(await evaluate("JSON.parse(localStorage.getItem('notanota-lesson-reviews-v1'))[0].assisted"),true,'Reading the lesson schedules an assisted review');
   await evaluate(`(()=>{const now=Date.now();localStorage.setItem('notanota-lesson-reviews-v1',JSON.stringify([{lessonId:'staff-basics',reviewedAt:new Date(now-2*86400000).toISOString(),dueAt:new Date(now-86400000).toISOString(),streak:1,assisted:false}]));})()`);
-  await navigate('/','.studio-review-plan');
-  assert.ok(await evaluate("document.querySelector('.studio-daily').textContent.includes('tekrar zamanı')"),'Due review takes priority in daily plan');
-  await click('.studio-daily button','Önerilen dersi aç');await waitFor('.studio-recall-intro');
+  await navigate('/','.studio-focus');
+  assert.ok(await evaluate("document.querySelector('.studio-focus').textContent.includes('tekrar zamanı')"),'Due review takes priority in daily plan');
+  assert.ok(await evaluate("document.querySelector('.studio-progress-line').textContent.includes('1 tekrar bekliyor')"),'Studio summary shows the due review');
+  await click('.studio-focus button','Hatırlamayı dene');await waitFor('.studio-recall-intro');
   assert.equal(await evaluate("Boolean(document.querySelector('.studio-lesson aside'))"),false,'Recall starts without lesson explanation');
   await answerCheck();
   assert.equal(await evaluate("JSON.parse(localStorage.getItem('notanota-lesson-reviews-v1'))[0].streak"),2,'Unaided due review extends schedule');
+  await navigate('/dersler/','.studio-review-plan');
   await evaluate("document.querySelector('.studio-review-plan details').open=true");
   await click('.studio-review-plan button','Erken tekrar');await waitFor('.studio-recall-intro');
   await click('.studio-recall-intro button','Açıklamayı göster');
@@ -150,7 +160,6 @@ try {
   }
   }
   await call('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
-  await navigate('/','.pulse-practice');
   await navigate('/eser-okuma/','.score-study-picker');
   await evaluate("(()=>{const s=document.querySelector('.score-study-picker select');s.value='steps';s.dispatchEvent(new Event('change',{bubbles:true}));})()");await settle();
   assert.equal(await evaluate("Boolean(document.querySelector('.score-range-grid'))"),false,'Fixed study does not advertise random range controls');
@@ -191,7 +200,7 @@ try {
   await click('.targeted-review button','Hedefli oturumu başlat');await waitFor('.quiz-shell');
   assert.ok(await evaluate("document.querySelector('.progress-row').textContent.includes('/ 10')"),'Targeted session adds one extra repetition');
   await click('.quiz-shell button','Oturumu bitir').catch(()=>{});
-  await navigate('/','.skill-map');
+  await navigate('/ilerleme/','.skill-map');
   assert.ok(await evaluate("document.querySelector('.skill-map').textContent.includes('Nota okuma')&&document.querySelector('.skill-map').textContent.includes('Tekrar gerekiyor')"),'Skill map lists the weak note');
   await evaluate("document.querySelector('.skill-map').scrollIntoView({block:'start',behavior:'instant'})");await screenshot('skill-map-390');
   // Grand staff asks for two keys at once; third position has no open strings.
@@ -205,7 +214,7 @@ try {
   await evaluate("(()=>{const s=[...document.querySelectorAll('.instrument-practice select')].find(x=>[...x.options].some(o=>o.value==='third'));s.value='third';s.dispatchEvent(new Event('change',{bubbles:true}));})()");await settle();
   assert.equal(await evaluate("[...document.querySelectorAll('.violin-string button')].filter(b=>b.textContent.startsWith('Boş')).length"),0,'Third position has no open strings');
   assert.ok(await evaluate("[...document.querySelectorAll('.violin-string button')].some(b=>b.getAttribute('aria-label').includes('3. parmak (düşük)'))"),'Low third finger labelled in third position');
-  await navigate('/','.pulse-practice');
+  await navigate('/isitme/','.ear-training');
   await evaluate(`(()=>{const original=AudioContext.prototype.createOscillator;window.__earTones=[];window.__earContexts=[];AudioContext.prototype.createOscillator=function(){window.__earContexts.push(this);const node=original.call(this),start=node.start.bind(node);node.start=function(time){window.__earTones.push({frequency:node.frequency.value,time});start(time);};return node;};})()`);
   await click('.ear-training button','8 soruluk çalışmaya başla');
   assert.ok(await evaluate("[...document.querySelectorAll('.ear-answers button')].every(b=>b.disabled)"),'Cannot answer before listening');
@@ -236,6 +245,7 @@ try {
   await evaluate("Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));delete document.hidden");await settle();
   assert.ok(await evaluate("[...document.querySelectorAll('.ear-answers button')].every(b=>b.disabled)"),'Interrupted playback does not unlock unanswered question');
   await click('.ear-end','Çalışmayı bitir');
+  await navigate('/ritim/','.pulse-practice');
   await evaluate(`(()=>{const input=document.querySelector('.pulse-controls input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'120');input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));const original=AudioContext.prototype.createOscillator;window.__pulseStarts=[];AudioContext.prototype.createOscillator=function(){window.__pulseAudio=this;const node=original.call(this),start=node.start.bind(node);node.start=function(time){window.__pulseStarts.push(time);start(time);};return node;};document.querySelector('.pulse-practice').scrollIntoView({block:'start',behavior:'instant'});})()`);await settle();
   assert.ok(await evaluate("document.querySelector('.pulse-controls').textContent.includes('120 BPM')"));
   await evaluate("(()=>{const s=document.querySelector('.pulse-pattern select');s.value='quarters-rests';s.dispatchEvent(new Event('change',{bubbles:true}));})()");await settle();
@@ -255,13 +265,16 @@ try {
   await evaluate("Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));delete document.hidden");await settle();
   assert.ok(await evaluate("document.querySelector('.pulse-practice').textContent.includes('arka plana')"),'Hidden tab interrupts exercise without a score');
   await click('.pulse-practice button','Vuruş çalışmasına başla');await waitFor('.pulse-live');
+  await pause(400);const liveAudio=await evaluate('window.__pulseAudio.state');assert.equal(liveAudio,'running','Pulse audio is running before leaving');
+  await click('.workshop-page .studio-breadcrumb a','Stüdyo');await waitFor('.learning-studio');await pause(200);
+  assert.equal(await evaluate('window.__pulseAudio.state'),'closed','Leaving the rhythm page stops the pulse');
+  await navigate('/isitme/','.ear-training');
+  await evaluate(`(()=>{const original=AudioContext.prototype.createOscillator;window.__leaveContexts=[];AudioContext.prototype.createOscillator=function(){window.__leaveContexts.push(this);return original.call(this);};})()`);
   await click('.ear-training button','8 soruluk çalışmaya başla');
   await click('.ear-listen','İki sesi dinle');
-  assert.equal(await evaluate("Boolean(document.querySelector('.pulse-live'))"),false,'Listening interrupts pulse audio');
-  await click('.pulse-practice button','Vuruş çalışmasına başla');await waitFor('.pulse-live');
-  assert.ok(await evaluate("!document.querySelector('.ear-listen').disabled"),'Pulse interrupts listening playback');
-  await click('.pulse-live button','Durdur');
-  await click('.ear-end','Çalışmayı bitir');
+  await click('.workshop-related button','Aralıkları duy');await waitFor('#active-lesson-title');await pause(200);
+  assert.ok(await evaluate("window.__leaveContexts.length>0&&window.__leaveContexts.every(c=>c.state==='closed')"),'Leaving the listening page stops playback');
+  assert.equal(await evaluate("document.querySelector('#active-lesson-title').textContent"),'Aralıkları duy','Related lesson opens on the lessons page');
   assert.equal(errors.length,0,errors.join('\n'));
   await writeFile(join(output,'report.json'),JSON.stringify({report,errors},null,2));
   console.log(JSON.stringify({screens:report.length,errors,output},null,2));

@@ -100,8 +100,8 @@ export function SkillMap({ locale, evidence, now }: { locale: Locale; evidence: 
     <p className="kicker">{tr ? 'BECERİ HARİTASI' : 'SKILL MAP'}</p>
     <h2 id="skill-map-title">{tr ? 'Hangi notada, hangi koşulda?' : 'Which note, under which conditions?'}</h2>
     <p>{tr
-      ? 'Her satır, aynı anahtar, oktav ve değiştirici işaretle verilen yardımsız cevaplardan oluşur. En az üç yardımsız cevap olmadan durum yazılmaz. “Güvenli”, son beş yardımsız cevabın en az %90’ının doğru olması demektir; kalıcı ustalık kanıtı değildir.'
-      : 'Each row groups unaided answers given with the same clef, octave and accidental. No status is shown without at least three unaided answers. “Secure” means at least 90% of the last five unaided answers were correct; it is not proof of lasting mastery.'}</p>
+      ? 'Her satır aynı anahtar, oktav ve işaretle verdiğin yardımsız cevaplardan oluşur; en az üç cevap olmadan durum yazılmaz.'
+      : 'Each row groups your unaided answers with the same clef, octave and accidental; no status is shown before three answers.'}</p>
     {!modules.length && <p className="skill-map-empty">{tr ? 'Henüz soru düzeyinde kayıt yok. Bir çalışma oturumunu tamamladığında harita burada oluşur.' : 'No question-level records yet. The map appears here after you complete a practice session.'}</p>}
     {modules.map(module => <details key={module.id} className="skill-map-module" open={module.counts['needs-work'] > 0}>
       <summary>
@@ -127,6 +127,5 @@ export function SkillMap({ locale, evidence, now }: { locale: Locale; evidence: 
       ? <div className="skill-map-confirm" role="group" aria-label={tr ? 'Silme onayı' : 'Confirm deletion'}><span>{tr ? 'Bütün soru kayıtları silinsin mi? Oturum geçmişi ve ders ilerlemesi etkilenmez.' : 'Delete every question record? Session history and lesson progress are not affected.'}</span><button type="button" onClick={() => clear('all')}>{tr ? 'Evet, hepsini sil' : 'Yes, delete all'}</button><button type="button" onClick={() => setConfirming(null)}>{tr ? 'Vazgeç' : 'Cancel'}</button></div>
       : <button type="button" className="skill-map-clear" onClick={() => setConfirming('all')}>{tr ? 'Bütün soru kayıtlarını sil' : 'Delete all question records'}</button>)}
     {message && <p role="status">{message}</p>}
-    <small>{tr ? 'Son 800 cevap yalnız bu tarayıcıda saklanır; sunucuya gönderilmez ve cihazlar arasında eşitlenmez.' : 'The last 800 answers are stored only in this browser; they are not sent to a server or synced between devices.'}</small>
   </section>;
 }

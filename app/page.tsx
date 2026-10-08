@@ -15,6 +15,7 @@ import {
 import { pitchAt, pitchName, matchesPitch, accidentalsFor, parsePitchAnswer } from "@/lib/music-pitch.mjs";
 import { SITE_PAGES, pageRoute, pageFromPath } from "@/lib/site-routes.mjs";
 import { LearningStudio } from './learning-studio';
+import { WorkshopPage } from './workshop-page';
 import { LEARNING_LESSONS } from '@/lib/learning-path.mjs';
 import { MusicStaff } from "./notation";
 import { NotationOptions, NavigationOptions, usePracticeNavigation, type Clef, type AccidentalMode } from "./practice-tools";
@@ -39,14 +40,15 @@ import {
 
 type LevelId = "temel" | "yakin" | "tam" | "genis";
 type ModeId = "porte" | "konum";
-type Stage = "landing" | "setup" | "quiz" | "done" | "pieces" | "instruments" | "guitar" | "piano" | "violin" | InfoPage;
+type Stage = "landing" | "setup" | "quiz" | "done" | "pieces" | "instruments" | "guitar" | "piano" | "violin" | "rhythm" | "listening" | "lessons" | "progress" | InfoPage;
 type Locale = "tr" | "en";
 type ReadingProfileId = "new" | "growing" | "confident";
 
 const STAGE_ROUTES: Record<Stage, string> = {
   landing: pageRoute('landing'), setup: pageRoute('setup'), quiz: pageRoute('setup'), done: pageRoute('setup'),
   pieces: pageRoute('pieces'), instruments: pageRoute('instruments'), guitar: pageRoute('guitar'),
-  piano: pageRoute('piano'), violin: pageRoute('violin'), about: pageRoute('about'), how: pageRoute('how'),
+  piano: pageRoute('piano'), violin: pageRoute('violin'), rhythm: pageRoute('rhythm'), listening: pageRoute('listening'),
+  lessons: pageRoute('lessons'), progress: pageRoute('progress'), about: pageRoute('about'), how: pageRoute('how'),
   faq: pageRoute('faq'), contact: pageRoute('contact'), roadmap: pageRoute('roadmap'),
 };
 
@@ -317,6 +319,11 @@ const SHELL_COPY = {
     sightReading: "Nota oku",
     scoreReading: "Eser okuma",
     instruments: "Müzik aletleri",
+    rhythm: "Ritim",
+    listening: "İşitme",
+    growth: "Gelişim",
+    lessons: "Dersler",
+    progress: "İlerleme",
     currentSession: "Etkin oturum",
     question: "Soru",
     remaining: "Kalan",
@@ -332,6 +339,11 @@ const SHELL_COPY = {
     sightReading: "Sight-reading",
     scoreReading: "Score reading",
     instruments: "Instruments",
+    rhythm: "Rhythm",
+    listening: "Listening",
+    growth: "Growth",
+    lessons: "Lessons",
+    progress: "Progress",
     currentSession: "Current session",
     question: "Question",
     remaining: "Remaining",
@@ -953,6 +965,7 @@ export default function Home() {
   }
 
   function navigateTo(nextStage: Stage) {
+    setRequestedLessonId(null);
     const nextUrl = new URL(pageRoute(nextStage, locale), document.baseURI);
     if (window.location.href !== nextUrl.href) window.history.pushState(null, "", nextUrl);
     setStage(nextStage);
@@ -965,8 +978,8 @@ export default function Home() {
       setRequestedLessonId(id!);
       setGuitarSessionActive(false);
       setScoreReadingSessionActive(false);
-      setStage('landing');
-      window.history.pushState(null, '', new URL(pageRoute('landing', locale), document.baseURI));
+      setStage('lessons');
+      window.history.pushState(null, '', new URL(pageRoute('lessons', locale), document.baseURI));
     };
     window.addEventListener('notanota-open-lesson', openLesson);
     return () => window.removeEventListener('notanota-open-lesson', openLesson);
@@ -1211,6 +1224,19 @@ export default function Home() {
           <a href={STAGE_ROUTES.instruments} className={["instruments", "guitar", "piano", "violin"].includes(stage) ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("instruments"); }} aria-label={shell.instruments} aria-current={["instruments", "guitar", "piano", "violin"].includes(stage) ? "page" : undefined}>
             <b>{shell.instruments}</b>
           </a>
+          <a href={STAGE_ROUTES.rhythm} className={stage === "rhythm" ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("rhythm"); }} aria-current={stage === "rhythm" ? "page" : undefined}>
+            <b>{shell.rhythm}</b>
+          </a>
+          <a href={STAGE_ROUTES.listening} className={stage === "listening" ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("listening"); }} aria-current={stage === "listening" ? "page" : undefined}>
+            <b>{shell.listening}</b>
+          </a>
+          <span className="app-navigation-label" aria-hidden="true">{shell.growth}</span>
+          <a href={STAGE_ROUTES.lessons} className={stage === "lessons" ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("lessons"); }} aria-current={stage === "lessons" ? "page" : undefined}>
+            <b>{shell.lessons}</b>
+          </a>
+          <a href={STAGE_ROUTES.progress} className={stage === "progress" ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("progress"); }} aria-current={stage === "progress" ? "page" : undefined}>
+            <b>{shell.progress}</b>
+          </a>
         </nav>
         <div className="header-actions">
           <AppearanceTools locale={locale} />
@@ -1258,15 +1284,16 @@ export default function Home() {
         <a href={STAGE_ROUTES.setup} className={["setup", "quiz", "done"].includes(stage) ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("setup"); }} aria-current={["setup", "quiz", "done"].includes(stage) ? "page" : undefined}>
           {shell.sightReading}
         </a>
-        <a href={STAGE_ROUTES.pieces} className={stage === "pieces" ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("pieces"); }} aria-current={stage === "pieces" ? "page" : undefined}>
-          {shell.scoreReading}
+        <a href={STAGE_ROUTES.lessons} className={stage === "lessons" ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("lessons"); }} aria-current={stage === "lessons" ? "page" : undefined}>
+          {shell.lessons}
         </a>
-        <a href={STAGE_ROUTES.instruments} className={["instruments", "guitar", "piano", "violin"].includes(stage) ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("instruments"); }} aria-current={["instruments", "guitar", "piano", "violin"].includes(stage) ? "page" : undefined}>
-          {shell.instruments}
+        <a href={STAGE_ROUTES.progress} className={stage === "progress" ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("progress"); }} aria-current={stage === "progress" ? "page" : undefined}>
+          {shell.progress}
         </a>
       </nav>}
 
-      {stage === "landing" && <LearningStudio locale={locale} onNavigate={navigateTo} initialLessonId={requestedLessonId} />}
+      {(stage === "landing" || stage === "lessons" || stage === "progress") && <LearningStudio key={stage} view={stage === "landing" ? "studio" : stage} locale={locale} onNavigate={navigateTo} initialLessonId={stage === "lessons" ? requestedLessonId : null} />}
+      {(stage === "rhythm" || stage === "listening") && <WorkshopPage key={stage} kind={stage} locale={locale} onNavigate={navigateTo} />}
 
       {stage === "instruments" && (
         <InstrumentHub locale={locale} onOpenGuitar={() => navigateTo("guitar")} onOpenInstrument={navigateTo} />

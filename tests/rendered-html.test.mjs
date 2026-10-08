@@ -125,7 +125,8 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /const GuitarTrainer = lazy/);
   assert.match(page, /const ScoreReadingTrainer = lazy/);
   assert.match(page, /pieces: pageRoute\('pieces'\)/);
-  assert.match(studio, /'setup','pieces'/);
+  // The studio links both reading modules from its practice-area tiles.
+  assert.match(studio, /target:'setup'[\s\S]*target:'pieces'/);
   assert.match(page, /Eser okuma/);
   assert.match(page, /Score reading/);
   assert.match(scoreReading, /type ReadingMode = "flow" \| "rhythm"/);
@@ -158,7 +159,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(rhythmGlyphs, /eighthTriplet/);
   assert.doesNotMatch(rhythmGlyphs, /rhythm-triplet-mark/);
   assert.match(scoreReadingLogic, /chooseUnrecentPiece/);
-  assert.match(studio, /'guitar','piano','violin'/);
+  assert.match(studio, /target:'guitar'[\s\S]*target:'piano'[\s\S]*target:'violin'/);
   assert.match(page, /function InstrumentHub/);
   assert.match(page, /navigateTo\("instruments"\)/);
   assert.match(page, /Piyano/);
@@ -302,7 +303,8 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.community-header-actions button \{[\s\S]*justify-content: center;[\s\S]*text-align: center/);
   assert.match(styles, /li\[aria-current="date"\]:not\(\.is-complete\) \.practice-day-mark::after[\s\S]*inset: 5px;[\s\S]*background: var\(--primary\)/);
   assert.match(studio, /className="studio-hero-score"/);
-  assert.match(studio, /<MusicStaff position=\{4\}/);
+  // The note-reading tile draws a staff; the focus card keeps the real notation preview.
+  assert.match(studio, /target:'setup',title:[^\n]*art:<StaffArt\/>/);
   assert.match(styles, /\.staff--animated \.note-head,[\s\S]*top \.78s cubic-bezier\(\.22, 1, \.36, 1\)/);
   assert.match(styles, /\.landing-staff-label\.is-visible \{[\s\S]*opacity: 1;[\s\S]*transform: translateY\(0\)/);
   assert.match(styles, /\.landing-art \{ min-height: 180px; \}/);

@@ -317,3 +317,63 @@
   .learning-studio--home .studio-tile-art .studio-instrument-art { max-height:40px; padding:0; }
   .learning-studio--home .studio-tile strong { font-size:13px; font-family:inherit; font-weight:700; letter-spacing:0; }
 }
+
+/* Home as an introduction: message, a moving staff, three pillars and how progress works. */
+.studio-intro { position:relative; display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); gap:clamp(24px,4vw,56px); align-items:center; padding:clamp(28px,4vw,56px); border:1px solid var(--border); border-radius:28px; background:radial-gradient(circle at 85% 15%, rgba(163,51,71,.08), transparent 45%), var(--surface); box-shadow:0 18px 40px rgba(54,43,30,.08); overflow:hidden; }
+.studio-intro-copy h1 { margin:0; font-family:var(--serif); font-size:clamp(34px,4.4vw,58px); line-height:1.06; letter-spacing:-.04em; font-weight:600; text-wrap:balance; }
+.studio-intro-copy h1 em { font-weight:400; color:var(--primary); }
+.studio-intro-copy > p:not(.kicker) { margin:20px 0 0; max-width:520px; font-size:17px; line-height:1.65; color:var(--foreground-muted); }
+.studio-intro .studio-actions { margin-top:26px; }
+.studio-intro .primary-button { min-height:54px !important; padding:14px 26px !important; font-size:16px !important; background:#a33347 !important; box-shadow:0 10px 22px rgba(163,51,71,.22) !important; }
+.studio-intro-copy > p.studio-intro-note { margin-top:14px; font-size:14px; color:var(--foreground-muted); }
+.studio-intro-visual { position:relative; padding:24px 18px; border-radius:22px; background:var(--background-deep); }
+.studio-intro .studio-hero-score { margin:0; }
+.studio-intro .studio-hero-score svg { animation:studio-score-breathe 6s ease-in-out infinite; }
+.studio-playhead { position:absolute; top:18px; bottom:18px; left:18px; width:3px; border-radius:3px; background:var(--primary); opacity:.55; box-shadow:0 0 14px rgba(163,51,71,.45); animation:studio-playhead 6s linear infinite; }
+@keyframes studio-playhead { 0% { left:18px; opacity:0; } 8% { opacity:.55; } 92% { opacity:.55; } 100% { left:calc(100% - 21px); opacity:0; } }
+@keyframes studio-score-breathe { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-3px); } }
+.studio-pillars { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+.studio-pillar { display:flex; flex-direction:column; gap:8px; padding:20px; border:1px solid var(--border); border-radius:20px; background:var(--surface); color:var(--foreground); text-decoration:none; transition:transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
+.studio-pillar:hover { transform:translateY(-2px); border-color:var(--primary); box-shadow:0 12px 26px rgba(54,43,30,.08); }
+.studio-pillar .studio-tile-art { height:84px; margin-bottom:6px; }
+.studio-pillar strong { font-family:var(--serif); font-size:26px; font-weight:600; letter-spacing:-.02em; }
+.studio-pillar > span:last-child { font-size:15px; line-height:1.55; color:var(--foreground-muted); }
+.studio-steps { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+.studio-steps li { display:flex; gap:14px; align-items:flex-start; padding:18px 20px; border-radius:18px; background:#20231f; color:#fffdf8; }
+.studio-steps b { flex:none; width:34px; height:34px; display:grid; place-items:center; border-radius:50%; background:#a33347; font-family:var(--serif); }
+.studio-steps strong { display:block; font-size:16px; }
+.studio-steps small { display:block; margin-top:4px; font-size:14px; line-height:1.5; color:#d6cfbf; }
+.learning-studio--practice .studio-tile-grid { grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; }
+.learning-studio--practice .studio-tile { align-items:center; text-align:center; }
+.learning-studio--practice .studio-tile strong { font-size:20px; }
+@media(prefers-reduced-motion:reduce) { .studio-playhead,.studio-intro .studio-hero-score svg { animation:none; } }
+@media(max-width:1000px) {
+  .studio-intro { grid-template-columns:1fr; }
+  .studio-pillars,.studio-steps { grid-template-columns:1fr; }
+}
+@media(max-width:650px) {
+  .studio-intro { padding:24px 20px; border-radius:22px; gap:20px; }
+  .studio-intro-copy h1 { font-size:clamp(30px,8.4vw,38px); }
+  .studio-intro-copy > p:not(.kicker) { font-size:16px; }
+  .studio-intro .studio-actions .primary-button { width:100%; }
+  .studio-intro-visual { padding:14px 8px; }
+  .studio-pillar { flex-direction:row; flex-wrap:wrap; align-items:center; padding:16px; }
+  .studio-pillar .studio-tile-art { width:96px; height:56px; margin:0; }
+  .studio-pillar strong { font-size:22px; }
+  .studio-pillar > span:last-child { flex-basis:100%; font-size:14px; }
+  .learning-studio--practice .studio-tile-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+}
+
+/* A calmer sidebar: four destinations with room to breathe. */
+@media(min-width:821px) {
+  .site-header .app-navigation { gap:4px; }
+  .site-header .app-navigation a { min-height:46px; padding:10px 16px; }
+  .site-header .app-navigation a > b { font-size:16px; font-weight:600; }
+  .site-header .app-navigation a:not(.is-active) { color:var(--foreground-muted); }
+  .site-header .header-actions { margin-top:auto; }
+}
+/* The wordmark sits directly on its staff, with no halo around the letters. */
+.site-header .brand-name { text-shadow:none; }
+/* Measured so the text baseline rests on the second staff line from the bottom. */
+.site-header .brand-name { transform:translateY(-2.5px); }
+@media(min-width:821px) { .site-header .brand-name { transform:translateY(-4px); } }

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { LEARNING_LESSONS, LESSON_PROGRESS_KEY, LESSON_STATE_KEY, drawCheck, lessonStatus, markLessonState, recommendFromEvidence, recommendLesson, summarizeLearning, validLearningHistory, validCompletedLessons, validLessonStates, type Lesson as LessonData, type LessonState } from '@/lib/learning-path.mjs';
 import { pageRoute } from '@/lib/site-routes.mjs';
-import { useEvidence, weaknessReason } from './targeted-review';
+import { useEvidence } from './targeted-review';
 import { SkillMap } from './skill-map';
 import { RhythmPatternPreview } from './rhythm-glyphs';
 import { LocalProgress } from './local-progress';
@@ -11,8 +11,8 @@ import { LessonReviewPlan, type LessonReview } from './lesson-review-plan';
 import { REVIEW_KEY, validReviews, recordReview, buildReviewPlan } from '@/lib/lesson-review.mjs';
 
 type Locale = 'tr' | 'en';
-export type StudioView = 'studio' | 'lessons' | 'progress';
-export type StudioTarget = 'landing' | 'setup' | 'pieces' | 'guitar' | 'piano' | 'violin' | 'rhythm' | 'listening' | 'lessons' | 'progress' | 'how';
+export type StudioView = 'studio' | 'practice' | 'lessons' | 'progress';
+export type StudioTarget = 'landing' | 'setup' | 'pieces' | 'guitar' | 'piano' | 'violin' | 'rhythm' | 'listening' | 'lessons' | 'progress' | 'practice' | 'how';
 type CheckQuestion = ReturnType<typeof drawCheck>[number];
 type History = {id:string;module:string;correct:number;wrong:number;milliseconds:number;date:string};
 type Track = 'reading' | 'rhythm' | 'guitar' | 'piano' | 'violin' | 'ear';
@@ -134,13 +134,6 @@ export function LearningStudio({locale,onNavigate,initialLessonId,view='studio'}
   }
   function next(time:number){if(!lesson||!question||answer!==question.answerIndex||submitted.current)return;if(questionIndex<checkQuestions.length-1){setQuestionIndex(i=>i+1);setAnswer(null);}else{submitted.current=true;const ids=[...new Set([...completed,lesson.id])];let source=reviews;try{source=validReviews([...reviews,...validReviews(JSON.parse(localStorage.getItem(REVIEW_KEY)||'[]'),time)],time);}catch{setStorageWarning(true);}const updated=recordReview(source,lesson.id,assisted.current,time);setNow(time);setReviews(updated);setCompleted(ids);setFinished(true);try{localStorage.setItem(LESSON_PROGRESS_KEY,JSON.stringify(ids));localStorage.setItem(REVIEW_KEY,JSON.stringify(updated));}catch{setStorageWarning(true);}saveStates(markLessonState(lessonStates,lesson.id,'checkedAt',time));}}
 
-  const reason=evidenceSuggestion
-    ?(tr?`Aynı koşullarda tekrarlanan hatalar bu dersi öneriyor: ${weaknessReason(evidenceSuggestion.item,locale)}.`:`Repeated errors in comparable conditions point to this lesson: ${weaknessReason(evidenceSuggestion.item,locale)}.`)
-    :suggestion.reason==='review'?(tr?`${suggestion.evidenceSessions} oturumdaki cevaplarına göre bu alanda temel bir tekrar öneriyoruz.`:`Based on answers in ${suggestion.evidenceSessions} sessions, a basic review may help.`)
-    :suggestion.reason==='continue'?(tr?'Tamamladığın kısa derslerden sonraki adım.':'Your next step after the short lessons you completed.')
-    :suggestion.reason==='revisit'?(tr?'Bütün bilgi kontrollerini tamamladın. Bir konuyu yeniden çalışabilir veya serbest oturuma geçebilirsin.':'You completed every knowledge check. Revisit a topic or choose free practice.')
-    :(tr?'Temelden başla; öneriler, bu tarayıcıdaki çalışmaların biriktikçe güncellenir.':'Start with the basics; suggestions update as practice builds up in this browser.');
-
   const lessonButton=(item:LessonData)=>{
     const status=statusOf(item);
     return <button key={item.id} onClick={()=>open(item.id)} aria-expanded={active===item.id}>
@@ -197,30 +190,45 @@ export function LearningStudio({locale,onNavigate,initialLessonId,view='studio'}
     {target:'lessons',title:tr?'Dersler':'Lessons',art:<LessonsArt/>},
   ];
 
-  // One decision on arrival: today's step. Everything else is a single tap below it.
+  if(view==='practice') return <section className="learning-studio learning-studio--practice">
+    <p className="studio-breadcrumb"><a {...link('landing')}>{tr?'Stüdyo':'Studio'}</a> / {tr?'Çalış':'Practice'}</p>
+    <header className="studio-page-header"><p className="kicker">{tr?'ÇALIŞMA ALANLARI':'PRACTICE AREAS'}</p><h1>{tr?'Ne çalışmak istersin?':'What do you want to practise?'}</h1></header>
+    <section className="studio-modules" aria-label={tr?'Çalışma alanları':'Practice areas'}>
+      <div className="studio-tile-grid">{tiles.map(tile=><a key={tile.target} className="studio-tile" {...link(tile.target)}><span className="studio-tile-art" aria-hidden="true">{tile.art}</span><strong>{tile.title}</strong></a>)}</div>
+    </section>
+  </section>;
+
+  // The home page introduces what NotaNota is for; practice areas live on their own tab.
+  const pillars:{title:string;copy:string;art:ReactNode;target:StudioTarget}[]=[
+    {title:tr?'Oku':'Read',copy:tr?'Porte okuma ile notaları, Eser okuma ile ölçülü ve suslu satırları sol ve fa anahtarında okumayı öğren.':'Learn notes with sight-reading and barred lines with rests through score reading, in treble and bass clef.',art:<StaffArt/>,target:'setup'},
+    {title:tr?'Say ve duy':'Count and hear',copy:tr?'Ritim atölyesinde vuruşu ve örüntüleri, işitme atölyesinde aralık, akor ve kısa dikteyi çalış.':'Practise the pulse and rhythm patterns, then intervals, chords and short dictation by ear.',art:<PulseArt/>,target:'rhythm'},
+    {title:tr?'Çal':'Play',copy:tr?'Müzik aletleri: okuduğun notanın yerini Gitar, piyano ve kemanda bul.':'Instruments: find each written note on guitar, piano and violin.',art:<InstrumentArt kind="piano"/>,target:'guitar'},
+  ];
+  const steps=tr
+    ?[['3 dakikalık ders','Kısa bir açıklama ve iki soruluk kontrol.'],['Uygulama','Konuyu gerçek alıştırmalarda kullan.'],['Akıllı tekrar','Zorlandığın notalar sana geri gelir.']]
+    :[['3-minute lesson','A short explanation and a two-question check.'],['Practice','Use the idea in real exercises.'],['Smart review','The notes you miss come back to you.']];
+
   return <section className="learning-studio learning-studio--home">
-    <section className="studio-focus" aria-labelledby="studio-title">
-      <div className="studio-focus-copy">
-        <p className="kicker">NOTANOTA</p>
+    <section className="studio-intro" aria-labelledby="studio-title">
+      <div className="studio-intro-copy">
+        <p className="kicker">{tr?'NOTANOTA · MÜZİK STÜDYOSU':'NOTANOTA · MUSIC STUDIO'}</p>
         <h1 id="studio-title">{tr?'Notayı oku, ritmi say,':'Read the notes, feel the pulse,'} <em>{tr?'enstrümanında bul.':'find your sound.'}</em></h1>
-        <p>{tr?'Porte okuma, ritim, işitme ve enstrüman çalışmaları; her gün birkaç dakika.':'Reading, rhythm, listening and instrument practice, a few minutes a day.'}</p>
-        <div className="studio-hero-score" aria-hidden="true"><RhythmPatternPreview variant="mixed"/></div>
+        <p>{tr?'Müziği okumayı ve çalmayı öğrenmek isteyenler için ücretsiz, Türkçe bir çalışma stüdyosu. Her gün birkaç dakikalık kısa derslerle önce doğruluk, sonra akıcılık kazan.':'A free, bilingual practice studio for anyone learning to read and play music. A few minutes of short lessons a day build accuracy first, then fluency.'}</p>
+        <div className="studio-actions"><button className="primary-button" onClick={()=>open(recommended.id,Boolean(dueLesson))}>{dueLesson?(tr?'Hatırlamayı dene':'Try recalling'):(tr?'Bugünkü dersle başla':'Start with today’s lesson')} <span aria-hidden="true">→</span></button><a {...link('practice')}>{tr?'Tüm çalışmaları gör':'See all practice'}</a></div>
+        <p className="studio-intro-note">{dueLesson?(tr?`Bu dersin tekrar zamanı geldi: ${recommended.title[locale]}`:`This lesson is due for review: ${recommended.title[locale]}`):(tr?`Bugünkü adım: ${recommended.title[locale]} · ${recommended.minutes} dk`:`Today’s step: ${recommended.title[locale]} · ${recommended.minutes} min`)}</p>
       </div>
-      <div className="studio-focus-step">
-        <small>{dueLesson?(tr?'TEKRAR ZAMANI':'REVIEW DUE'):(tr?'BUGÜNKÜ ADIM':'TODAY’S STEP')}</small>
-        <strong>{recommended.title[locale]}</strong>
-        <span>{recommended.minutes} {tr?'dk ders · 2 soruluk kontrol':'min lesson · 2-question check'}</span>
-        <button className="primary-button" onClick={()=>open(recommended.id,Boolean(dueLesson))}>{dueLesson?(tr?'Hatırlamayı dene':'Try recalling'):(tr?'Bugünkü dersi başlat':'Start today’s lesson')} <span aria-hidden="true">→</span></button>
-        <a {...link('setup')}>{tr?'ya da hemen nota oku':'or read notes right away'}</a>
-        <p>{dueLesson?(tr?'Bu dersin tekrar zamanı geldi. Önce açıklamayı açmadan hatırlamayı dene.':'This lesson is due. Try recalling before opening the explanation.'):reason}</p>
+      <div className="studio-intro-visual" aria-hidden="true">
+        <div className="studio-hero-score"><RhythmPatternPreview variant="mixed"/></div>
+        <span className="studio-playhead"/>
       </div>
     </section>
     {storageNotice}
     {lessonPanelView}
-    {hasActivity&&<a className="studio-progress-line" {...link('progress')}><strong>{completed.length}/{lessons.length} {tr?'ders':'lessons'} · {appliedCount} ★</strong><span>{tr?`${summary.sessions} oturum${summary.accuracy===null?'':` · %${summary.accuracy} doğruluk`}${reviewPlan.due.length?` · ${reviewPlan.due.length} tekrar bekliyor`:''}`:`${summary.sessions} sessions${summary.accuracy===null?'':` · ${summary.accuracy}% accuracy`}${reviewPlan.due.length?` · ${reviewPlan.due.length} reviews due`:''}`}</span><b aria-hidden="true">→</b></a>}
-    <section className="studio-modules" aria-labelledby="studio-modules-title">
-      <h2 id="studio-modules-title" className="kicker">{tr?'NE ÇALIŞMAK İSTERSİN?':'WHAT DO YOU WANT TO PRACTISE?'}</h2>
-      <div className="studio-tile-grid">{tiles.map(tile=><a key={tile.target} className="studio-tile" {...link(tile.target)}><span className="studio-tile-art" aria-hidden="true">{tile.art}</span><strong>{tile.title}</strong></a>)}</div>
+    <section className="studio-pillars" aria-label={tr?'NotaNota ile neler yapabilirsin':'What you can do with NotaNota'}>
+      {pillars.map(pillar=><a key={pillar.title} className="studio-pillar" {...link(pillar.target)}><span className="studio-tile-art" aria-hidden="true">{pillar.art}</span><strong>{pillar.title}</strong><span>{pillar.copy}</span></a>)}
     </section>
+    <ol className="studio-steps" aria-label={tr?'Nasıl ilerlersin':'How you progress'}>
+      {steps.map(([title,copy],i)=><li key={title}><b>{i+1}</b><span><strong>{title}</strong><small>{copy}</small></span></li>)}
+    </ol>
   </section>;
 }

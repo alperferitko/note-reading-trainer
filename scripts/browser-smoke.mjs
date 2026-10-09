@@ -63,8 +63,9 @@ try {
     if(width===1440){await click('.sound-toggle','');await waitFor('.audio-settings-panel');await screenshot('audio-settings-centered');await click('.sound-toggle','');}
     const info=await measure();assert.ok(info.scrollWidth<=width+1,`Studio overflow at ${width}: ${info.scrollWidth}`);
     if(width===390)assert.ok(await evaluate('document.documentElement.scrollHeight')<3600,'Studio stays a short dashboard on phones');
-    assert.equal(await evaluate("Boolean(document.querySelector('.studio-progress-line'))"),false,'No empty progress summary for a new visitor');report.push({screen:'studio',...info});await screenshot(`studio-${width}`);
-    for(const [path,selector,label] of [['/nota-oku/','.setup-shell','notes'],['/eser-okuma/','.score-reading-setup','score'],['/muzik-aletleri/gitar/','.guitar-setup','guitar'],['/muzik-aletleri/piyano/','.instrument-practice','piano'],['/dersler/','.learning-studio--lessons','lessons'],['/ilerleme/','.learning-studio--progress','progress'],['/ritim/','.pulse-practice','rhythm'],['/isitme/','.ear-training','listening']]) {
+    assert.equal(await evaluate("document.querySelectorAll('.studio-tile').length"),0,'Home introduces NotaNota; practice tiles live on the Practice tab');
+    assert.equal(await evaluate("document.querySelectorAll('.app-navigation a').length"),4,'Sidebar has four destinations');report.push({screen:'studio',...info});await screenshot(`studio-${width}`);
+    for(const [path,selector,label] of [['/nota-oku/','.setup-shell','notes'],['/eser-okuma/','.score-reading-setup','score'],['/muzik-aletleri/gitar/','.guitar-setup','guitar'],['/muzik-aletleri/piyano/','.instrument-practice','piano'],['/calis/','.learning-studio--practice','practice'],['/dersler/','.learning-studio--lessons','lessons'],['/ilerleme/','.learning-studio--progress','progress'],['/ritim/','.pulse-practice','rhythm'],['/isitme/','.ear-training','listening']]) {
       await navigate(path,selector);if(label==='notes'&&await evaluate("Boolean(document.querySelector('.reading-setup-dialog'))")){await click('.reading-setup-dialog button','Şimdilik kapat');await settle();}const state=await measure();assert.ok(state.scrollWidth<=width+1,`${label} overflow at ${width}: ${state.scrollWidth}`);report.push({screen:label,...state});await screenshot(`${label}-${width}`);
       assert.equal(await evaluate("document.querySelectorAll('.rhythm-triplet-mark').length"),0,'No triplet numerals');
       assert.ok(await evaluate("[...document.querySelectorAll('.step-heading>span[aria-hidden=true],.guitar-shell .kicker[aria-hidden=true]')].every(e=>getComputedStyle(e).display==='none')"),'Decorative dots hidden');
@@ -79,16 +80,15 @@ try {
   await click('.studio-track-tabs button','Keman');
   assert.ok(await evaluate("document.querySelector('.studio-lesson-list').textContent.includes('Kemanın boş telleri')"),'Track tabs switch the lesson list');
   await navigate('/','.learning-studio');
-  await click('.studio-focus button','Bugünkü dersi başlat');await waitFor('.studio-question');
+  await click('.studio-intro button','Bugünkü dersle başla');await waitFor('.studio-question');
   await answerCheck();
   assert.ok(await evaluate("JSON.parse(localStorage.getItem('notanota-learning-v1')).includes('staff-basics')"),'Lesson completion saved');
   await screenshot('lesson-complete');
   assert.equal(await evaluate("JSON.parse(localStorage.getItem('notanota-lesson-reviews-v1'))[0].assisted"),true,'Reading the lesson schedules an assisted review');
   await evaluate(`(()=>{const now=Date.now();localStorage.setItem('notanota-lesson-reviews-v1',JSON.stringify([{lessonId:'staff-basics',reviewedAt:new Date(now-2*86400000).toISOString(),dueAt:new Date(now-86400000).toISOString(),streak:1,assisted:false}]));})()`);
-  await navigate('/','.studio-focus');
-  assert.ok(await evaluate("document.querySelector('.studio-focus').textContent.includes('tekrar zamanı')"),'Due review takes priority in daily plan');
-  assert.ok(await evaluate("document.querySelector('.studio-progress-line').textContent.includes('1 tekrar bekliyor')"),'Studio summary shows the due review');
-  await click('.studio-focus button','Hatırlamayı dene');await waitFor('.studio-recall-intro');
+  await navigate('/','.studio-intro');
+  assert.ok(await evaluate("document.querySelector('.studio-intro').textContent.includes('tekrar zamanı')"),'Due review takes priority in daily plan');
+  await click('.studio-intro button','Hatırlamayı dene');await waitFor('.studio-recall-intro');
   assert.equal(await evaluate("Boolean(document.querySelector('.studio-lesson aside'))"),false,'Recall starts without lesson explanation');
   await answerCheck();
   assert.equal(await evaluate("JSON.parse(localStorage.getItem('notanota-lesson-reviews-v1'))[0].streak"),2,'Unaided due review extends schedule');

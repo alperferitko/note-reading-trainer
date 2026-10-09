@@ -161,7 +161,8 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(scoreReadingLogic, /chooseUnrecentPiece/);
   assert.match(studio, /target:'guitar'[\s\S]*target:'piano'[\s\S]*target:'violin'/);
   assert.match(page, /function InstrumentHub/);
-  assert.match(page, /navigateTo\("instruments"\)/);
+  // Instrument pages sit under the Practice tab, which stays highlighted on them.
+  assert.match(page, /const PRACTICE_STAGES: Stage\[\] = \[[^\]]*"instruments"[^\]]*"guitar"/);
   assert.match(page, /Piyano/);
   assert.match(page, /Keman/);
   assert.match(page, /<GuitarTrainer/);

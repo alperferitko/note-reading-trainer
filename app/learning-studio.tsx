@@ -60,6 +60,81 @@ function ListeningArt() {
   return <svg viewBox="0 0 300 110" aria-hidden="true" className="studio-instrument-art"><path d="M10 70 Q 35 30 60 70 T 110 70 T 160 70" fill="none" stroke="currentColor" strokeWidth="3" opacity=".6"/><path d="M140 44 Q 158 14 176 44 T 212 44 T 248 44 T 284 44" fill="none" stroke="var(--primary)" strokeWidth="3"/><path d="M110 92 H 250 M110 86 V 98 M250 86 V 98" stroke="currentColor" strokeWidth="2"/></svg>;
 }
 
+/** A hand-drawn wavy underline, drawn in once beneath the headline's last words. */
+function HandUnderline() {
+  return <svg className="studio-hand-underline" viewBox="0 0 300 20" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path pathLength={100} d="M2 12 C 22 4, 38 18, 58 10 S 98 4, 118 11 S 158 18, 178 9 S 218 4, 238 11 S 278 16, 298 9"/></svg>;
+}
+
+/** A pencilled arrow pointing back up at the call to action. */
+function HandArrow() {
+  return <svg className="studio-hand-arrow" viewBox="0 0 90 50" aria-hidden="true" focusable="false"><path d="M86 42 C 62 46, 32 38, 14 16 M28 18 L14 16 L17 30"/></svg>;
+}
+
+/** A pencilled arrow curving down towards the cards below. */
+function HandArrowDown() {
+  return <svg className="studio-hand-arrow studio-hand-arrow--down" viewBox="0 0 40 46" aria-hidden="true" focusable="false"><path d="M8 4 C 22 12, 28 24, 24 40 M14 32 L24 40 L32 30"/></svg>;
+}
+
+const STAGE_BARS=[26,44,34,58,40,70,52,76,50,64,38,54,30,42];
+// x, y and stem direction (-1 up, 1 down) of the five notes on the floating staff.
+const STAGE_NOTES:[number,number,number][]=[[110,204,-1],[190,186,1],[270,168,1],[350,177,1],[430,159,1]];
+const STAGE_SPARKS:[number,number,number,number][]=[[80,110,1,0],[500,92,.8,.7],[476,292,.7,1.2],[88,300,.6,1.6]];
+const SPARK_PATH='M0 -10 L2.5 -2.5 L10 0 L2.5 2.5 L0 10 L-2.5 2.5 L-10 0 L-2.5 -2.5 Z';
+
+/** A lit stage: a floating staff whose notes light up in turn above a moving level meter. */
+function StageArt() {
+  return <svg className="studio-stage-art" viewBox="0 0 560 460" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="studio-stage-beam" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#e7c98f" stopOpacity=".42"/><stop offset="1" stopColor="#e7c98f" stopOpacity="0"/></linearGradient>
+      <radialGradient id="studio-stage-floor" cx=".5" cy=".5" r=".5"><stop offset="0" stopColor="#e7c98f" stopOpacity=".32"/><stop offset="1" stopColor="#e7c98f" stopOpacity="0"/></radialGradient>
+    </defs>
+    <polygon className="stage-beam" points="246,0 314,0 520,410 40,410" fill="url(#studio-stage-beam)"/>
+    <ellipse cx="280" cy="410" rx="250" ry="34" fill="url(#studio-stage-floor)"/>
+    <g className="stage-staff">
+      <g stroke="rgba(251,246,234,.4)" strokeWidth="1.4">{[150,168,186,204,222].map(y=><line key={y} x1="40" x2="520" y1={y} y2={y}/>)}</g>
+      <circle className="stage-ring" cx="430" cy="159" r="18"/>
+      <circle className="stage-ring stage-ring--late" cx="430" cy="159" r="18"/>
+      <g className="stage-notes">
+        {STAGE_NOTES.map(([x,y],i)=><ellipse key={x} className="stage-note" style={{animationDelay:`${(i*.8).toFixed(1)}s`}} cx={x} cy={y} rx="11" ry="8" transform={`rotate(-20 ${x} ${y})`}/>)}
+        <g stroke="#fbf6ea" strokeWidth="2.2">{STAGE_NOTES.map(([x,y,direction])=>direction<0?<line key={x} x1={x+10.3} x2={x+10.3} y1={y-2} y2={y-58}/>:<line key={x} x1={x-10.3} x2={x-10.3} y1={y+2} y2={y+56}/>)}</g>
+      </g>
+    </g>
+    {STAGE_BARS.map((height,i)=><rect key={i} className="stage-bar" style={{animationDelay:`${(i*.09).toFixed(2)}s`}} x={132+i*22} y={404-height} width="12" height={height} rx="3" fill={i%2?'#b13a4f':'#e7c98f'}/>)}
+    {STAGE_SPARKS.map(([x,y,scale,delay])=><g key={x} transform={`translate(${x} ${y}) scale(${scale})`}><path className="stage-spark" style={{animationDelay:`${delay}s`}} d={SPARK_PATH}/></g>)}
+  </svg>;
+}
+
+/** Reading: three notes climbing a staff, on the reading colour. */
+function ReadBlock() {
+  return <svg viewBox="0 0 300 150" aria-hidden="true" focusable="false">
+    <g stroke="rgba(255,253,248,.3)" strokeWidth="2">{[35,55,75,95,115].map(y=><line key={y} x1="20" x2="280" y1={y} y2={y}/>)}</g>
+    {[[90,105],[150,95],[210,85]].map(([x,y],i)=><g key={x} className="block-bob" style={{animationDelay:`${-i*.8}s`}} fill="#fffdf8"><circle cx={x} cy={y} r="9.5"/><rect x={x+5.5} y={y-60} width="4" height="60"/></g>)}
+  </svg>;
+}
+
+/** Counting and hearing: a beamed pair over a lit beat, beside a sounding source. */
+function CountHearBlock() {
+  return <svg viewBox="0 0 300 150" aria-hidden="true" focusable="false">
+    <g fill="#20231f"><circle cx="50" cy="100" r="10"/><circle cx="100" cy="90" r="10"/><rect x="56" y="45" width="4" height="55"/><rect x="106" y="35" width="4" height="55"/><polygon points="56,45 110,35 110,47 56,57"/></g>
+    <g fill="#20231f">{[30,60,90,120].map((x,i)=><circle key={x} className="block-beat" style={{animationDelay:`${i*1.2}s`}} cx={x} cy="132" r="5"/>)}</g>
+    <circle cx="190" cy="75" r="12" fill="#fffdf8"/>
+    <g fill="none" stroke="#20231f" strokeWidth="6" strokeLinecap="round">{['M206.06 52.06 A28 28 0 0 1 206.06 97.94','M217.53 35.68 A48 48 0 0 1 217.53 114.32','M229 19.3 A68 68 0 0 1 229 130.7'].map((d,i)=><path key={d} className="block-wave" style={{animationDelay:`${i*.3}s`}} d={d}/>)}</g>
+  </svg>;
+}
+
+/** Playing: a fingerboard with three marked positions. */
+function PlayBlock() {
+  return <svg viewBox="0 0 300 150" aria-hidden="true" focusable="false">
+    <g stroke="rgba(251,246,234,.22)" strokeWidth="3">{[90,150,210,270].map(x=><line key={x} x1={x} x2={x} y1="24" y2="126"/>)}</g>
+    <line x1="30" x2="30" y1="24" y2="126" stroke="rgba(251,246,234,.85)" strokeWidth="6"/>
+    <g stroke="rgba(251,246,234,.55)">{[30,48,66,84,102,120].map((y,i)=><line key={y} x1="30" x2="290" y1={y} y2={y} strokeWidth={1+i*.28}/>)}</g>
+    <circle className="block-ring" cx="120" cy="84" r="11" fill="none" stroke="#e07a8c" strokeWidth="3"/>
+    <circle cx="120" cy="84" r="11" fill="#b13a4f"/>
+    <circle cx="180" cy="48" r="9" fill="none" stroke="#c6a15b" strokeWidth="4"/>
+    <circle cx="60" cy="102" r="9" fill="#73826b"/>
+  </svg>;
+}
+
 function LessonMeta({lesson,locale,status}:{lesson:LessonData;locale:Locale;status:ReturnType<typeof lessonStatus>}) {
   const tr=locale==='tr';
   const title=(id:string)=>lessons.find(l=>l.id===id)?.title[locale]??id;
@@ -155,7 +230,7 @@ export function LearningStudio({locale,onNavigate,initialLessonId,view='studio'}
     {lessonPanelView}
     <section className="studio-learning-path" aria-labelledby="lesson-track-title">
       <h2 id="lesson-track-title" className="sr-only">{tr?'Ders alanları':'Lesson tracks'}</h2>
-      <div className="studio-track-tabs" role="group" aria-label={tr?'Ders alanı':'Lesson track'}>{TRACKS.map(item=>{const inTrack=lessons.filter(l=>l.skill===item.id);return <button key={item.id} aria-pressed={currentTrack===item.id} onClick={()=>setTrack(item.id)}>{item[locale]} <small>{inTrack.filter(l=>completed.includes(l.id)).length}/{inTrack.length}</small></button>;})}</div>
+      <div className="studio-track-tabs" role="group" aria-label={tr?'Ders alanı':'Lesson track'}>{TRACKS.map(item=>{const inTrack=lessons.filter(l=>l.skill===item.id);return <button key={item.id} data-track={item.id} aria-pressed={currentTrack===item.id} onClick={()=>setTrack(item.id)}>{item[locale]} <small>{inTrack.filter(l=>completed.includes(l.id)).length}/{inTrack.length}</small></button>;})}</div>
       <div className="studio-lesson-list">{lessons.filter(l=>l.skill===currentTrack).map(lessonButton)}</div>
     </section>
     {(reviews.length>0||completed.length>0)&&<LessonReviewPlan locale={locale} records={reviews} completed={completed} now={now} onOpen={id=>open(id,true)}/>}
@@ -194,15 +269,15 @@ export function LearningStudio({locale,onNavigate,initialLessonId,view='studio'}
     <p className="studio-breadcrumb"><a {...link('landing')}>{tr?'Stüdyo':'Studio'}</a> / {tr?'Çalış':'Practice'}</p>
     <header className="studio-page-header"><p className="kicker">{tr?'ÇALIŞMA ALANLARI':'PRACTICE AREAS'}</p><h1>{tr?'Ne çalışmak istersin?':'What do you want to practise?'}</h1></header>
     <section className="studio-modules" aria-label={tr?'Çalışma alanları':'Practice areas'}>
-      <div className="studio-tile-grid">{tiles.map(tile=><a key={tile.target} className="studio-tile" {...link(tile.target)}><span className="studio-tile-art" aria-hidden="true">{tile.art}</span><strong>{tile.title}</strong></a>)}</div>
+      <div className="studio-tile-grid">{tiles.map(tile=><a key={tile.target} className={`studio-tile studio-tile--${tile.target}`} {...link(tile.target)}><span className="studio-tile-art" aria-hidden="true">{tile.art}</span><strong>{tile.title}</strong></a>)}</div>
     </section>
   </section>;
 
-  // The home page introduces what NotaNota is for; practice areas live on their own tab.
-  const pillars:{title:string;copy:string;art:ReactNode;target:StudioTarget}[]=[
-    {title:tr?'Oku':'Read',copy:tr?'Porte okuma ile notaları, Eser okuma ile ölçülü ve suslu satırları sol ve fa anahtarında okumayı öğren.':'Learn notes with sight-reading and barred lines with rests through score reading, in treble and bass clef.',art:<StaffArt/>,target:'setup'},
-    {title:tr?'Say ve duy':'Count and hear',copy:tr?'Ritim atölyesinde vuruşu ve örüntüleri, işitme atölyesinde aralık, akor ve kısa dikteyi çalış.':'Practise the pulse and rhythm patterns, then intervals, chords and short dictation by ear.',art:<PulseArt/>,target:'rhythm'},
-    {title:tr?'Çal':'Play',copy:tr?'Müzik aletleri: okuduğun notanın yerini Gitar, piyano ve kemanda bul.':'Instruments: find each written note on guitar, piano and violin.',art:<InstrumentArt kind="piano"/>,target:'guitar'},
+  // The home page is a notebook page: today's homework, three parts and how progress works.
+  const pillars:{title:string;copy:string;cta:string;art:ReactNode;tone:'read'|'count'|'play';target:StudioTarget}[]=[
+    {title:tr?'Oku':'Read',copy:tr?'Porte okuma ile notaları, Eser okuma ile ölçülü ve suslu satırları sol ve fa anahtarında okumayı öğren.':'Learn notes with sight-reading and barred lines with rests through score reading, in treble and bass clef.',cta:tr?'Nota okumaya başla':'Start reading notes',art:<ReadBlock/>,tone:'read',target:'setup'},
+    {title:tr?'Say ve duy':'Count and hear',copy:tr?'Ritim atölyesinde vuruşu ve örüntüleri, işitme atölyesinde aralık, akor ve kısa dikteyi çalış.':'Practise the pulse and rhythm patterns, then intervals, chords and short dictation by ear.',cta:tr?'Ritim atölyesine git':'Go to the rhythm workshop',art:<CountHearBlock/>,tone:'count',target:'rhythm'},
+    {title:tr?'Çal':'Play',copy:tr?'Gitar, piyano ve kemanda okuduğun notanın yerini bul.':'Find each written note on guitar, piano and violin.',cta:tr?'Müzik aletlerine göz at':'Browse the instruments',art:<PlayBlock/>,tone:'play',target:'practice'},
   ];
   const steps=tr
     ?[['3 dakikalık ders','Kısa bir açıklama ve iki soruluk kontrol.'],['Uygulama','Konuyu gerçek alıştırmalarda kullan.'],['Akıllı tekrar','Zorlandığın notalar sana geri gelir.']]
@@ -211,24 +286,26 @@ export function LearningStudio({locale,onNavigate,initialLessonId,view='studio'}
   return <section className="learning-studio learning-studio--home">
     <section className="studio-intro" aria-labelledby="studio-title">
       <div className="studio-intro-copy">
-        <p className="kicker">{tr?'NOTANOTA · MÜZİK STÜDYOSU':'NOTANOTA · MUSIC STUDIO'}</p>
-        <h1 id="studio-title">{tr?'Notayı oku, ritmi say,':'Read the notes, feel the pulse,'} <em>{tr?'enstrümanında bul.':'find your sound.'}</em></h1>
+        <p className="studio-hand studio-intro-kicker">{tr?`bugünün ödevi: ${recommended.minutes} dakika`:`today’s homework: ${recommended.minutes} minutes`}</p>
+        <h1 id="studio-title"><span>{tr?'Notayı oku,':'Read the notes,'}</span> <span>{tr?'ritmi say,':'feel the pulse,'}</span> <em>{tr?'enstrümanında bul.':'find your sound.'}<HandUnderline/></em></h1>
         <p>{tr?'Müziği okumayı ve çalmayı öğrenmek isteyenler için ücretsiz, Türkçe bir çalışma stüdyosu. Her gün birkaç dakikalık kısa derslerle önce doğruluk, sonra akıcılık kazan.':'A free, bilingual practice studio for anyone learning to read and play music. A few minutes of short lessons a day build accuracy first, then fluency.'}</p>
         <div className="studio-actions"><button className="primary-button" onClick={()=>open(recommended.id,Boolean(dueLesson))}>{dueLesson?(tr?'Hatırlamayı dene':'Try recalling'):(tr?'Bugünkü dersle başla':'Start with today’s lesson')} <span aria-hidden="true">→</span></button><a {...link('practice')}>{tr?'Tüm çalışmaları gör':'See all practice'}</a></div>
-        <p className="studio-intro-note">{dueLesson?(tr?`Bu dersin tekrar zamanı geldi: ${recommended.title[locale]}`:`This lesson is due for review: ${recommended.title[locale]}`):(tr?`Bugünkü adım: ${recommended.title[locale]} · ${recommended.minutes} dk`:`Today’s step: ${recommended.title[locale]} · ${recommended.minutes} min`)}</p>
+        <p className="studio-hand studio-intro-arrow" aria-hidden="true"><HandArrow/><span>{tr?'buradan başla!':'start here!'}</span></p>
       </div>
-      <div className="studio-intro-visual" aria-hidden="true">
-        <div className="studio-hero-score"><RhythmPatternPreview variant="mixed"/></div>
-        <span className="studio-playhead"/>
+      <div className="studio-intro-visual">
+        <figure className="studio-stage-photo" aria-hidden="true"><StageArt/><figcaption className="studio-hand">{tr?'sahne senin':'the stage is yours'}</figcaption></figure>
+        <p className="studio-intro-note"><span>{dueLesson?(tr?'Bu dersin tekrar zamanı geldi:':'This lesson is due for review:'):(tr?'Bugünkü adım:':'Today’s step:')}</span> <strong>{recommended.title[locale]}{dueLesson?'':` · ${recommended.minutes} ${tr?'dk':'min'}`}</strong></p>
       </div>
     </section>
     {storageNotice}
     {lessonPanelView}
-    <section className="studio-pillars" aria-label={tr?'NotaNota ile neler yapabilirsin':'What you can do with NotaNota'}>
-      {pillars.map(pillar=><a key={pillar.title} className="studio-pillar" {...link(pillar.target)}><span className="studio-tile-art" aria-hidden="true">{pillar.art}</span><strong>{pillar.title}</strong><span>{pillar.copy}</span></a>)}
+    <section className="studio-pillars" aria-labelledby="studio-pillars-title">
+      <header className="studio-pillars-head"><h2 id="studio-pillars-title">{tr?'Defterinde üç bölüm var.':'Your notebook has three parts.'}</h2><p className="studio-hand" aria-hidden="true">{tr?'her gün birinden başla':'start with one each day'}<HandArrowDown/></p></header>
+      <div className="studio-pillar-grid">{pillars.map((pillar,i)=><a key={pillar.tone} className={`studio-pillar studio-pillar--${pillar.tone}`} {...link(pillar.target)}><span className="studio-pillar-art" aria-hidden="true">{pillar.art}</span><span className="studio-hand studio-pillar-label">{tr?`${i+1}. bölüm`:`part ${i+1}`}</span><strong>{pillar.title}</strong><span className="studio-pillar-copy">{pillar.copy}</span><span className="studio-pillar-cta">{pillar.cta} <span aria-hidden="true">→</span></span></a>)}</div>
     </section>
-    <ol className="studio-steps" aria-label={tr?'Nasıl ilerlersin':'How you progress'}>
-      {steps.map(([title,copy],i)=><li key={title}><b>{i+1}</b><span><strong>{title}</strong><small>{copy}</small></span></li>)}
-    </ol>
+    <section className="studio-homework" aria-labelledby="studio-homework-title">
+      <div className="studio-homework-goal"><p className="studio-hand">{tr?'hedef: böyle bir satırı akıcı okumak':'goal: reading a line like this fluently'}</p><div className="studio-hero-score"><RhythmPatternPreview variant="mixed"/></div></div>
+      <div className="studio-homework-steps"><h2 id="studio-homework-title">{tr?'Nasıl ilerlersin?':'How you progress'}</h2><ol className="studio-steps">{steps.map(([title,copy],i)=><li key={title}><b>{i+1}</b><span><strong>{title}</strong><small>{copy}</small></span></li>)}</ol></div>
+    </section>
   </section>;
 }

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import "./globals.css";
 import "./learning-studio.css";
+import "./notebook.css";
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
@@ -43,7 +44,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#F4EFE4",
+  themeColor: "#F8F2E4",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

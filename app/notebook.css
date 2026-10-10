@@ -1,0 +1,348 @@
+/*
+ * NotaNota notebook identity: a solfège notebook with handwritten notes, taped paper cards,
+ * a sticky note for today's step and one colour per module (reading bordo, rhythm mustard,
+ * listening sage, instruments ink). Loaded after every other stylesheet.
+ */
+@font-face { font-family: "Nota Caveat"; src: url('../public/fonts/caveat-latin.woff2') format('woff2'); font-style: normal; font-weight: 400 700; font-display: swap; unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Nota Caveat"; src: url('../public/fonts/caveat-latin-ext.woff2') format('woff2'); font-style: normal; font-weight: 400 700; font-display: swap; unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Nota Sans"; src: url('../public/fonts/source-sans-3-latin.woff2') format('woff2'); font-style: normal; font-weight: 400 800; font-display: swap; unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Nota Sans"; src: url('../public/fonts/source-sans-3-latin-ext.woff2') format('woff2'); font-style: normal; font-weight: 400 800; font-display: swap; unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+
+:root {
+  --background: #f8f2e4;
+  --background-deep: #efe6d2;
+  --surface: #fffdf7;
+  --surface-elevated: #fffdf8;
+  --foreground: #20231f;
+  --foreground-muted: #57594f;
+  --border: #dccfb9;
+  --border-strong: #bba98d;
+  --accent: #c6a15b;
+  --accent-soft: #f3e1a6;
+  --surface-shadow: 0 14px 28px rgba(70, 55, 25, .09), 0 2px 6px rgba(70, 55, 25, .05);
+  --surface-shadow-soft: 0 8px 18px rgba(70, 55, 25, .07);
+  --nb-hand: "Nota Caveat", "Segoe Print", "Bradley Hand", cursive;
+  --nb-sans: "Nota Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --nb-card: #fffdf7;
+  --nb-card-line: rgba(32, 35, 31, .1);
+  --nb-ink-line: rgba(32, 35, 31, .22);
+  --nb-ink-line-strong: rgba(32, 35, 31, .5);
+  --nb-tape: rgba(214, 190, 130, .55);
+  --nb-sticky: #f3e1a6;
+  --nb-sticky-ink: #20231f;
+  --nb-rule: rgba(32, 35, 31, .065);
+  --nb-margin: rgba(139, 47, 60, .34);
+  --nb-cover: #f0e6d1;
+  --nb-ring: rgba(32, 35, 31, .22);
+  --nb-sticker-line: #20231f;
+  --nb-sticker-shadow: 3px 4px 0 #20231f;
+  --nb-paper-shadow: 0 14px 28px rgba(70, 55, 25, .1), 0 2px 6px rgba(70, 55, 25, .05);
+  --nb-highlight: rgba(198, 161, 91, .38);
+  --nb-red-rule: rgba(139, 47, 60, .42);
+  --nb-bordo: #8b2f3c;
+  --nb-mustard: #c6a15b;
+  --nb-sage: #73826b;
+  --nb-block-ink: #20231f;
+  --nb-circle-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 80' preserveAspectRatio='none'%3E%3Cpath d='M126 6C166 8 196 22 190 40C184 60 130 74 82 72C36 70 6 56 10 36C14 16 58 6 110 6C138 6 160 11 174 18' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+  --nb-check-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 46'%3E%3Cpath d='M6 26C12 30 16 36 20 42C28 26 40 12 56 4' fill='none' stroke='black' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+html[data-theme=dark] {
+  --background: #1a1c19;
+  --background-deep: #22261f;
+  --surface: #252923;
+  --surface-elevated: #2c3029;
+  --foreground: #f1ede2;
+  --foreground-muted: #bdb7a8;
+  --border: #464c43;
+  --border-strong: #6c7568;
+  --accent-soft: #4d4330;
+  --nb-card: #252923;
+  --nb-card-line: rgba(241, 237, 226, .1);
+  --nb-ink-line: rgba(241, 237, 226, .22);
+  --nb-ink-line-strong: rgba(241, 237, 226, .45);
+  --nb-tape: rgba(216, 184, 121, .26);
+  --nb-sticky: #4d4330;
+  --nb-sticky-ink: #f8ecc8;
+  --nb-rule: rgba(241, 237, 226, .045);
+  --nb-margin: rgba(235, 163, 176, .28);
+  --nb-cover: #151714;
+  --nb-ring: rgba(241, 237, 226, .2);
+  --nb-sticker-line: #0b0c0a;
+  --nb-sticker-shadow: 3px 4px 0 #0b0c0a;
+  --nb-paper-shadow: 0 14px 30px rgba(0, 0, 0, .35);
+  --nb-highlight: rgba(216, 184, 121, .3);
+  --nb-red-rule: rgba(235, 163, 176, .4);
+  --nb-block-ink: #10120f;
+}
+
+@keyframes nb-draw { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+@keyframes nb-nudge { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-6px, -3px); } }
+@keyframes nb-sway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(-1.4deg); } }
+@keyframes nb-glow { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+@keyframes nb-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes nb-ring { 0% { transform: scale(.6); opacity: .85; } 100% { transform: scale(2.3); opacity: 0; } }
+@keyframes nb-twinkle { 0%, 100% { opacity: .15; transform: scale(.6); } 50% { opacity: 1; transform: scale(1); } }
+
+/* Paper: faint five-line staves ruled across the page, and a red margin line beside the content. */
+html { background: var(--background); }
+body,
+html[data-theme=dark] body {
+  font-family: var(--nb-sans);
+  background-color: var(--background);
+  background-image: linear-gradient(to bottom, var(--nb-rule) 0, var(--nb-rule) 1px, transparent 1px, transparent 9px, var(--nb-rule) 9px, var(--nb-rule) 10px, transparent 10px, transparent 18px, var(--nb-rule) 18px, var(--nb-rule) 19px, transparent 19px, transparent 27px, var(--nb-rule) 27px, var(--nb-rule) 28px, transparent 28px, transparent 36px, var(--nb-rule) 36px, var(--nb-rule) 37px, transparent 37px);
+  background-size: 100% 132px;
+  background-position: 0 56px;
+}
+body::before { content: none; }
+.app-shell::before { content: ""; position: fixed; z-index: -1; top: 0; bottom: 0; left: 262px; width: 1.5px; background: var(--nb-margin); pointer-events: none; }
+.app-shell--session::before { display: none; }
+
+/* Sidebar: the notebook's spine, punched along its edge. */
+@media (min-width: 821px) {
+  .app-shell .site-header,
+  html[data-theme=dark] .site-header {
+    background-color: var(--nb-cover);
+    background-image: radial-gradient(circle at 50% 50%, var(--background) 0 4px, var(--nb-ring) 4.5px 5.6px, transparent 6.2px);
+    background-size: 16px 30px;
+    background-position: right 5px top 16px;
+    background-repeat: repeat-y;
+    border-right: 1px solid var(--nb-card-line);
+    box-shadow: none;
+  }
+  .site-header .brand-ornament { height: 0; min-height: 0; border-top: 1.5px dashed var(--nb-ink-line); background: none; opacity: 1; }
+  .site-header .app-navigation { gap: 6px; }
+  .site-header .app-navigation a,
+  .site-header .app-navigation a:not(.is-active) { min-height: 48px; padding: 10px 18px; background: transparent; box-shadow: none; color: var(--foreground-muted); }
+  .site-header .app-navigation a > b { position: relative; font-family: var(--nb-sans); font-size: 17px; font-weight: 600; }
+  .site-header .app-navigation a.is-active,
+  html[data-theme=dark] .site-header .app-navigation a.is-active { background: transparent; color: var(--primary); box-shadow: none; }
+  .site-header .app-navigation a.is-active > b { font-weight: 700; }
+  .site-header .app-navigation a.is-active > b::after { content: ""; position: absolute; inset: -10px -18px; background: currentColor; -webkit-mask: var(--nb-circle-mask) center / 100% 100% no-repeat; mask: var(--nb-circle-mask) center / 100% 100% no-repeat; pointer-events: none; }
+  .site-header .app-navigation a:not(.is-active):hover > b { background: linear-gradient(transparent 58%, var(--nb-highlight) 58%); color: var(--foreground); }
+}
+
+/* Header tools: plain pencil outlines, with sign-in as a sticky note. */
+.app-shell .site-header .appearance-tools summary,
+.app-shell .site-header .community-header-actions button,
+.app-shell .site-header .sound-toggle,
+html[data-theme=dark] .app-shell .site-header .sound-toggle {
+  border: 1.5px solid var(--nb-ink-line);
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--foreground);
+  font-family: var(--nb-sans);
+  font-weight: 600;
+}
+.app-shell .site-header .community-header-actions button:last-child,
+html[data-theme=dark] .app-shell .site-header .community-header-actions button:last-child {
+  border-color: transparent;
+  background: var(--nb-sticky);
+  color: var(--nb-sticky-ink);
+  font-family: var(--nb-hand);
+  font-size: 22px;
+  font-weight: 700;
+  transform: rotate(-2deg);
+  box-shadow: 0 6px 12px rgba(70, 55, 25, .16);
+}
+.app-shell .site-header .language-switch { border: 1.5px solid var(--nb-ink-line); border-radius: 10px; background: transparent; }
+.app-shell .site-header .language-switch button { border-radius: 7px; background: transparent; color: var(--foreground-muted); font-family: var(--nb-sans); font-weight: 700; }
+.app-shell .site-header .language-switch button.is-active,
+html[data-theme=dark] .app-shell .site-header .language-switch button.is-active { background: var(--foreground); color: var(--background); }
+
+/* Phones: a paper top bar and a bottom tab strip with the same hand-drawn circle. */
+@media (max-width: 820px) {
+  .app-shell::before { left: 7px; }
+  .app-shell .site-header,
+  html[data-theme=dark] .app-shell .site-header { background: var(--background); background-image: none; border-bottom: 1.5px dashed var(--nb-ink-line); box-shadow: none; }
+  .app-shell .site-header .community-header-actions button:last-child { font-size: 19px; }
+  .app-shell .mobile-module-navigation,
+  html[data-theme=dark] .app-shell .mobile-module-navigation { background: var(--nb-card); border: 1px solid var(--nb-card-line); box-shadow: 0 10px 26px rgba(40, 32, 18, .18); }
+  .app-shell .mobile-module-navigation a,
+  html[data-theme=dark] .app-shell .mobile-module-navigation a { position: relative; background: transparent; box-shadow: none; color: var(--foreground-muted); font-family: var(--nb-sans); font-weight: 700; }
+  .app-shell .mobile-module-navigation a.is-active,
+  html[data-theme=dark] .app-shell .mobile-module-navigation a.is-active { background: transparent; color: var(--primary); }
+  .app-shell .mobile-module-navigation a.is-active::after { content: ""; position: absolute; inset: 7px 3px; background: currentColor; -webkit-mask: var(--nb-circle-mask) center / 100% 100% no-repeat; mask: var(--nb-circle-mask) center / 100% 100% no-repeat; pointer-events: none; }
+}
+
+/* Footer: a dashed cut line and the motto in handwriting. */
+.app-shell > footer { border-top: 1.5px dashed var(--nb-ink-line); }
+.app-shell > footer > p { font-family: var(--nb-hand); font-size: 23px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--primary); }
+.app-shell .site-links a { text-decoration: underline wavy; text-decoration-color: var(--nb-ink-line-strong); text-decoration-thickness: 1px; text-underline-offset: 5px; }
+
+/* Shared pieces: sticker buttons, handwritten kickers, pencil outlines. */
+.app-shell .primary-button {
+  border: 2px solid var(--nb-sticker-line);
+  border-radius: 12px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: var(--nb-sticker-shadow);
+  font-family: var(--nb-sans);
+  font-weight: 700;
+  transition: transform .15s ease, box-shadow .15s ease, background-color .2s ease;
+}
+.app-shell .primary-button:hover:not(:disabled) { background: var(--primary-hover); transform: translate(-1px, -1px); box-shadow: 4px 6px 0 var(--nb-sticker-line); }
+.app-shell .primary-button:active:not(:disabled) { transform: translate(2px, 3px); box-shadow: 1px 1px 0 var(--nb-sticker-line); }
+.app-shell .primary-button:disabled { box-shadow: none; transform: none; }
+.app-shell .secondary-button { border: 2px solid var(--nb-ink-line-strong); border-radius: 12px; background: transparent; color: var(--foreground); }
+.app-shell .kicker {
+  font-family: var(--nb-hand);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0;
+  text-transform: lowercase;
+  color: var(--primary);
+}
+.app-shell select { border: 1.5px solid var(--nb-ink-line-strong); border-radius: 10px; background-color: var(--nb-card); color: var(--foreground); }
+.app-shell input[type=range] { accent-color: var(--primary); }
+
+/* Containers that framed whole pages now sit directly on the notebook paper. */
+.app-shell .setup-shell,
+.app-shell .guitar-shell.guitar-setup,
+html[data-theme=dark] .app-shell .setup-shell,
+html[data-theme=dark] .app-shell .guitar-shell.guitar-setup { border-color: transparent; background: transparent; background-image: none; box-shadow: none; }
+
+/* Paper cards: white paper, a fine edge and a soft shadow, with tape on the leading card of a page. */
+.app-shell :is(.reading-session-summary, .targeted-review, .hero-staff, .notation-options, .reading-recommendation, .score-reading-hero, .score-study-picker, .score-reading-range-section, .score-reading-session-section, .score-reading-mode-section, .score-reading-start-card, .guitar-hero, .guitar-study-tools, .guitar-start-panel, .instrument-practice, .pulse-practice, .ear-training, .workshop-related, .info-page, .studio-review-plan, .skill-map, .local-progress),
+html[data-theme=dark] .app-shell :is(.reading-session-summary, .targeted-review, .hero-staff, .notation-options, .reading-recommendation, .score-reading-hero, .score-study-picker, .score-reading-range-section, .score-reading-session-section, .score-reading-mode-section, .score-reading-start-card, .guitar-hero, .guitar-study-tools, .guitar-start-panel, .instrument-practice, .pulse-practice, .ear-training, .workshop-related, .info-page, .studio-review-plan, .skill-map, .local-progress) {
+  border: 1px solid var(--nb-card-line);
+  border-radius: 4px;
+  background: var(--nb-card);
+  background-image: none;
+  box-shadow: var(--nb-paper-shadow);
+}
+.app-shell :is(.reading-session-summary, .score-reading-hero, .guitar-hero, .pulse-practice, .ear-training, .info-page) { position: relative; }
+.app-shell :is(.reading-session-summary, .score-reading-hero, .guitar-hero, .pulse-practice, .ear-training, .info-page)::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  top: -12px;
+  left: 50%;
+  width: 104px;
+  height: 26px;
+  margin-left: -52px;
+  background: var(--nb-tape);
+  transform: rotate(-3deg);
+  pointer-events: none;
+}
+
+/* Option cards: plain paper with a pencil edge; the chosen one is outlined in red pen and its title highlighted. */
+.app-shell :is(.level-card, .mode-card, .reading-profile-grid > button, .score-option-grid > button, .score-range-grid > button, .score-session-grid > button, .guitar-range-grid > button),
+html[data-theme=dark] .app-shell :is(.level-card, .mode-card, .reading-profile-grid > button, .score-option-grid > button, .score-range-grid > button, .score-session-grid > button, .guitar-range-grid > button) {
+  border: 1.5px solid var(--nb-card-line);
+  border-radius: 6px;
+  background: var(--nb-card);
+  background-image: none;
+  box-shadow: 0 6px 14px rgba(70, 55, 25, .06);
+}
+.app-shell :is(.level-card, .mode-card)::before,
+.app-shell :is(.level-card, .mode-card)::after { background: none; border-color: transparent; opacity: 0; }
+.app-shell :is(.level-card, .mode-card, .reading-profile-grid > button, .score-option-grid > button, .score-range-grid > button, .score-session-grid > button, .guitar-range-grid > button):is(.is-selected, [aria-pressed=true]),
+html[data-theme=dark] .app-shell :is(.level-card, .mode-card, .reading-profile-grid > button, .score-option-grid > button, .score-range-grid > button, .score-session-grid > button, .guitar-range-grid > button):is(.is-selected, [aria-pressed=true]) {
+  border-color: var(--primary);
+  background: var(--nb-card);
+  box-shadow: 0 0 0 1px var(--primary), 0 10px 20px rgba(70, 55, 25, .1);
+}
+.app-shell :is(.level-card, .mode-card, .reading-profile-grid > button, .score-option-grid > button, .score-range-grid > button, .score-session-grid > button, .guitar-range-grid > button):is(.is-selected, [aria-pressed=true]) strong { background: linear-gradient(transparent 58%, var(--nb-highlight) 58%); }
+.app-shell .mode-card.is-selected .mode-icon { background: var(--background); }
+.app-shell .mode-icon { border-radius: 6px; background: var(--background); }
+
+/* Section eyebrows are handwritten; dividers are dashed pencil lines. */
+.app-shell .step-heading p,
+.app-shell .guitar-range-heading > div > p,
+.app-shell .score-reading-section-heading p { font-family: var(--nb-hand); font-size: 23px; font-weight: 600; letter-spacing: 0; text-transform: lowercase; color: var(--primary); }
+.app-shell .divider { height: 0; border-top: 1.5px dashed var(--nb-ink-line); background: none; }
+
+/* A side note on the guitar page is a sticky note. */
+.app-shell .guitar-range-heading aside,
+html[data-theme=dark] .app-shell .guitar-range-heading aside { border: 0; border-radius: 2px; background: var(--nb-sticky); color: var(--nb-sticky-ink); box-shadow: 0 10px 18px rgba(70, 55, 25, .16); transform: rotate(1.2deg); }
+.app-shell .guitar-range-heading aside strong { font-family: var(--nb-hand); font-size: 25px; }
+.app-shell .guitar-range-heading aside :is(p, span) { color: inherit; }
+.app-shell .score-reading-hero-visual,
+html[data-theme=dark] .app-shell .score-reading-hero-visual { border: 1px solid var(--nb-card-line); border-radius: 4px; background: var(--background); box-shadow: none; }
+
+/* Working controls inside sessions and workshops: pencil outlines on paper instead of beige pills. */
+.app-shell :is(.score-reading-session-top > button, .score-reading-session-controls > button, .end-session-button, .restart-session-button, .instrument-practice-top button, .instrument-practice > button:not(.primary-button), .metronome-toggle, .instrument-note-choices button, .skill-map-clear, .local-progress button, .result-share button),
+.app-shell :is(.ear-training, .pulse-practice) :is(button:not(.ear-listen):not(.pulse-tap):not(.primary-button), select),
+html[data-theme=dark] .app-shell :is(.score-reading-session-top > button, .score-reading-session-controls > button, .end-session-button, .restart-session-button) {
+  border: 1.5px solid var(--nb-ink-line-strong);
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--foreground);
+}
+.app-shell .ear-training .ear-modes button[aria-pressed=true] { border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); background: var(--nb-card); }
+.app-shell .ear-training .ear-modes button[aria-pressed=true] strong { background: linear-gradient(transparent 58%, var(--nb-highlight) 58%); }
+.app-shell .ear-training .ear-listen,
+.app-shell .pulse-practice .pulse-tap { border: 2px solid var(--nb-sticker-line); border-radius: 12px; box-shadow: var(--nb-sticker-shadow); }
+.app-shell :is(.music-staff, .score-reading-stats, .targeted-review-list li, .skill-map-module, .studio-lesson-meta, .pulse-pattern-score, .leaderboard-invite) {
+  border: 1px solid var(--nb-card-line);
+  border-radius: 4px;
+  background: var(--background);
+}
+.app-shell .skill-map-list li { border: 1px solid var(--nb-card-line); border-radius: 4px; background: var(--nb-card); }
+.app-shell :is(.instrument-feedback, .guitar-feedback, .ear-feedback),
+html[data-theme=dark] .app-shell :is(.instrument-feedback, .guitar-feedback, .ear-feedback) { border: 1.5px dashed var(--nb-ink-line); border-radius: 4px; background: transparent; }
+.app-shell :is(.pulse-result, .ear-result) { border-radius: 2px; background: var(--nb-sticky); color: var(--nb-sticky-ink); box-shadow: 0 10px 18px rgba(70, 55, 25, .14); transform: rotate(-.4deg); }
+
+/* Dialogs are a sheet of paper taped over the page. */
+body :is(.reading-setup-dialog, .modal-card),
+html[data-theme=dark] body :is(.reading-setup-dialog, .modal-card) { border: 1px solid var(--nb-card-line); border-radius: 6px; background: var(--nb-card); background-image: none; box-shadow: 0 30px 60px rgba(30, 24, 14, .28); }
+body .modal-card { position: relative; }
+/* The sheets scroll, so their tape sits just inside the top edge. */
+body :is(.reading-setup-dialog, .modal-card)::before { content: ""; position: absolute; z-index: 1; top: 2px; left: 50%; width: 110px; height: 22px; margin-left: -55px; background: var(--nb-tape); transform: rotate(-2deg); pointer-events: none; }
+.app-shell .primary-button > span { color: #f3e1a6; }
+
+/* Guitar sessions: the staff and the answer sheet on plain paper, labels in handwriting. */
+.app-shell :is(.guitar-staff-frame, .guitar-location-answer),
+html[data-theme=dark] .app-shell :is(.guitar-staff-frame, .guitar-location-answer) { border: 1px solid var(--nb-card-line); border-radius: 4px; background: var(--background); box-shadow: none; }
+.app-shell .guitar-location-options button:not(.is-selected) { border: 1.5px solid var(--nb-ink-line); border-radius: 8px; background: var(--nb-card); }
+.app-shell .guitar-location-answer legend { font-family: var(--nb-hand); font-size: 23px; font-weight: 600; letter-spacing: 0; text-transform: lowercase; color: var(--primary); }
+.app-shell .guitar-location-selection { border-top: 1.5px dashed var(--nb-ink-line); }
+.app-shell .guitar-location-status > strong { font-family: var(--nb-hand); font-size: 25px; letter-spacing: 0; color: var(--primary); }
+.app-shell .guitar-location-selection > button:not(:disabled) { border: 2px solid var(--nb-sticker-line); border-radius: 12px; box-shadow: var(--nb-sticker-shadow); }
+
+/* Reading sessions and results: the question on a sheet of paper, the staff on ruled paper, answers as pencil boxes. */
+.app-shell :is(.question-card, .quiz-stat-panel, .progress-row, .practice-navigation, .results-card, .session-insight, .result-session-meta, .endless-results-card, .hardest-card, .result-share),
+html[data-theme=dark] .app-shell :is(.question-card, .quiz-stat-panel, .progress-row, .practice-navigation, .results-card, .session-insight, .result-session-meta, .endless-results-card, .hardest-card, .result-share) {
+  border: 1px solid var(--nb-card-line);
+  border-radius: 4px;
+  background: var(--nb-card);
+  background-image: none;
+  box-shadow: var(--nb-paper-shadow);
+}
+.app-shell .question-card { position: relative; }
+.app-shell .question-card::after { content: ""; position: absolute; z-index: 1; top: -12px; left: 50%; width: 104px; height: 26px; margin-left: -52px; background: var(--nb-tape); transform: rotate(-2deg); pointer-events: none; }
+.app-shell .notation-stage,
+html[data-theme=dark] .app-shell .notation-stage { border-radius: 4px; background: var(--background); box-shadow: inset 0 0 0 1px var(--nb-card-line); }
+.app-shell .notation-stage::before,
+.app-shell .notation-stage::after { display: none; }
+.app-shell .question-number,
+html[data-theme=dark] .app-shell .question-number { padding: 0; border-radius: 0; background: transparent; font-family: var(--nb-hand); font-size: 25px; font-weight: 700; letter-spacing: 0; text-transform: lowercase; color: var(--primary); }
+.app-shell .question-heading::after { height: 0; border-top: 1.5px dashed var(--nb-ink-line); background: none; }
+.app-shell .answer-line input { border: 1.5px solid var(--nb-ink-line-strong); border-radius: 10px; background: var(--nb-card); box-shadow: none; }
+.app-shell .answer-line button { border: 2px solid var(--nb-sticker-line); border-radius: 12px; box-shadow: var(--nb-sticker-shadow); }
+.app-shell .answer-line button:disabled { box-shadow: none; }
+.app-shell .note-hints button { border: 1.5px solid var(--nb-ink-line); border-radius: 8px; background: var(--nb-card); box-shadow: none; }
+.app-shell .feedback { border-radius: 4px; box-shadow: none; }
+.app-shell .quiz-stat-panel blockquote { font-family: var(--nb-hand); font-size: 27px; font-style: normal; line-height: 1.2; }
+.app-shell .score-ring-track { stroke: var(--background-deep); }
+
+/* The leaderboard note after a session is the teacher's sticky note. */
+.app-shell .community-result-card,
+html[data-theme=dark] .app-shell .community-result-card { border: 0; border-radius: 2px; background: var(--nb-sticky); color: var(--nb-sticky-ink); box-shadow: 0 14px 24px rgba(70, 55, 25, .18); transform: rotate(-.6deg); }
+.app-shell .community-result-card .kicker { color: var(--primary); }
+.app-shell .community-result-card :is(.community-result-note, .community-message) { color: var(--nb-sticky-ink); }
+.app-shell .community-result-encouragement { color: var(--nb-sticky-ink); font-family: var(--nb-hand); font-size: 25px; font-style: normal; }
+.app-shell .community-result-card > button { border: 1.5px solid var(--nb-sticky-ink); background: transparent; color: var(--nb-sticky-ink); }
+
+/* Feedback reads like a teacher's note in the margin. */
+.app-shell .feedback strong,
+.app-shell .guitar-feedback > strong,
+.app-shell .instrument-feedback strong { font-family: var(--nb-hand); font-size: 30px; font-weight: 700; letter-spacing: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell .primary-button { transition: none; }
+}

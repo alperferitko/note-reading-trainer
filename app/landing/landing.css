@@ -11,15 +11,15 @@
 .lp > section, .lp > div:not(.clef-traveler) { position: relative; z-index: 2; }
 
 /* ---------- Buttons ---------- */
-.lp .primary-button, .lp .secondary-button, .app-shell .lp-tile-action {
+.app-shell .lp .primary-button, .app-shell .lp .secondary-button, .app-shell .lp-tile-action {
   width: auto; min-height: 48px; padding: 0 22px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   border: 0; border-radius: 999px; font-weight: 600; cursor: pointer;
 }
-.lp .secondary-button { background: var(--surface); color: var(--foreground); box-shadow: var(--shadow-1); }
-.lp .secondary-button:hover { box-shadow: var(--shadow-2); }
-.lp .ghost-button { width: auto; min-height: 44px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; background: transparent; color: var(--primary); font-weight: 600; text-decoration: none; }
-.lp .ghost-button:hover { background: var(--accent-soft); }
-.lp .lp-start { min-height: 54px; padding-inline: 28px; font-size: 17px; }
+.app-shell .lp .secondary-button { background: var(--surface); color: var(--foreground); box-shadow: var(--shadow-1); }
+.app-shell .lp .secondary-button:hover { box-shadow: var(--shadow-2); }
+.app-shell .lp .ghost-button { width: auto; min-height: 44px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; background: transparent; color: var(--primary); font-weight: 600; text-decoration: none; }
+.app-shell .lp .ghost-button:hover { background: var(--accent-soft); }
+.app-shell .lp .lp-start { min-height: 54px; padding-inline: 28px; font-size: 17px; }
 
 /* ---------- Staff primitives ---------- */
 .staff-figure { position: relative; color: var(--foreground); }

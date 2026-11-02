@@ -4,26 +4,64 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex">
-    <meta name="theme-color" content="#F4EFE4">
+    <meta name="theme-color" content="#FAF6F1">
     <title>Sayfa bulunamadı | NotaNota</title>
+    <script>
+      // Same colour theme and light/dark choice as the app, applied before the first paint.
+      (function () {
+        var themes = {
+          bordo: ['#faf6f1', '#fffdfa', '#2b2326', '#67595b', '#8b2435', '#1c1517', '#2a2023', '#f2e9e7', '#bfaeae', '#e3929d', '#2a0d13'],
+          petrol: ['#f3f6f2', '#fffffb', '#1b2a2b', '#536664', '#0e5561', '#111b1c', '#1b2a2c', '#e6efed', '#a3b6b3', '#5fb7bf', '#06191b'],
+          indigo: ['#f6f5fb', '#ffffff', '#1e1c35', '#5b5875', '#3d3b94', '#15142a', '#222140', '#ebeaf7', '#b0aed0', '#a9a6f2', '#15143a'],
+          kiremit: ['#f8f1e8', '#fffaf3', '#3a2a21', '#6c5b4f', '#a3412a', '#1d1612', '#2c221c', '#f3e8df', '#c3ae9f', '#ec9a7c', '#2e120a'],
+          meta: ['#f4f6f9', '#ffffff', '#1c2b33', '#4f5f69', '#0064e0', '#0e1418', '#18232a', '#e8eef2', '#a3b1ba', '#4f9dff', '#06182e']
+        };
+        try {
+          var p = themes[localStorage.getItem('notanota-palette-v1')] ? localStorage.getItem('notanota-palette-v1') : 'bordo';
+          var m = localStorage.getItem('notanota-theme');
+          var dark = m === 'dark' || (m !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+          var t = themes[p], s = document.documentElement.style;
+          s.setProperty('--bg', dark ? t[5] : t[0]); s.setProperty('--surface', dark ? t[6] : t[1]);
+          s.setProperty('--ink', dark ? t[7] : t[2]); s.setProperty('--muted', dark ? t[8] : t[3]);
+          s.setProperty('--primary', dark ? t[9] : t[4]); s.setProperty('--on-primary', dark ? t[10] : '#ffffff');
+          s.setProperty('--shade', dark ? 'rgba(0,0,0,.5)' : 'rgba(30,25,25,.12)');
+        } catch (e) {}
+      })();
+    </script>
     <style>
-      :root { color: #20231f; background: #f4efe4; font-family: Arial, sans-serif; }
-      body { min-height: 100vh; margin: 0; display: grid; place-items: center; background: radial-gradient(circle at 20% 10%, #fffdf8, transparent 42%), #f4efe4; }
-      main { width: min(560px, calc(100% - 40px)); padding: 44px; border: 1px solid #d5caba; background: #fbf8f1; box-shadow: 10px 12px 0 rgba(54,43,30,.06); }
-      span { width: 48px; height: 48px; padding: 0; display: grid; place-items: center; border: 0; background: transparent; }
-      span img { width: 100%; height: 100%; display: block; object-fit: contain; }
-      p { color: #64665f; line-height: 1.6; }
-      h1 { margin: 22px 0 12px; font-family: Georgia, serif; font-size: clamp(38px, 8vw, 62px); font-weight: 500; letter-spacing: -.04em; }
-      a { min-height: 48px; margin-top: 14px; padding: 0 20px; display: inline-flex; align-items: center; background: #8b2f3c; color: #fffdf8; font-weight: 700; text-decoration: none; }
+      :root { --bg: #faf6f1; --surface: #fffdfa; --ink: #2b2326; --muted: #67595b; --primary: #8b2435; --on-primary: #fff; --shade: rgba(30,25,25,.12); }
+      * { box-sizing: border-box; }
+      body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 20px; background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+      main { width: min(600px, 100%); padding: clamp(28px, 6vw, 56px); border-radius: 32px; background: var(--surface); box-shadow: 0 2px 6px var(--shade), 0 28px 60px -28px var(--shade); text-align: center; }
+      .stage { position: relative; max-width: 360px; margin: 0 auto 10px; color: var(--ink); }
+      .stage > svg:first-child { display: block; width: 100%; height: auto; }
+      .stage > .lost { position: absolute; right: 4%; top: -10%; width: 28px; height: 45px; color: var(--primary); animation: drift 3.2s ease-in-out infinite; }
+      @keyframes drift { 0%, 100% { transform: translate(0, 0) rotate(-14deg); } 50% { transform: translate(6px, -10px) rotate(8deg); } }
+      .code { margin: 0; color: var(--primary); font-weight: 600; }
+      h1 { margin: 6px 0 12px; font-size: clamp(30px, 6vw, 44px); line-height: 1.08; letter-spacing: -.02em; font-weight: 600; }
+      p { color: var(--muted); line-height: 1.6; margin: 0 0 6px; }
+      nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 24px; }
+      a { min-height: 48px; padding: 0 22px; display: inline-flex; align-items: center; border-radius: 999px; font-weight: 600; text-decoration: none; }
+      a.primary { background: var(--primary); color: var(--on-primary); }
+      a.secondary { background: var(--bg); color: var(--ink); }
+      a:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+      @media (prefers-reduced-motion: reduce) { .lost { animation: none; } }
     </style>
   </head>
   <body>
     <main>
-      <span aria-hidden="true"><img src="https://notanota.online/notanota-monogram.png" alt=""></span>
-      <h1>Bu sayfa burada değil.</h1>
-      <p>Aradığın bağlantı taşınmış veya artık bulunmuyor olabilir. NotaNota stüdyosuna dönüp çalışmaya devam edebilirsin.</p>
-      <p lang="en">This page could not be found. Return to the NotaNota studio to keep practising.</p>
-      <a href="https://notanota.online/">Stüdyoya dön / Back to studio</a>
+      <div class="stage" aria-hidden="true">
+        <svg viewBox="0 0 360 120"><g stroke="currentColor" stroke-width="1.4" opacity=".7"><line x1="0" x2="360" y1="40" y2="40"/><line x1="0" x2="360" y1="52" y2="52"/><line x1="0" x2="360" y1="64" y2="64"/><line x1="0" x2="360" y1="76" y2="76"/><line x1="0" x2="360" y1="88" y2="88"/></g><g fill="currentColor"><ellipse cx="90" cy="76" rx="7.5" ry="5.2" transform="rotate(-22 90 76)"/><ellipse cx="160" cy="64" rx="7.5" ry="5.2" transform="rotate(-22 160 64)"/><ellipse cx="230" cy="52" rx="7.5" ry="5.2" transform="rotate(-22 230 52)"/></g><g stroke="currentColor" stroke-width="1.6"><line x1="97" x2="97" y1="76" y2="36"/><line x1="167" x2="167" y1="64" y2="24"/><line x1="223" x2="223" y1="52" y2="92"/></g></svg>
+        <svg class="lost" viewBox="0 0 40 64"><ellipse cx="14" cy="52" rx="10" ry="7" transform="rotate(-22 14 52)" fill="currentColor"/><path d="M23 50V6" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+      </div>
+      <p class="code">404</p>
+      <h1>Bu sayfa ritmi kaçırmış.</h1>
+      <p>Aradığın adres burada değil. Taşınmış ya da hiç var olmamış olabilir; çalışman yerinde duruyor.</p>
+      <p lang="en">This page lost the beat. The address may have moved; your practice is safe.</p>
+      <nav>
+        <a class="primary" href="https://notanota.online/">Ana sayfaya dön</a>
+        <a class="secondary" href="https://notanota.online/calis/">Stüdyoya git</a>
+      </nav>
     </main>
   </body>
 </html>

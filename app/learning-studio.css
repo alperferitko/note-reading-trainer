@@ -487,7 +487,7 @@ html[data-theme=dark] .studio-track-tabs button:is([data-track=guitar],[data-tra
 .studio-lesson-list::before { content:""; position:absolute; top:-12px; left:40px; width:96px; height:26px; background:var(--nb-tape); transform:rotate(-4deg); }
 .studio-lesson-list > button { min-height:78px; padding:14px 4px; border:0; border-bottom:1.5px dashed var(--nb-ink-line); border-radius:0; background:transparent; }
 .studio-lesson-list > button[aria-expanded=true] { box-shadow:none; }
-.studio-lesson-list > button[aria-expanded=true] strong { background:linear-gradient(transparent 56%,var(--nb-highlight) 56%); }
+.studio-lesson-list > button[aria-expanded=true] strong { text-decoration:underline; text-decoration-color:var(--nb-highlight); text-decoration-thickness:.45em; text-underline-offset:-.3em; text-decoration-skip-ink:none; }
 .studio-lesson-list > button:hover strong { color:var(--primary); }
 .studio-lesson-number { min-width:34px; font-family:var(--nb-hand); font-style:normal; font-size:29px; font-weight:700; line-height:1; color:var(--primary); }
 .studio-lesson-list > button > span:last-child { font-family:var(--nb-hand); font-size:27px; font-weight:700; color:var(--primary); }

@@ -30,14 +30,23 @@ test("NotaNota çalışma ekranını sunar", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<html lang="tr">/i);
+  assert.match(html, /<html lang="tr"[^>]*>/i);
   assert.match(html, /<title>NotaNota \| Note Reading Trainer<\/title>/i);
-  assert.match(html, /Notayı oku,/);
-  assert.match(html, /ritmi say,/);
-  assert.match(html, /Porte okuma/);
-  assert.match(html, /Müzik aletleri/);
-  assert.match(html, /Gitar/);
-  assert.match(html, /Eser okuma/);
+  // The home page explains the product, offers one-click practice and a live note question,
+  // and shows the studios, the sample conversion and the sample teacher without menus.
+  assert.match(html, /<h1 id="lp-title"><span>Notaları tanı\.<\/span><span>Ritmi yakala\.<\/span><span>Müziğini geliştir\.<\/span><\/h1>/);
+  assert.match(html, /Çalışmaya başla/);
+  assert.match(html, /30 saniyede dene/);
+  assert.match(html, /Tahmin et/);
+  assert.match(html, /Ne çalışmak istersin\?/);
+  for (const area of ["Nota okuma", "Ritim", "Eser çalışma", "Enstrüman ve kulak", "Örnek dönüşüm", "Örnek önizleme", "Stüdyoda dene"]) assert.match(html, new RegExp(area));
+  // The staves and the clef anchors are in the first HTML, so the page reads without its script.
+  assert.equal((html.match(/data-clef-anchor="/g) ?? []).length, 5);
+  assert.match(html, /data-palette="bordo"/);
+  assert.match(html, /Ritme başla/);
+  assert.match(html, /Enstrüman seç/);
+  assert.match(html, /piyanoda, gitarda, kemanda/);
+  assert.match(html, /Esere başla/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
 });
 
@@ -161,8 +170,9 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(scoreReadingLogic, /chooseUnrecentPiece/);
   assert.match(studio, /target:'guitar'[\s\S]*target:'piano'[\s\S]*target:'violin'/);
   assert.match(page, /function InstrumentHub/);
-  // Instrument pages sit under the Practice tab, which stays highlighted on them.
-  assert.match(page, /const PRACTICE_STAGES: Stage\[\] = \[[^\]]*"instruments"[^\]]*"guitar"/);
+  // Instrument pages sit under the "more studios" menu, which stays highlighted on them.
+  assert.match(page, /const MORE_LINKS: \[Stage, ShellKey\]\[\] = \[\["instruments"/);
+  assert.match(page, /stage === "guitar" \|\| stage === "piano" \|\| stage === "violin" \? "more"/);
   assert.match(page, /Piyano/);
   assert.match(page, /Keman/);
   assert.match(page, /<GuitarTrainer/);
@@ -290,7 +300,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /className="reading-session-summary"/);
   assert.match(page, /saveReadingSetup/);
   assert.match(page, /const immersiveSession = stage === "quiz" \|\| guitarSessionActive/);
-  assert.match(page, /!immersiveSession && <header className="site-header">/);
+  assert.match(page, /!immersiveSession && <header className="site-header site-header--float">/);
   assert.doesNotMatch(page, /className="landing-proof"/);
   assert.doesNotMatch(page, />00<|>01<|>02<|>03<|>04</);
   assert.doesNotMatch(page, /<span aria-hidden="true">⚬<\/span><b>/);
@@ -360,7 +370,8 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /!audioSettingsRef\.current\?\.contains\(event\.target\)/);
   assert.doesNotMatch(page, /listen-note-button|playNotaNotaEffect|setAmbientMusicActive|unlockNotaNotaAudio/);
   assert.match(styles, /\.mobile-module-navigation/);
-  assert.match(page, /className="brand-mark" aria-hidden="true">[\s\S]*notanota-monogram-96\.webp/);
+  // The header shows the original logo in the chosen colour model.
+  assert.match(page, /<BrandLogo palette=\{palette\} className="brand-tile" \/>/);
   assert.match(page, /className="brand-mark result-flourish" aria-hidden="true">[\s\S]*notanota-monogram-96\.webp/);
   assert.doesNotMatch(page, /className="brand-mark" aria-hidden="true">♪/);
   assert.doesNotMatch(page, /name="note"/);
@@ -461,7 +472,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(migration, /p_wrong_count <> 0/i);
   assert.match(page, /sessionType === "standard"[\s\S]*totalWrong === 0 && correctCount === uniqueCount[\s\S]*totalWrong === 1 && correctCount > 0/);
   // Targeted review repeats chosen notes, so those sessions are never ranked.
-  assert.match(page, /const leaderboardEligible = targetedKeys\.length === 0 && clef === 'treble' && accidentals === 'natural' && !endedEarly/);
+  assert.match(page, /const leaderboardEligible = !focusDrill && targetedKeys\.length === 0 && clef === 'treble' && accidentals === 'natural' && !endedEarly/);
   assert.match(endlessEligibilityMigration, /p_session_type = 'endless' and p_wrong_count <> 1/i);
   assert.match(endlessEligibilityMigration, /p_session_type = 'standard' and \(p_wrong_count <> 0 or p_correct_count <> v_expected_count\)/i);
   assert.match(noteRangeCountMigration, /when 'yakin' then 17[\s\S]*when 'tam' then 25[\s\S]*else 29/i);

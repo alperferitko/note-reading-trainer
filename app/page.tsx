@@ -13,16 +13,27 @@ import {
   CommunityResult,
 } from "./community";
 import { pitchAt, pitchName, matchesPitch, accidentalsFor, parsePitchAnswer } from "@/lib/music-pitch.mjs";
-import { SITE_PAGES, pageRoute, pageFromPath } from "@/lib/site-routes.mjs";
+import { SITE_PAGES, pageRoute, pageFromPath, isKnownRoute } from "@/lib/site-routes.mjs";
 import { LearningStudio } from './learning-studio';
+import { LandingPage, type LandingStage, type NextPlan } from './landing/landing-page';
+import { TeacherPage } from './landing/teacher-page';
+import type { TeacherAction } from './landing/teacher-demo';
+import { BrandLogo, LanguageMenu, ThemeMenu, usePalette } from './palette-tools';
+import { StudioMenu, type StudioLink } from './site-nav';
+import { PricingPage } from './landing/pricing-page';
+import { ChatWidget } from './landing/chat-widget';
+import { NotFound, Skeleton } from './landing/states';
+import { toMusicXml } from '@/lib/demo-piece.mjs';
+import { AITeacher } from './ai-teacher';
 import { WorkshopPage } from './workshop-page';
 import { LEARNING_LESSONS } from '@/lib/learning-path.mjs';
 import { MusicStaff } from "./notation";
 import { NotationOptions, NavigationOptions, usePracticeNavigation, type Clef, type AccidentalMode } from "./practice-tools";
 import { LocalResult } from "./local-progress";
+import { ReadingQuickStart } from "./reading-quick-start";
 import { buildTargetedPool, findWeakItems, saveEvidence, spreadRepeats } from "@/lib/practice-evidence.mjs";
 import { TargetedReviewCard, TargetedReviewResult, useEvidence, writtenNoteLabel } from "./targeted-review";
-import { AppearanceTools, InfoContent, SiteLinks, type InfoPage } from "./site-features";
+import { InfoContent, SiteLinks, type InfoPage } from "./site-features";
 import type { ScoreSubmission, SessionType } from "@/lib/leaderboard";
 import {
   buildSessionInsight,
@@ -40,12 +51,9 @@ import {
 
 type LevelId = "temel" | "yakin" | "tam" | "genis";
 type ModeId = "porte" | "konum";
-type Stage = "landing" | "setup" | "quiz" | "done" | "pieces" | "instruments" | "guitar" | "piano" | "violin" | "rhythm" | "listening" | "lessons" | "progress" | "practice" | InfoPage;
+type Stage = "landing" | "setup" | "quiz" | "done" | "pieces" | "instruments" | "guitar" | "piano" | "violin" | "rhythm" | "listening" | "lessons" | "progress" | "practice" | "score-import" | "listen-play" | "teacher" | "palettes" | "pricing" | "notfound" | InfoPage;
 type Locale = "tr" | "en";
 type ReadingProfileId = "new" | "growing" | "confident";
-
-// Pages reached from the Practice tab keep that tab highlighted.
-const PRACTICE_STAGES: Stage[] = ["practice", "setup", "quiz", "done", "pieces", "instruments", "guitar", "piano", "violin", "rhythm", "listening"];
 
 const STAGE_ROUTES: Record<Stage, string> = {
   landing: pageRoute('landing'), setup: pageRoute('setup'), quiz: pageRoute('setup'), done: pageRoute('setup'),
@@ -53,7 +61,13 @@ const STAGE_ROUTES: Record<Stage, string> = {
   piano: pageRoute('piano'), violin: pageRoute('violin'), rhythm: pageRoute('rhythm'), listening: pageRoute('listening'),
   lessons: pageRoute('lessons'), progress: pageRoute('progress'), practice: pageRoute('practice'), about: pageRoute('about'), how: pageRoute('how'),
   faq: pageRoute('faq'), contact: pageRoute('contact'), roadmap: pageRoute('roadmap'),
+  'score-import': pageRoute('score-import'), 'listen-play': pageRoute('listen-play'),
+  teacher: pageRoute('teacher'), palettes: pageRoute('palettes'), pricing: pageRoute('pricing'), notfound: pageRoute('landing'),
 };
+
+type ShellKey = "reading" | "rhythm" | "pieces" | "ai" | "mine" | "instruments" | "mic" | "listening" | "lessons" | "allStudios" | "home" | "studios";
+const MORE_LINKS: [Stage, ShellKey][] = [["instruments", "instruments"], ["listen-play", "mic"], ["listening", "listening"], ["lessons", "lessons"], ["practice", "allStudios"]];
+const MOBILE_LINKS: [Stage, ShellKey][] = [["landing", "home"], ["practice", "studios"], ["pricing", "ai"], ["progress", "mine"]];
 
 const READING_PRESETS: Record<ReadingProfileId, { level: LevelId; mode: ModeId; sessionType: SessionType }> = {
   new: { level: "temel", mode: "porte", sessionType: "standard" },
@@ -77,6 +91,9 @@ const GuitarTrainer = lazy(() => import("./guitar-trainer").then((module) => ({
 const ScoreReadingTrainer = lazy(() => import("./score-reading-trainer").then((module) => ({
   default: module.ScoreReadingTrainer,
 })));
+const PaletteReview = lazy(() => import("./landing/palette-review").then((module) => ({ default: module.PaletteReview })));
+const ScoreWorkspace = lazy(() => import("./score-workspace").then((module) => ({ default: module.ScoreWorkspace })));
+const MicPractice = lazy(() => import("./mic-practice").then((module) => ({ default: module.MicPractice })));
 const InstrumentTrainer = lazy(() => import("./instrument-trainer").then(module => ({ default: module.InstrumentTrainer })));
 
 type NoteQuestion = {
@@ -335,6 +352,15 @@ const SHELL_COPY = {
     correct: "Doğru",
     mistakes: "Hata",
     leaderboard: "Sıralamayı görüntüle",
+    home: "Ana sayfa",
+    reading: "Nota okuma",
+    pieces: "Eser çalışma",
+    ai: "NotaNota AI",
+    mine: "İlerlemem",
+    more: "Diğer stüdyolar",
+    studios: "Stüdyolar",
+    allStudios: "Tüm çalışmalar",
+    mic: "Mikrofonla çal",
   },
   en: {
     navigation: "Practice sections",
@@ -355,6 +381,15 @@ const SHELL_COPY = {
     correct: "Correct",
     mistakes: "Mistakes",
     leaderboard: "View leaderboard",
+    home: "Home",
+    reading: "Note reading",
+    pieces: "Pieces",
+    ai: "NotaNota AI",
+    mine: "My progress",
+    more: "More studios",
+    studios: "Studios",
+    allStudios: "All practice",
+    mic: "Play to the microphone",
   },
 } as const;
 
@@ -713,6 +748,11 @@ export default function Home() {
   const [currentStreak, setCurrentStreak] = useState(0);
   const [endedEarly, setEndedEarly] = useState(false);
   const [noteSoundEnabled, setNoteSoundEnabled] = useState(true);
+  const [pendingStart, setPendingStart] = useState<null | "standard" | "targeted" | "focus">(null);
+  // A short drill on chosen notes (opened by the AI teacher sample); null means the normal range.
+  const [focusDrill, setFocusDrill] = useState<{ notes: string[]; repeats: number } | null>(null);
+  const [scoreInitial, setScoreInitial] = useState<{ xml: string; from?: number; to?: number } | null>(null);
+  const palette = usePalette();
   const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const feedbackButtonRef = useRef<HTMLButtonElement>(null);
@@ -735,7 +775,11 @@ export default function Home() {
   const noteSoundCopy = NOTE_SOUND_COPY[locale];
   const levels = LEVELS[locale];
 
-  const sessionNotes = useMemo(() => questionsFor(level, clef, accidentals), [level, clef, accidentals]);
+  const sessionNotes = useMemo(() => {
+    if (!focusDrill) return questionsFor(level, clef, accidentals);
+    const picked = ALL_NOTES.filter((note) => focusDrill.notes.includes(note.id)).map((note) => ({ ...note, ...pitchAt(note.position, 'treble', 0) } as NoteQuestion));
+    return Array.from({ length: focusDrill.repeats }, () => picked).flat();
+  }, [level, clef, accidentals, focusDrill]);
   // A targeted session repeats some notes, so progress counts its own queue length.
   const uniqueCount = sessionTotal || sessionNotes.length;
   const readingTask = mode === "porte" ? "staff-name" : "position-name";
@@ -751,6 +795,7 @@ export default function Home() {
   const selectedLevel = levels.find((item) => item.id === level)!;
   const selectedModeTitle = copy.modes[mode].title;
   const selectedSessionTitle = sessionType === "standard" ? extra.standard.title : extra.endless.title;
+  const readingSummary = [clef === "bass" ? (locale === "tr" ? "Fa anahtarı" : "Bass clef") : (locale === "tr" ? "Sol anahtarı" : "Treble clef"), selectedLevel.title, `${questionsFor(level, clef, accidentals).length} ${locale === "tr" ? "nota" : "notes"}`, selectedSessionTitle].join(" · ");
   const answerChoices = locale === "tr" ? ["Do", "Re", "Mi", "Fa", "Sol", "La", "Si"] : ["C", "D", "E", "F", "G", "A", "B"];
 
   const hardestNotes = useMemo(() => {
@@ -797,7 +842,10 @@ export default function Home() {
         setStage(legacyStage);
         return;
       }
-      setStage(window.location.search.includes('sayfa=') ? stageFromSearch(window.location.search) : pageFromPath(window.location.pathname) as Stage);
+      // Paths are read relative to the site root (<base> on Pages); an unknown one shows the 404 page.
+      const root = document.querySelector('base') ? new URL(document.baseURI).pathname : '/';
+      const relative = window.location.pathname.startsWith(root) ? window.location.pathname.slice(root.length) : window.location.pathname;
+      setStage(window.location.search.includes('sayfa=') ? stageFromSearch(window.location.search) : isKnownRoute(relative) ? pageFromPath(window.location.pathname) as Stage : "notfound");
       setLocale(window.location.pathname.split('/').includes('en') || new URLSearchParams(window.location.search).get('lang') === 'en' ? 'en' : 'tr');
     };
     syncStageFromLocation();
@@ -1027,13 +1075,66 @@ export default function Home() {
   }
 
   function startSession() {
+    // Leaving a focused drill: return to the saved range first, then start.
+    if (focusDrill) { setFocusDrill(null); setPendingStart("standard"); return; }
     beginSession(false);
   }
 
+  function startFocusDrill(notes: string[], repeats: number) {
+    setClef("treble");
+    setAccidentals("natural");
+    setMode("porte");
+    setSessionType("standard");
+    setFocusDrill({ notes, repeats });
+    setPendingStart("focus");
+  }
+
+  function handleTeacherAction(action: TeacherAction) {
+    if (action.kind === "focus") { startFocusDrill(action.notes, action.repeats); return; }
+    setScoreInitial({ xml: toMusicXml(), from: action.from, to: action.to });
+    navigateTo("score-import");
+  }
+
+  function practiseXml(xml: string) {
+    setScoreInitial({ xml });
+    navigateTo("score-import");
+  }
+
   function startTargetedSession() {
+    if (focusDrill) { setFocusDrill(null); setPendingStart("targeted"); return; }
     // Repeated items only make sense in a queue that ends; endless mode is not persisted over.
     setSessionType("standard");
     beginSession(true);
+  }
+
+  // Home actions may change settings first; the session starts once those settings are applied.
+  useEffect(() => {
+    if (!pendingStart) return;
+    const kind = pendingStart;
+    const timer = window.setTimeout(() => {
+      setPendingStart(null);
+      if (kind === "targeted") startTargetedSession(); else if (kind === "focus") beginSession(false); else startSession();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once per request, after the settings render
+  }, [pendingStart]);
+
+  function startPlan(plan: NextPlan) {
+    if (plan.kind === "targeted-reading") {
+      setMode("porte");
+      if (plan.clef === "treble" || plan.clef === "bass") setClef(plan.clef);
+      setPendingStart("targeted");
+      return;
+    }
+    if (plan.kind === "step-up") {
+      const order: LevelId[] = ["temel", "yakin", "tam", "genis"];
+      setLevel(order[Math.min(order.length - 1, order.indexOf(level) + 1)]);
+      if (plan.clef === "treble" || plan.clef === "bass") setClef(plan.clef);
+      setPendingStart("standard");
+      return;
+    }
+    if (plan.stage === "setup") { setPendingStart("standard"); return; }
+    navigateTo(plan.stage as Stage);
   }
 
   function beginSession(targeted: boolean) {
@@ -1041,7 +1142,7 @@ export default function Home() {
     const plan = targeted
       ? buildTargetedPool(sessionNotes, weakReading.map((item) => item.item), { itemKey: evidenceKey })
       : { pool: sessionNotes, targeted: [] as NoteQuestion[] };
-    const ordered = targeted ? spreadRepeats(plan.pool, (note) => note.id) : shuffledWithoutRuns(sessionNotes);
+    const ordered = targeted || focusDrill ? spreadRepeats(plan.pool, (note) => note.id) : shuffledWithoutRuns(sessionNotes);
     const initialQueue = ordered.map((note) => ({
       key: questionKey.current++,
       misses: 0,
@@ -1175,7 +1276,7 @@ export default function Home() {
     correctCount,
     averageResponseMs,
   });
-  const leaderboardEligible = targetedKeys.length === 0 && clef === 'treble' && accidentals === 'natural' && !endedEarly && (
+  const leaderboardEligible = !focusDrill && targetedKeys.length === 0 && clef === 'treble' && accidentals === 'natural' && !endedEarly && (
     sessionType === "standard"
       ? totalWrong === 0 && correctCount === uniqueCount
       : totalWrong === 1 && correctCount > 0
@@ -1189,9 +1290,45 @@ export default function Home() {
     totalResponseTimeMs,
   };
   const immersiveSession = stage === "quiz" || guitarSessionActive || scoreReadingSessionActive;
+  const studioLinks: { practise: StudioLink[]; learn: StudioLink[] } = locale === "tr" ? {
+    practise: [
+      { stage: "setup", href: STAGE_ROUTES.setup, label: "Nota okuma", hint: "Porte, anahtar ve aralık" },
+      { stage: "rhythm", href: STAGE_ROUTES.rhythm, label: "Ritim", hint: "Vuruş ve ritim kalıpları" },
+      { stage: "pieces", href: STAGE_ROUTES.pieces, label: "Eser çalışma", hint: "Satır satır okuma, nota dosyası" },
+      { stage: "instruments", href: STAGE_ROUTES.instruments, label: "Enstrümanlar", hint: "Piyano, gitar, keman" },
+      { stage: "listening", href: STAGE_ROUTES.listening, label: "İşitme", hint: "Aralık, akor, dikte" },
+      { stage: "listen-play", href: STAGE_ROUTES["listen-play"], label: "Mikrofonla çal", hint: "Perdeni tarayıcı dinler" },
+    ],
+    learn: [
+      { stage: "lessons", href: STAGE_ROUTES.lessons, label: "Dersler", hint: "Kısa teori dersleri" },
+      { stage: "progress", href: STAGE_ROUTES.progress, label: "İlerlemem", hint: "Beceri haritası ve geçmiş" },
+      { stage: "pricing", href: STAGE_ROUTES.pricing, label: "NotaNota AI", hint: "Kişisel öğretmen" },
+      { stage: "practice", href: STAGE_ROUTES.practice, label: "Tüm çalışmalar", hint: "Hepsi tek sayfada" },
+    ],
+  } : {
+    practise: [
+      { stage: "setup", href: STAGE_ROUTES.setup, label: "Note reading", hint: "Staff, clef and range" },
+      { stage: "rhythm", href: STAGE_ROUTES.rhythm, label: "Rhythm", hint: "Pulse and rhythm patterns" },
+      { stage: "pieces", href: STAGE_ROUTES.pieces, label: "Pieces", hint: "Line reading, score files" },
+      { stage: "instruments", href: STAGE_ROUTES.instruments, label: "Instruments", hint: "Piano, guitar, violin" },
+      { stage: "listening", href: STAGE_ROUTES.listening, label: "Listening", hint: "Intervals, chords, dictation" },
+      { stage: "listen-play", href: STAGE_ROUTES["listen-play"], label: "Play to the mic", hint: "The browser hears your pitch" },
+    ],
+    learn: [
+      { stage: "lessons", href: STAGE_ROUTES.lessons, label: "Lessons", hint: "Short theory lessons" },
+      { stage: "progress", href: STAGE_ROUTES.progress, label: "My progress", hint: "Skill map and history" },
+      { stage: "pricing", href: STAGE_ROUTES.pricing, label: "NotaNota AI", hint: "A personal teacher" },
+      { stage: "practice", href: STAGE_ROUTES.practice, label: "All practice", hint: "Everything on one page" },
+    ],
+  };
+  const navGroup: Stage | "more" = stage === "quiz" || stage === "done" || stage === "setup" ? "setup"
+    : stage === "pieces" || stage === "score-import" ? "pieces"
+      : (["rhythm", "teacher", "progress", "landing", "pricing", "notfound"] as Stage[]).includes(stage) ? stage
+        : (MORE_LINKS.map(([target]) => target) as Stage[]).includes(stage) || stage === "guitar" || stage === "piano" || stage === "violin" ? "more" : stage;
   const navigation = usePracticeNavigation({ active: stage === 'quiz', feedback: Boolean(feedback), choices: answerChoices.map(n=>n+answerAccidental), onAnswer: value=>recordAnswer(value,Date.now()), onNext: nextQuestion });
   useEffect(() => {
     const key = stage === 'quiz' || stage === 'done' ? 'setup' : stage;
+    if (key === 'notfound') { document.title = (locale === 'tr' ? 'Sayfa bulunamadı' : 'Page not found') + ' | NotaNota'; return; }
     const page = SITE_PAGES[key];
     if (!page) return;
     document.title = `${stage==='quiz'?(locale==='tr'?'Oturum · ':'Session · '):stage==='done'?(locale==='tr'?'Sonuç · ':'Results · '):''}${page[locale][0]} | NotaNota`;
@@ -1206,54 +1343,19 @@ export default function Home() {
   return (
     <CommunityProvider locale={locale} onIdentityChange={handleCommunityIdentityChange}>
     <main className={`app-shell ${immersiveSession ? "app-shell--session" : ""}`}>
-      {!immersiveSession && <header className="site-header">
+      {!immersiveSession && <header className="site-header site-header--float">
         <a className="brand" href={STAGE_ROUTES.landing} onClick={(event) => { event.preventDefault(); navigateTo("landing"); }} aria-label={copy.homeLabel}>
-          <span className="brand-mark" aria-hidden="true">
-            <img src="./notanota-monogram-96.webp" alt="" />
-          </span>
+          <BrandLogo palette={palette} className="brand-tile" />
           <span className="brand-name">NotaNota</span>
         </a>
-        <span className="brand-ornament" aria-hidden="true"><i /><b>◇</b><i /></span>
-        {/* Four destinations; every practice area lives under Practice. */}
         <nav className="app-navigation" aria-label={shell.navigation}>
-          <a href={STAGE_ROUTES.landing} className={stage === "landing" ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("landing"); }} aria-current={stage === "landing" ? "page" : undefined}>
-            <b>{shell.studio}</b>
-          </a>
-          <a href={STAGE_ROUTES.practice} className={PRACTICE_STAGES.includes(stage) ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("practice"); }} aria-current={PRACTICE_STAGES.includes(stage) ? "page" : undefined}>
-            <b>{shell.practice}</b>
-          </a>
-          <a href={STAGE_ROUTES.lessons} className={stage === "lessons" ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("lessons"); }} aria-current={stage === "lessons" ? "page" : undefined}>
-            <b>{shell.lessons}</b>
-          </a>
-          <a href={STAGE_ROUTES.progress} className={stage === "progress" ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("progress"); }} aria-current={stage === "progress" ? "page" : undefined}>
-            <b>{shell.progress}</b>
-          </a>
+          <StudioMenu locale={locale} practise={studioLinks.practise} learn={studioLinks.learn} active={stage !== "landing" && stage !== "pricing"} onGo={(target) => navigateTo(target as Stage)} />
+          <a href={STAGE_ROUTES.pricing} className={stage === "pricing" ? "is-active" : ""} aria-current={stage === "pricing" ? "page" : undefined} onClick={(event) => { event.preventDefault(); navigateTo("pricing"); }}><b>NotaNota AI</b></a>
         </nav>
         <div className="header-actions">
-          <AppearanceTools locale={locale} />
           <CommunityHeader />
-          <div className="audio-settings" ref={audioSettingsRef}>
-            <button
-              className="sound-toggle"
-              ref={audioSettingsButtonRef}
-              type="button"
-              aria-label={noteSoundCopy.settings}
-              aria-expanded={audioSettingsOpen}
-              aria-controls="audio-settings-panel"
-              onClick={() => setAudioSettingsOpen((open) => !open)}
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M4 10v4h4l5 4V6L8 10H4Z" fill="currentColor" />
-                {noteSoundEnabled
-                  ? <path d="M16 9c1.2 1.7 1.2 4.3 0 6M18.7 6.8c2.8 3 2.8 7.4 0 10.4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                  : <path d="m16.5 9 4.5 6m0-6-4.5 6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />}
-              </svg>
-            </button>
-          </div>
-          <div className="language-switch" role="group" aria-label={locale === "tr" ? "Dil seçimi" : "Language selection"}>
-            <button type="button" className={locale === "tr" ? "is-active" : ""} onClick={() => changeLocale("tr")} aria-pressed={locale === "tr"}>TR</button>
-            <button type="button" className={locale === "en" ? "is-active" : ""} onClick={() => changeLocale("en")} aria-pressed={locale === "en"}>EN</button>
-          </div>
+          <ThemeMenu locale={locale} soundEnabled={noteSoundEnabled} onToggleSound={toggleNoteSound} onCompare={() => navigateTo("palettes")} />
+          <LanguageMenu locale={locale} onChange={changeLocale} />
         </div>
       </header>}
 
@@ -1269,21 +1371,25 @@ export default function Home() {
       )}
 
       {!immersiveSession && <nav className="mobile-module-navigation" aria-label={shell.navigation}>
-        <a href={STAGE_ROUTES.landing} className={stage === "landing" ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("landing"); }} aria-current={stage === "landing" ? "page" : undefined}>
-          {shell.studio}
-        </a>
-        <a href={STAGE_ROUTES.practice} className={PRACTICE_STAGES.includes(stage) ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("practice"); }} aria-current={PRACTICE_STAGES.includes(stage) ? "page" : undefined}>
-          {shell.practice}
-        </a>
-        <a href={STAGE_ROUTES.lessons} className={stage === "lessons" ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("lessons"); }} aria-current={stage === "lessons" ? "page" : undefined}>
-          {shell.lessons}
-        </a>
-        <a href={STAGE_ROUTES.progress} className={stage === "progress" ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo("progress"); }} aria-current={stage === "progress" ? "page" : undefined}>
-          {shell.progress}
-        </a>
+        {MOBILE_LINKS.map(([target, key]) => {
+          const on = target === "practice" ? (navGroup !== "landing" && navGroup !== "pricing" && navGroup !== "progress" && navGroup !== "notfound") : navGroup === target;
+          return (
+            <a key={target} href={STAGE_ROUTES[target]} className={on ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo(target); }} aria-current={on ? "page" : undefined}>
+              {shell[key]}
+            </a>
+          );
+        })}
       </nav>}
 
-      {(stage === "landing" || stage === "lessons" || stage === "progress" || stage === "practice") && <LearningStudio key={stage} view={stage === "landing" ? "studio" : stage} locale={locale} onNavigate={navigateTo} initialLessonId={stage === "lessons" ? requestedLessonId : null} />}
+      {stage === "landing" && <LandingPage locale={locale} evidence={evidence} soundEnabled={noteSoundEnabled} onNavigate={(next: LandingStage) => navigateTo(next)} onQuickStart={startSession} onStartPlan={startPlan} onPractiseXml={practiseXml} />}
+      {stage === "pricing" && <PricingPage locale={locale} onOpenChat={() => window.dispatchEvent(new Event("notanota-open-chat"))} onStudio={() => navigateTo("setup")} />}
+      {stage === "notfound" && <NotFound locale={locale} onHome={() => navigateTo("landing")} onStudio={() => navigateTo("practice")} />}
+      {!immersiveSession && <ChatWidget locale={locale} />}
+      {stage === "teacher" && <TeacherPage locale={locale} owner={communityUserId} onAction={handleTeacherAction} onPractise={() => navigateTo("setup")} />}
+      {stage === "palettes" && <Suspense fallback={<Skeleton kind="panel" locale={locale} />}><PaletteReview locale={locale} soundEnabled={noteSoundEnabled} /></Suspense>}
+      {(stage === "lessons" || stage === "progress" || stage === "practice") && <LearningStudio key={stage} view={stage} locale={locale} onNavigate={navigateTo} initialLessonId={stage === "lessons" ? requestedLessonId : null} />}
+      {stage === "score-import" && <Suspense fallback={<Skeleton kind="score" locale={locale} />}><ScoreWorkspace key={scoreInitial?.xml.length ?? 0} locale={locale} noteSoundEnabled={noteSoundEnabled} onNavigate={navigateTo} initial={scoreInitial} /></Suspense>}
+      {stage === "listen-play" && <Suspense fallback={<Skeleton kind="panel" locale={locale} />}><MicPractice locale={locale} onNavigate={navigateTo} /></Suspense>}
       {(stage === "rhythm" || stage === "listening") && <WorkshopPage key={stage} kind={stage} locale={locale} onNavigate={navigateTo} />}
 
       {stage === "instruments" && (
@@ -1292,7 +1398,7 @@ export default function Home() {
 
 
       {stage === "guitar" && (
-        <Suspense fallback={<section className="guitar-shell guitar-shell--loading" aria-busy="true" />}>
+        <Suspense fallback={<Skeleton kind="studio" locale={locale} />}>
           <GuitarTrainer
             locale={locale}
             noteSoundEnabled={noteSoundEnabled}
@@ -1300,11 +1406,11 @@ export default function Home() {
           />
         </Suspense>
       )}
-      {(stage === 'piano' || stage === 'violin') && <Suspense fallback={<p>{locale==='tr'?'Yükleniyor…':'Loading…'}</p>}><InstrumentTrainer key={stage} instrument={stage} locale={locale} noteSoundEnabled={noteSoundEnabled} onSessionActiveChange={setGuitarSessionActive} /></Suspense>}
+      {(stage === 'piano' || stage === 'violin') && <Suspense fallback={<Skeleton kind="panel" locale={locale} />}><InstrumentTrainer key={stage} instrument={stage} locale={locale} noteSoundEnabled={noteSoundEnabled} onSessionActiveChange={setGuitarSessionActive} /></Suspense>}
       {(['about','how','faq','contact','roadmap'] as string[]).includes(stage) && <InfoContent page={stage as InfoPage} locale={locale} />}
 
       {stage === "pieces" && (
-        <Suspense fallback={<section className="score-reading-shell score-reading-shell--loading" aria-busy="true" />}>
+        <Suspense fallback={<Skeleton kind="studio" locale={locale} />}>
           <ScoreReadingTrainer
             locale={locale}
             noteSoundEnabled={noteSoundEnabled}
@@ -1320,7 +1426,9 @@ export default function Home() {
               <p className="kicker">{readingProfileCopy.summaryEyebrow}</p>
               <h2 id="reading-session-summary-title">{readingProfileCopy.summaryTitle}</h2>
               <div className="reading-session-chips" aria-label={readingProfileCopy.summaryEyebrow}>
+                <span>{clef === "bass" ? (locale === "tr" ? "Fa anahtarı" : "Bass clef") : (locale === "tr" ? "Sol anahtarı" : "Treble clef")}</span>
                 <span>{selectedLevel.title}</span>
+                <span>{questionsFor(level, clef, accidentals).length} {locale === "tr" ? "nota" : "notes"}</span>
                 <span>{selectedModeTitle}</span>
                 <span>{selectedSessionTitle}</span>
               </div>
@@ -1330,6 +1438,21 @@ export default function Home() {
               <button type="button" onClick={() => document.getElementById("reading-detailed-settings")?.scrollIntoView({ behavior: "smooth", block: "start" })}>{readingProfileCopy.details}</button>
             </div>
           </section>
+
+          <ReadingQuickStart
+            locale={locale}
+            evidence={evidence}
+            weakCount={weakReading.length}
+            summary={readingSummary}
+            onBeginner={() => {
+              setLevel("temel"); setMode("porte"); setSessionType("standard"); setClef("treble"); setAccidentals("natural");
+              persistReadingSettings({ level: "temel", mode: "porte", sessionType: "standard" });
+              setFocusDrill(null);
+              setPendingStart("standard");
+            }}
+            onWeak={startTargetedSession}
+            onLast={startSession}
+          />
 
           <TargetedReviewCard locale={locale} weak={weakReading} label={(item) => writtenNoteLabel(item, locale)} onStart={startTargetedSession} />
 
@@ -1609,6 +1732,10 @@ export default function Home() {
           </div>}
 
           <CommunityResult score={scoreSubmission} eligible={leaderboardEligible} />
+
+          <AITeacher key={`${sessionStartedAt}-${locale}`} locale={locale} session={`notes-${sessionStartedAt}`} evidence={evidence}
+            onRepeat={startSession} onProgress={() => navigateTo('progress')} onPractiseWeak={startTargetedSession} />
+          <p className="result-teacher-link"><button type="button" className="ghost-button" onClick={() => navigateTo('teacher')}>{locale==='tr'?'AI öğretmen örneğini gör':'See the AI teacher sample'}</button></p>
 
           {answerTimes.length > 0 && <aside className="reading-lesson-guidance">
             <div><p className="kicker">{locale==='tr'?'Bir sonraki adım':'Your next step'}</p><h2>{locale==='tr'?'Bilgiyi kısa bir dersle pekiştir.':'Reinforce your knowledge with a short lesson.'}</h2><p>{locale==='tr'?'Seçtiğin anahtar ve nota türüne uygun temel anlatıma dönüp yeni örneklerle devam edebilirsin. Bu öneri tek başına bir beceri eksikliği göstermez.':'Review the basics for your chosen clef and note type, then try new examples. This suggestion does not by itself indicate a skill gap.'}</p></div>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { EVIDENCE_EVENT, WEAKNESS_RULES, analyzeItems, readEvidence, type EvidenceRecord, type ItemSummary } from '@/lib/practice-evidence.mjs';
-import { LETTERS, SOLFEGE, pitchAt, pitchName } from '@/lib/music-pitch.mjs';
+import { LETTERS, SOLFEGE, namesLocale, pitchAt, pitchName } from '@/lib/music-pitch.mjs';
 import './targeted-review.css';
 
 type Locale = 'tr' | 'en';
@@ -26,7 +26,7 @@ export function answerLabel(answer: string | null | undefined, locale: Locale) {
   const match = /^([A-G])([#b]?)$/.exec(answer);
   if (!match) return answer;
   const index = LETTERS.indexOf(match[1]);
-  return `${locale === 'tr' ? SOLFEGE[index] : LETTERS[index]}${match[2] === '#' ? '♯' : match[2] === 'b' ? '♭' : ''}`;
+  return `${namesLocale(locale) === 'tr' ? SOLFEGE[index] : LETTERS[index]}${match[2] === '#' ? '♯' : match[2] === 'b' ? '♭' : ''}`;
 }
 
 export function clefLabel(clef: string | undefined, locale: Locale) {

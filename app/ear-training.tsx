@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { evaluateDictation, makeChordQuestion, makeDictationQuestion, makeIntervalQuestion, makePitchQuestion, midiFrequency } from '@/lib/ear-training.mjs';
+import { namesLocale } from '@/lib/music-pitch.mjs';
 import { saveEvidence } from '@/lib/practice-evidence.mjs';
 import { useEvidence } from './targeted-review';
 import './ear-training.css';
@@ -141,7 +142,7 @@ export function EarTraining({locale}:{locale:Locale}) {
   }
   function end(){release();setPlaying(false);setQuestion(null);setFinished(true);}
 
-  const name=(letter:string)=>tr?SOLFEGE[LETTERS.indexOf(letter)]:letter;
+  const name=(letter:string)=>namesLocale(locale)==='tr'?SOLFEGE[LETTERS.indexOf(letter)]:letter;
   const history=(['direction','interval','chord','dictation'] as Mode[]).map(item=>{const rows=evidence.filter(row=>row.module==='ear'&&row.task===item&&!row.assisted);return {mode:item,answers:rows.length,correct:rows.filter(row=>row.correct).length};}).filter(item=>item.answers>0);
   const dictationResult=question?.mode==='dictation'&&answer?evaluateDictation(question.letters,dictation):null;
   const expected=question&&question.mode!=='dictation'?question.answer:'';

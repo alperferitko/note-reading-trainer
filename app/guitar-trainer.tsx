@@ -8,7 +8,7 @@ import { LocalResult } from './local-progress';
 import { SessionGuidance } from './session-guidance';
 import { NavigationOptions, usePracticeNavigation } from './practice-tools';
 import { buildTargetedPool, findWeakItems, saveEvidence, spreadRepeats, type ItemSummary } from '@/lib/practice-evidence.mjs';
-import { pitchFromMidi, pitchName } from '@/lib/music-pitch.mjs';
+import { namesLocale, pitchFromMidi, pitchName } from '@/lib/music-pitch.mjs';
 import { TargetedReviewCard, TargetedReviewResult, useEvidence } from './targeted-review';
 import './guitar-hero.css';
 
@@ -313,7 +313,7 @@ function pickRandomQuestion(pool: GuitarQuestion[], avoidId = "") {
 }
 
 function noteName(letter: Letter, locale: Locale) {
-  return locale === "tr" ? SOLFEGE[letter] : letter;
+  return namesLocale(locale) === "tr" ? SOLFEGE[letter] : letter;
 }
 
 function GuitarHeroFretboard({ locale }: { locale: Locale }) {
@@ -518,7 +518,7 @@ export function GuitarTrainer({
   const usesFretboardAnswer = practiceMode === "staff-to-fretboard";
   const usesLocationAnswer = practiceMode === "staff-to-location";
   const selectedModeTitle = practiceMode === "name-note" ? text.nameMode : usesFretboardAnswer ? text.positionMode : text.locationMode;
-  const choices = locale === "tr" ? Object.values(SOLFEGE) : Object.keys(SOLFEGE);
+  const choices = namesLocale(locale) === "tr" ? Object.values(SOLFEGE) : Object.keys(SOLFEGE);
   const answeredCount = times.length;
   const correctAnswers = Math.max(0, answeredCount - wrong);
   const completed = sessionType === "standard" ? initialCount - queue.length : correctAnswers;

@@ -34,7 +34,7 @@ test("GitHub Pages output uses portable relative asset paths", async () => {
   assert.match(html, /href="\.\/notanota-app-icon\.svg\?v=3"/);
   assert.match(html, /src="\.\/notanota-monogram-96\.webp"/);
   assert.match(html, /content="https:\/\/notanota\.online\/og\.png"/);
-  assert.match(html, /name="theme-color" content="#F8F2E4"/);
+  assert.match(html, /name="theme-color" content="#FAF6F1"/);
   assert.match(html, /<title>Stüdyo \| NotaNota<\/title>/);
   assert.match(html, /rel="canonical" href="https:\/\/notanota\.online\/"/);
   assert.match(html, /type="application\/ld\+json">.*"EducationalApplication"/);

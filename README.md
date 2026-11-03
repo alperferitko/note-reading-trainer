@@ -44,6 +44,11 @@ Practice runs in the browser. Passwordless accounts, private streaks, and leader
 - Private, account-backed daily practice streaks with a Monday-to-Sunday activity view
 - Separate, privacy-conscious leaderboards for each mode, range, and question style
 - Turkish and English privacy information
+- Home page that is itself the first exercise, with one-click note practice, "continue where you left off" and a measured next-step suggestion
+- Personal goal (aim, answers a day, days a week) kept on the device, with progress counted from measured answers
+- MusicXML workspace: open an uncompressed `.musicxml`/`.xml` file, see the score (OpenSheetMusicDisplay) and practise single-line bars by name or by microphone; unsupported bars are named, not guessed
+- Microphone practice (pitchy): single notes on piano, guitar or violin, compared with the written note; audio stays in the browser and only pitch is measured
+- AI teacher panel with three labelled sources: `live` (Meta, staging only), `mock` (test answer) and `deterministic` (rules on measurements, no AI)
 
 ## Practice modes
 
@@ -102,6 +107,11 @@ npm run build
 npm run build:pages
 npm run test:pages
 npm run test:sql   # leaderboard SQL checks in a disposable Docker database
+npm run test:ai && npm run test:ai:http && npm run test:ai:learning && npm run test:ai:b3
+npm run test:ai:b4      # Edge import graph, AI ledger on PostgreSQL (PGlite), AI client, Meta config
+npm run test:features   # MusicXML reader, pitch detection, goals and next-step plan
+npm run test:edge:deno  # Deno type check and Edge test for the ai-gateway (downloads Deno 2.5.6)
+npm run sync:edge       # refresh the Edge copies after editing lib/practice-evidence.mjs or the staging pins
 ```
 
 The only audio feedback is the pitch played after a correct answer. It is

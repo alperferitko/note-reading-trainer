@@ -3,7 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#F8F2E4" />
+    <meta name="theme-color" content="#FAF6F1" />
+    <!-- Applies the saved colour theme and light/dark mode before the first paint (lib/palettes.mjs PALETTE_BOOT_SCRIPT). -->
+    <script>try{var d=document.documentElement,p=localStorage.getItem("notanota-palette-v1");d.dataset.palette=["bordo","petrol","indigo","kiremit","meta"].indexOf(p)>-1?p:"bordo";var m=localStorage.getItem("notanota-theme");d.dataset.theme=m==="dark"||(m!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light"}catch(e){}</script>
     <link rel="apple-touch-icon" href="%BASE_URL%app-192.png" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta

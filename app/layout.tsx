@@ -3,6 +3,10 @@ import { headers } from "next/headers";
 import "./globals.css";
 import "./learning-studio.css";
 import "./notebook.css";
+import "./frost.css";
+import "./palettes.css";
+import "./shell.css";
+import { PALETTE_BOOT_SCRIPT } from "@/lib/palettes.mjs";
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
@@ -44,12 +48,16 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#F8F2E4",
+  themeColor: "#FAF6F1",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="tr">
+    <html lang="tr" data-palette="bordo" suppressHydrationWarning>
+      <head>
+        {/* Applies the saved colour model before the first paint. */}
+        <script dangerouslySetInnerHTML={{ __html: PALETTE_BOOT_SCRIPT }} />
+      </head>
       <body>{children}</body>
     </html>
   );

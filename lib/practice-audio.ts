@@ -1,3 +1,5 @@
+import { playVoiceNote, readNoteVoice, type NoteVoice } from "./note-voices";
+
 let audioContext: AudioContext | null = null;
 const NOTE_SOUND_PREFERENCE_KEY = "nota-nota-correct-note-sound";
 
@@ -6,6 +8,11 @@ function context() {
   audioContext ??= new AudioContext();
   if (audioContext.state === "suspended") void audioContext.resume();
   return audioContext;
+}
+
+/** The one AudioContext the practice sounds share; created (or resumed) only when a click asks for sound. */
+export function practiceAudioContext() {
+  return context();
 }
 
 export function readNoteSoundPreference() {
@@ -33,38 +40,20 @@ export function noteIdToMidi(noteId: string) {
   return (Number(match[2]) + 1) * 12 + pitchClasses[match[1].toLowerCase()];
 }
 
-export function playPracticeNote(midi: number, enabled = true) {
+export function playPracticeNote(midi: number, enabled = true, voice?: NoteVoice) {
   if (!enabled) return;
   const audio = context();
   if (!audio) return;
+  try {
+    playVoiceNote(audio, midi, voice ?? readNoteVoice());
+  } catch {
+    /* Sound is optional. */
+  }
+}
 
-  const now = audio.currentTime;
-  const frequency = 440 * 2 ** ((midi - 69) / 12);
-  const master = audio.createGain();
-  const body = audio.createOscillator();
-  const warmth = audio.createOscillator();
-  const warmthGain = audio.createGain();
-
-  body.type = "sine";
-  body.frequency.setValueAtTime(frequency, now);
-  warmth.type = "triangle";
-  warmth.frequency.setValueAtTime(frequency * 2, now);
-  warmthGain.gain.setValueAtTime(0.09, now);
-
-  master.gain.setValueAtTime(0.0001, now);
-  master.gain.exponentialRampToValueAtTime(0.32, now + 0.018);
-  master.gain.exponentialRampToValueAtTime(0.13, now + 0.22);
-  master.gain.exponentialRampToValueAtTime(0.0001, now + 1.05);
-
-  body.connect(master);
-  warmth.connect(warmthGain);
-  warmthGain.connect(master);
-  master.connect(audio.destination);
-
-  body.start(now);
-  warmth.start(now);
-  body.stop(now + 1.08);
-  warmth.stop(now + 1.08);
+/** Plays middle C (midi 60) in the given voice, e.g. from a settings page. */
+export function previewNoteVoice(voice: NoteVoice) {
+  playPracticeNote(60, true, voice);
 }
 
 export function playRhythmPulse(midi: number, enabled = true, durationMs = 150) {

@@ -67,15 +67,28 @@ export function SiteFooter({ locale, motto, homeLabel, onNavigate }: {
       }
       // On phones the bottom tab bar slides down out of the way as the footer comes up, so it never covers
       // the footer's links (they hold the same destinations); the chat button follows it down.
+      // It fades rather than moving off screen: moved past the bottom edge it would lengthen the page
+      // (its containing block scrolls with the page), leaving an empty strip under the footer.
       const rise = Math.max(0, window.innerHeight - top);
       const tabs = document.querySelector<HTMLElement>('.mobile-module-navigation');
       const tabsShown = tabs && getComputedStyle(tabs).display !== 'none' ? tabs.offsetHeight + 8 : 0;
-      if (tabs) tabs.style.translate = tabsShown && rise ? `0 ${Math.min(rise, tabsShown)}px` : '';
+      const gone = tabsShown ? Math.min(1, rise / tabsShown) : 0;
+      if (tabs) {
+        tabs.style.opacity = gone ? String(1 - gone) : '';
+        tabs.style.visibility = gone >= 1 ? 'hidden' : '';
+        tabs.style.pointerEvents = gone > 0.5 ? 'none' : '';
+      }
       // The page keeps room at the bottom for that bar; the footer's painting reaches into it instead.
       const room = tabsShown && box.parentElement ? `${-(parseFloat(getComputedStyle(box.parentElement).paddingBottom) || 0)}px` : '';
       if (box.style.marginBottom !== room) box.style.marginBottom = room;
+      // The chat button follows the bar down, but stops 16px above the bottom edge.
       const chat = document.querySelector<HTMLElement>('.chat-bubble');
-      if (chat) chat.style.translate = tabsShown && rise ? `0 ${Math.min(rise, tabsShown)}px` : '';
+      if (chat) {
+        chat.style.translate = '';
+        const room = window.innerHeight - 16 - chat.getBoundingClientRect().bottom;
+        const drop = tabsShown && rise ? Math.max(0, Math.min(rise, tabsShown, room)) : 0;
+        chat.style.translate = drop ? `0 ${drop}px` : '';
+      }
     };
     const onScroll = () => { if (!frame) frame = window.requestAnimationFrame(place); };
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -84,7 +97,9 @@ export function SiteFooter({ locale, motto, homeLabel, onNavigate }: {
     return () => {
       window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll);
       if (frame) window.cancelAnimationFrame(frame);
-      for (const el of [...bars(), ...document.querySelectorAll<HTMLElement>('.mobile-module-navigation, .chat-bubble')]) el.style.translate = '';
+      for (const el of [...bars(), ...document.querySelectorAll<HTMLElement>('.mobile-module-navigation, .chat-bubble')]) {
+        el.style.translate = ''; el.style.opacity = ''; el.style.visibility = ''; el.style.pointerEvents = '';
+      }
     };
   }, []);
 

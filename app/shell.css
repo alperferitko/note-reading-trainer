@@ -488,3 +488,16 @@ html:not([data-theme=dark]) .footer-staff { color: #f0b43a; filter: drop-shadow(
 .lp .lp-hero-scene .hero-ribbon { z-index: 2; }
 /* Daylight needs a deeper gold and a firmer edge to read on the pale lake; night keeps the soft light. */
 html body .glow-quiz[open] { position: fixed; inset: 0; margin: auto; height: fit-content; max-height: calc(100svh - 32px); overflow: auto; }
+/* Text that lands on the busy lower part of the painting gets a soft halo in its own sky colour, so it
+   stays readable over rocks and flowers without a panel behind it. */
+html body .app-shell footer.site-footer :is(.site-footer-group a, .site-footer-legal :is(span, a), .site-footer-group h2) {
+  text-shadow: 0 0 2px color-mix(in srgb, var(--sky-veil, #f3f1ff) 90%, transparent), 0 0 10px color-mix(in srgb, var(--sky-veil, #f3f1ff) 75%, transparent);
+}
+html[data-theme=dark] body .app-shell footer.site-footer :is(.site-footer-group a, .site-footer-legal :is(span, a), .site-footer-group h2) {
+  text-shadow: 0 0 2px rgba(10, 12, 40, .9), 0 0 10px rgba(10, 12, 40, .7);
+}
+/* The sky's veil reaches below the links; where the sky is as tall as the footer it must not lengthen the page. */
+html body .app-shell > footer.site-footer { overflow: clip; }
+/* Keep the last legal link clear of the round chat button in the corner. */
+html body .app-shell > footer.site-footer .site-footer-legal { padding-right: 84px; }
+@media (max-width: 760px) { html body .app-shell > footer.site-footer .site-footer-legal { padding-right: 72px; } }

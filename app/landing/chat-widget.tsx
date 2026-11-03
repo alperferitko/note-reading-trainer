@@ -1,5 +1,6 @@
 "use client";
 
+import { AiIcon } from "./ai-icon";
 import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { createDemoTeacher } from "@/lib/teacher-demo.mjs";
 
@@ -95,11 +96,12 @@ export function ChatWidget({ locale, hidden = false }: { locale: Locale; hidden?
   return (
     <>
       <button ref={bubble} type="button" className={`chat-bubble${open ? " is-open" : ""}`} aria-label={t.open} aria-expanded={open} aria-controls="chat-panel" onClick={() => (open ? close() : setOpen(true))}>
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 19 17H10l-4.5 3.5V17H5a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 5 5.5Z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /><circle cx="9" cy="11.3" r="1.1" fill="currentColor" /><circle cx="12" cy="11.3" r="1.1" fill="currentColor" /><circle cx="15" cy="11.3" r="1.1" fill="currentColor" /></svg>
+        <AiIcon size={30} />
       </button>
       {open && (
         <div ref={panel} id="chat-panel" className="chat-panel" role="dialog" aria-modal="false" aria-labelledby="chat-title" onKeyDown={onKeyDown}>
           <header className="chat-head">
+            <span className="chat-head-icon"><AiIcon size={24} /></span>
             <h2 id="chat-title">{t.title}</h2>
             <span className="teacher-badge">{t.badge}</span>
             <button type="button" className="chat-close" aria-label={t.close} onClick={close}>

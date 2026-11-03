@@ -92,7 +92,7 @@ const T = {
 
 function nameOf(item: Item, locale: Locale) { return `${NAMES[locale][STEPS.indexOf(item.step)]}${ACC[item.alter] ?? ""}${item.octave}`; }
 
-function ScoreView({ xml, label, failLabel }: { xml: string; label: string; failLabel: string }) {
+export function ScoreView({ xml, label, failLabel }: { xml: string; label: string; failLabel: string }) {
   const box = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<"loading" | "ready" | "failed">("loading");
   useEffect(() => {

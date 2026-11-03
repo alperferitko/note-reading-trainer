@@ -16,7 +16,6 @@ import { pitchAt, pitchName, matchesPitch, accidentalsFor, parsePitchAnswer } fr
 import { SITE_PAGES, pageRoute, pageFromPath, isKnownRoute } from "@/lib/site-routes.mjs";
 import { LearningStudio } from './learning-studio';
 import { LandingPage, type LandingStage, type NextPlan } from './landing/landing-page';
-import { TeacherPage } from './landing/teacher-page';
 import type { TeacherAction } from './landing/teacher-demo';
 import { BrandLogo, LanguageMenu, ThemeMenu, usePalette } from './palette-tools';
 import { StudioMenu, type StudioLink } from './site-nav';
@@ -67,7 +66,7 @@ const STAGE_ROUTES: Record<Stage, string> = {
 
 type ShellKey = "reading" | "rhythm" | "pieces" | "ai" | "mine" | "instruments" | "mic" | "listening" | "lessons" | "allStudios" | "home" | "studios";
 const MORE_LINKS: [Stage, ShellKey][] = [["instruments", "instruments"], ["listen-play", "mic"], ["listening", "listening"], ["lessons", "lessons"], ["practice", "allStudios"]];
-const MOBILE_LINKS: [Stage, ShellKey][] = [["landing", "home"], ["practice", "studios"], ["pricing", "ai"], ["progress", "mine"]];
+const MOBILE_LINKS: [Stage, ShellKey][] = [["landing", "home"], ["practice", "studios"], ["teacher", "ai"], ["progress", "mine"]];
 
 const READING_PRESETS: Record<ReadingProfileId, { level: LevelId; mode: ModeId; sessionType: SessionType }> = {
   new: { level: "temel", mode: "porte", sessionType: "standard" },
@@ -93,6 +92,7 @@ const ScoreReadingTrainer = lazy(() => import("./score-reading-trainer").then((m
 })));
 const PaletteReview = lazy(() => import("./landing/palette-review").then((module) => ({ default: module.PaletteReview })));
 const ScoreWorkspace = lazy(() => import("./score-workspace").then((module) => ({ default: module.ScoreWorkspace })));
+const AiWorkspace = lazy(() => import("./landing/ai-workspace").then((module) => ({ default: module.AiWorkspace })));
 const MicPractice = lazy(() => import("./mic-practice").then((module) => ({ default: module.MicPractice })));
 const InstrumentTrainer = lazy(() => import("./instrument-trainer").then(module => ({ default: module.InstrumentTrainer })));
 
@@ -1100,6 +1100,11 @@ export default function Home() {
     navigateTo("score-import");
   }
 
+  function practiseRange(xml: string, from: number, to: number) {
+    setScoreInitial({ xml, from, to });
+    navigateTo("score-import");
+  }
+
   function startTargetedSession() {
     if (focusDrill) { setFocusDrill(null); setPendingStart("targeted"); return; }
     // Repeated items only make sense in a queue that ends; endless mode is not persisted over.
@@ -1349,8 +1354,8 @@ export default function Home() {
           <span className="brand-name">NotaNota</span>
         </a>
         <nav className="app-navigation" aria-label={shell.navigation}>
-          <StudioMenu locale={locale} practise={studioLinks.practise} learn={studioLinks.learn} active={stage !== "landing" && stage !== "pricing"} onGo={(target) => navigateTo(target as Stage)} />
-          <a href={STAGE_ROUTES.pricing} className={stage === "pricing" ? "is-active" : ""} aria-current={stage === "pricing" ? "page" : undefined} onClick={(event) => { event.preventDefault(); navigateTo("pricing"); }}><b>NotaNota AI</b></a>
+          <StudioMenu locale={locale} practise={studioLinks.practise} learn={studioLinks.learn} active={stage !== "landing" && stage !== "pricing" && stage !== "teacher"} onGo={(target) => navigateTo(target as Stage)} />
+          <a href={STAGE_ROUTES.teacher} className={stage === "teacher" ? "is-active" : ""} aria-current={stage === "teacher" ? "page" : undefined} onClick={(event) => { event.preventDefault(); navigateTo("teacher"); }}><b>NotaNota AI</b></a>
         </nav>
         <div className="header-actions">
           <CommunityHeader />
@@ -1385,10 +1390,10 @@ export default function Home() {
       {stage === "pricing" && <PricingPage locale={locale} onOpenChat={() => window.dispatchEvent(new Event("notanota-open-chat"))} onStudio={() => navigateTo("setup")} />}
       {stage === "notfound" && <NotFound locale={locale} onHome={() => navigateTo("landing")} onStudio={() => navigateTo("practice")} />}
       {!immersiveSession && <ChatWidget locale={locale} />}
-      {stage === "teacher" && <TeacherPage locale={locale} owner={communityUserId} onAction={handleTeacherAction} onPractise={() => navigateTo("setup")} />}
+      {stage === "teacher" && <Suspense fallback={<Skeleton kind="panel" locale={locale} />}><AiWorkspace locale={locale} evidence={evidence} owner={communityUserId} onQuickStart={startSession} onStartPlan={startPlan} onPractiseRange={practiseRange} onStudio={() => navigateTo("setup")} onTeacherAction={handleTeacherAction} /></Suspense>}
       {stage === "palettes" && <Suspense fallback={<Skeleton kind="panel" locale={locale} />}><PaletteReview locale={locale} soundEnabled={noteSoundEnabled} /></Suspense>}
       {(stage === "lessons" || stage === "progress" || stage === "practice") && <LearningStudio key={stage} view={stage} locale={locale} onNavigate={navigateTo} initialLessonId={stage === "lessons" ? requestedLessonId : null} />}
-      {stage === "score-import" && <Suspense fallback={<Skeleton kind="score" locale={locale} />}><ScoreWorkspace key={scoreInitial?.xml.length ?? 0} locale={locale} noteSoundEnabled={noteSoundEnabled} onNavigate={navigateTo} initial={scoreInitial} /></Suspense>}
+      {stage === "score-import" && <Suspense fallback={<Skeleton kind="score" locale={locale} />}><ScoreWorkspace key={`${scoreInitial?.xml.length ?? 0}-${scoreInitial?.from ?? 0}-${scoreInitial?.to ?? 0}`} locale={locale} noteSoundEnabled={noteSoundEnabled} onNavigate={navigateTo} initial={scoreInitial} /></Suspense>}
       {stage === "listen-play" && <Suspense fallback={<Skeleton kind="panel" locale={locale} />}><MicPractice locale={locale} onNavigate={navigateTo} /></Suspense>}
       {(stage === "rhythm" || stage === "listening") && <WorkshopPage key={stage} kind={stage} locale={locale} onNavigate={navigateTo} />}
 
@@ -1823,8 +1828,23 @@ export default function Home() {
         </div>
       )}
 
-      <div hidden={immersiveSession} className="site-extras"><SiteLinks locale={locale} onNavigate={navigateTo} /></div>
-      {!immersiveSession && <footer><span>NotaNota</span><p>{copy.footer}</p><CommunityLegalLink /><a className="brand-mark brand-mark--footer" href={STAGE_ROUTES.landing} onClick={(event) => { event.preventDefault(); navigateTo("landing"); }} aria-label={copy.homeLabel}><img src="./notanota-monogram-96.webp" alt="" /></a></footer>}
+      {!immersiveSession && (
+        <footer className="site-footer">
+          <div className="site-footer-bar">
+            <div className="site-footer-brand">
+              <a className="brand-mark brand-mark--footer" href={STAGE_ROUTES.landing} onClick={(event) => { event.preventDefault(); navigateTo("landing"); }} aria-label={copy.homeLabel}><BrandLogo palette={palette} className="footer-logo" /></a>
+              <span>NotaNota</span><p>{copy.footer}</p>
+            </div>
+            <div className="site-extras"><SiteLinks locale={locale} onNavigate={navigateTo} /></div>
+            <div className="site-footer-legal"><CommunityLegalLink /></div>
+          </div>
+          {/* Decorative scene only: every word and link above is real text. Notation for learning is always rendered, never this picture. */}
+          <div className="site-footer-scene" aria-hidden="true">
+            <div className="site-footer-atmos" />
+            <img src="./brand/footer-scene-1440.webp" srcSet="./brand/footer-scene-800.webp 800w, ./brand/footer-scene-1440.webp 1440w, ./brand/footer-scene-2172.webp 2172w" sizes="100vw" width={2172} height={724} alt="" loading="lazy" decoding="async" />
+          </div>
+        </footer>
+      )}
     </main>
     </CommunityProvider>
   );

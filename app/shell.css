@@ -80,10 +80,22 @@ html[data-theme=dark] body .app-shell .site-header .community-header-actions but
 @keyframes menu-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 .nav-panel--studio { left: 0; right: auto; width: min(560px, calc(100vw - 32px)); display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; padding: 12px; }
 .studio-menu-group { margin: 6px 10px 6px; font-family: var(--fx-ui); font-size: 12px; font-weight: 600; color: var(--foreground-muted); }
-.studio-menu-item { display: grid; gap: 2px; padding: 10px 12px; border-radius: 12px; color: var(--foreground); text-decoration: none; }
-.studio-menu-item b { font-weight: 600; font-size: 15px; }
-.studio-menu-item span { font-size: 13px; color: var(--foreground-muted); }
-.studio-menu-item:hover, .studio-menu-item:focus-visible { background: var(--background-deep); }
+/* Menu items live inside .app-navigation, where legacy sidebar rules grid the link and pin its span absolutely.
+   Reset both here: title on one line, hint on the next, the whole block one link. */
+html body .app-shell .site-header .app-navigation .nav-panel .studio-menu-item {
+  position: static; box-sizing: border-box; width: 100%; min-height: 0; display: flex; flex-direction: column; align-items: flex-start; align-self: stretch; justify-self: stretch; gap: 2px; grid-template-columns: none;
+  padding: 10px 12px; border-radius: 12px; color: var(--foreground); text-align: left; text-decoration: none; background: transparent; box-shadow: none;
+}
+html body .app-shell .site-header .app-navigation .nav-panel .studio-menu-item > b,
+html body .app-shell .site-header .app-navigation .nav-panel .studio-menu-item > span {
+  position: static; inset: auto; transform: none; display: block; width: auto; min-width: 0; margin: 0; text-align: left; white-space: normal;
+  font-family: var(--fx-text); line-height: 1.35;
+}
+html body .app-shell .site-header .app-navigation .nav-panel .studio-menu-item > b { font-size: 15px; font-weight: 600; color: var(--foreground); }
+html body .app-shell .site-header .app-navigation .nav-panel .studio-menu-item > span { font-size: 13px; font-weight: 400; color: var(--foreground-muted); }
+html body .app-shell .site-header .app-navigation .nav-panel .studio-menu-item:hover,
+html body .app-shell .site-header .app-navigation .nav-panel .studio-menu-item:focus-visible { background: var(--background-deep); }
+html body .app-shell .site-header .app-navigation .nav-panel .studio-menu-item:focus-visible { outline: 3px solid var(--primary); outline-offset: -1px; }
 .nav-panel-item { display: block; width: 100%; text-align: left; padding: 10px 12px; border: 0; border-radius: 12px; background: transparent; color: var(--foreground); font-size: 15px; cursor: pointer; }
 .nav-panel-item:hover { background: var(--background-deep); }
 .nav-panel-item.is-on { color: var(--primary); font-weight: 600; background: var(--accent-soft); }
@@ -113,7 +125,8 @@ html[data-theme=dark] body .app-shell .site-header .community-header-actions but
   html body .app-shell .site-header .app-navigation { display: none; }
 }
 @media (max-width: 720px) {
-  html body .app-shell .site-header.site-header--float { top: 8px; margin-top: 8px; width: calc(100% - 20px); height: 60px; border-radius: 18px; gap: 6px; padding: 0 6px; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "brand actions"; }
+  html body .app-shell .site-header.site-header--float,
+  html[data-theme=dark] body .app-shell .site-header.site-header--float { top: 8px; margin-top: 8px; width: calc(100% - 20px); height: 60px; border-radius: 18px; gap: 6px; padding: 0 6px; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "brand actions"; }
   .brand-logo, html body .app-shell .site-header .brand-logo.brand-tile { width: 42px; height: 42px; }
   html body .app-shell .site-header .header-actions { gap: 2px; }
   html body .app-shell .site-header .community-header-actions button:first-child { display: none; }
@@ -208,22 +221,53 @@ html[data-theme=dark] :is(.primary-button, .feedback > button, .guitar-feedback 
 html body .app-shell :is(.violin-string button.is-target, .violin-string button.is-selected) { background: var(--primary); color: var(--primary-foreground); }
 html body .app-shell .mobile-module-navigation a.is-active { background: var(--accent-soft); color: var(--primary); }
 
-/* Footer and information links: quiet text, no dashed rules, no wavy underlines, sentence case. */
-html body .app-shell > footer, html body .app-shell footer:not([class]) {
-  width: min(calc(1240px - 2 * var(--fx-margin)), calc(100% - 2 * var(--fx-margin))); margin: 20px auto 96px; padding: 18px 24px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
-  border: 0; border-radius: 22px; background: var(--surface); box-shadow: var(--shadow-1);
+/* Footer: real text on a theme surface, then the approved painted scene as a decorative band.
+   The scene's sky melts into the page through a mask; a separate blurred copy tints the air around it. */
+html body .app-shell > footer.site-footer {
+  position: relative; width: 100%; max-width: none; margin: 24px 0 0; padding: 0; display: block; border: 0; border-radius: 0; background: none; box-shadow: none; isolation: isolate; overflow-x: clip;
 }
-html body .app-shell footer :is(span, p, a, button) { font-family: var(--fx-text); letter-spacing: 0; text-transform: none; }
-html body .app-shell footer > span { font-family: var(--fx-display); font-weight: 600; font-size: 17px; color: var(--foreground); }
-html body .app-shell footer > p { margin: 0; font-size: 15px; font-weight: 500; color: var(--foreground-muted); }
-html body .app-shell footer a, html body .app-shell footer button { color: var(--foreground-muted); border: 0; text-decoration: none; background: none; font-size: 14px; }
-html body .app-shell footer a:hover, html body .app-shell footer button:hover { color: var(--primary); }
-html body .app-shell footer .brand-mark--footer { margin-left: auto; width: 32px; height: 32px; }
-html body .app-shell .site-extras { width: min(calc(1240px - 2 * var(--fx-margin)), calc(100% - 2 * var(--fx-margin))); margin: 0 auto; }
-html body .app-shell .site-links { width: auto; margin: 0; display: flex; flex-wrap: wrap; gap: 4px 20px; padding: 0 24px; border: 0; }
-@media (max-width: 560px) { html body .app-shell > footer, html body .app-shell footer:not([class]) { margin-bottom: 88px; } }
-html body .app-shell .site-links a { color: var(--foreground-muted); font-size: 14px; text-decoration: none; border: 0; background: none; }
-html body .app-shell .site-links a:hover { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; text-decoration-style: solid; }
+.site-footer-bar {
+  position: relative; z-index: 2; width: min(calc(1240px - 2 * var(--fx-margin)), calc(100% - 2 * var(--fx-margin))); margin: 0 auto;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px 28px; padding: 18px 24px;
+  border-radius: 22px; background: color-mix(in srgb, var(--surface) 92%, transparent); box-shadow: var(--shadow-1);
+}
+.site-footer-brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+html body .app-shell footer.site-footer :is(span, p, a, button) { font-family: var(--fx-text); letter-spacing: 0; text-transform: none; }
+html body .app-shell footer.site-footer .site-footer-brand > span { font-family: var(--fx-display); font-weight: 600; font-size: 17px; color: var(--foreground); }
+html body .app-shell footer.site-footer .site-footer-brand > p { margin: 0; font-size: 15px; font-weight: 500; color: var(--foreground-muted); }
+html body .app-shell footer.site-footer .brand-mark--footer { margin: 0; width: 32px; height: 32px; flex: none; }
+html body .app-shell footer.site-footer a, html body .app-shell footer.site-footer button { color: var(--foreground-muted); border: 0; text-decoration: none; background: none; font-size: 14px; }
+html body .app-shell footer.site-footer a:hover, html body .app-shell footer.site-footer button:hover { color: var(--primary); }
+html body .app-shell footer.site-footer .site-extras { width: auto; margin: 0; }
+html body .app-shell footer.site-footer .site-links { width: auto; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 20px; border: 0; }
+.site-footer-legal { justify-self: end; }
+
+.site-footer-scene { position: relative; z-index: 1; margin-top: -40px; aspect-ratio: 2172 / 724; max-height: 520px; width: 100%; pointer-events: none; }
+.site-footer-scene > img { clip-path: inset(0); }
+.site-footer-scene > img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 100%; display: block;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, rgba(0,0,0,.18) 16%, rgba(0,0,0,.6) 30%, #000 46%), linear-gradient(90deg, rgba(0,0,0,.85), #000 6%, #000 94%, rgba(0,0,0,.85));
+  -webkit-mask-composite: source-in; mask-image: linear-gradient(180deg, transparent 0%, rgba(0,0,0,.18) 16%, rgba(0,0,0,.6) 30%, #000 46%), linear-gradient(90deg, rgba(0,0,0,.85), #000 6%, #000 94%, rgba(0,0,0,.85)); mask-composite: intersect;
+}
+/* Theme atmosphere: a blurred copy on its own layer, tinted toward the palette, sitting above the band. */
+.site-footer-atmos {
+  position: absolute; inset: -30% 0 35%; background: url("/brand/footer-scene-800.webp") center 60% / cover no-repeat;
+  filter: blur(32px) saturate(1.1); opacity: .12; transform: translateZ(0);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 40%, #000 70%, transparent); mask-image: linear-gradient(180deg, transparent, #000 40%, #000 70%, transparent);
+}
+html[data-theme=dark] .site-footer-atmos { opacity: .16; }
+
+@media (max-width: 860px) {
+  .site-footer-bar { grid-template-columns: minmax(0, 1fr); justify-items: start; }
+  .site-footer-legal { justify-self: start; }
+  html body .app-shell footer.site-footer .site-links { justify-content: flex-start; }
+}
+@media (max-width: 560px) {
+  /* Phone: keep the scene's centre (the river and the piano) instead of a thin strip; leave room for the chat bubble and the bottom bar. */
+  .site-footer-scene { aspect-ratio: 4 / 3; margin-top: -24px; }
+  .site-footer-scene > img { object-position: 62% 100%; }
+  html body .app-shell > footer.site-footer { padding-bottom: 72px; }
+}
 
 /* The Studio button stays a quiet text button on every page; only its colour marks the section. */
 html body .app-shell .site-header .app-navigation .nav-text-button,
@@ -237,3 +281,12 @@ html body .app-shell :is(.level-card, .mode-card).is-selected, html body .app-sh
 html body .app-shell :is(.step-heading p, .kicker) { font-family: var(--fx-ui); font-size: 14px; font-weight: 600; color: var(--primary); text-transform: none; letter-spacing: 0; }
 html body .app-shell .chat-form input { height: 46px; min-height: 0; margin: 0; padding: 0 14px; border-radius: 14px; font-size: 16px; box-shadow: none; }
 html body .app-shell .chat-form input:focus-visible { outline: 3px solid var(--primary); outline-offset: 1px; }
+html body .app-shell footer.site-footer .brand-mark--footer .brand-logo.footer-logo { width: 32px; height: 32px; border-radius: 9px; background: none; box-shadow: none; }
+html body .app-shell footer.site-footer .brand-mark--footer .brand-logo.footer-logo img { inset: 0; width: 100%; height: 100%; }
+
+/* Account button: never squeezed below its label (on phones the container used to collapse and the label slid under the theme button). */
+html body .app-shell .site-header .header-actions > .community-header-actions { flex: none; width: auto; min-width: max-content; }
+html body .app-shell .site-header .header-actions > .community-header-actions button { max-width: none; overflow: visible; }
+@media (max-width: 400px) { html body .app-shell .site-header .header-actions > .community-header-actions button { padding-inline: 12px; font-size: 14px; } }
+html body .app-shell footer.site-footer .site-footer-brand { flex-wrap: wrap; }
+html body .app-shell footer.site-footer .site-footer-brand > p { display: block; }

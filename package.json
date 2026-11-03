@@ -22,7 +22,7 @@
     "db:generate": "drizzle-kit generate",
     "test:sql": "node scripts/verify-leaderboard-sql.mjs",
     "test:ai:b4": "node --test tests/edge-bundle.test.mjs tests/ai-ledger-pglite.test.mjs tests/ai-client.test.mjs tests/ai-meta-config.test.mjs",
-    "test:features": "node --test tests/musicxml.test.mjs tests/pitch-detect.test.mjs tests/practice-plan.test.mjs",
+    "test:features": "node --test tests/musicxml.test.mjs tests/pitch-detect.test.mjs tests/practice-plan.test.mjs tests/ode-satb.test.mjs",
     "sync:edge": "node scripts/sync-edge-shared.mjs",
     "test:edge:deno": "cd supabase/functions/ai-gateway && npx -y deno@2.5.6 task check && npx -y deno@2.5.6 task test"
   },

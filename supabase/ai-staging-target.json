@@ -1,0 +1,6 @@
+{
+  "stagingProjectRef": "coftskrofgcfzsuqdtpn",
+  "productionProjectRef": "aywgulopittrbkkbwjwn",
+  "stagingOrigins": ["https://localhost:8443"],
+  "productionOrigins": ["https://notanota.online", "https://www.notanota.online", "https://alperferitko.github.io"]
+}

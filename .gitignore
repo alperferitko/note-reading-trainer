@@ -79,3 +79,7 @@ next-env.d.ts
 
 # allow public environment variable template
 !.env.example
+
+# staging preview build and its self-signed certificate
+/out-staging/
+/.staging-cert/

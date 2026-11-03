@@ -1,0 +1,1853 @@
+{
+ "soprano": [
+  [
+   {
+    "bar": 1,
+    "step": "B",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 1,
+    "step": "B",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 1,
+    "step": "C",
+    "alter": 0,
+    "octave": 5,
+    "beats": 1
+   },
+   {
+    "bar": 1,
+    "step": "D",
+    "alter": 0,
+    "octave": 5,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 2,
+    "step": "D",
+    "alter": 0,
+    "octave": 5,
+    "beats": 1
+   },
+   {
+    "bar": 2,
+    "step": "C",
+    "alter": 0,
+    "octave": 5,
+    "beats": 1
+   },
+   {
+    "bar": 2,
+    "step": "B",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 2,
+    "step": "A",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 3,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 3,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 3,
+    "step": "A",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 3,
+    "step": "B",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 4,
+    "step": "B",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1.5
+   },
+   {
+    "bar": 4,
+    "step": "A",
+    "alter": 0,
+    "octave": 4,
+    "beats": 0.5
+   },
+   {
+    "bar": 4,
+    "step": "A",
+    "alter": 0,
+    "octave": 4,
+    "beats": 2
+   }
+  ],
+  [
+   {
+    "bar": 5,
+    "step": "B",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 5,
+    "step": "B",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 5,
+    "step": "C",
+    "alter": 0,
+    "octave": 5,
+    "beats": 1
+   },
+   {
+    "bar": 5,
+    "step": "D",
+    "alter": 0,
+    "octave": 5,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 6,
+    "step": "D",
+    "alter": 0,
+    "octave": 5,
+    "beats": 1
+   },
+   {
+    "bar": 6,
+    "step": "C",
+    "alter": 0,
+    "octave": 5,
+    "beats": 1
+   },
+   {
+    "bar": 6,
+    "step": "B",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 6,
+    "step": "A",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 7,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 7,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 7,
+    "step": "A",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 7,
+    "step": "B",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 8,
+    "step": "A",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1.5
+   },
+   {
+    "bar": 8,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 0.5
+   },
+   {
+    "bar": 8,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 2
+   }
+  ],
+  [
+   {
+    "bar": 9,
+    "step": "A",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 9,
+    "step": "A",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 9,
+    "step": "B",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 9,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 10,
+    "step": "A",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 10,
+    "step": "B",
+    "alter": 0,
+    "octave": 4,
+    "beats": 0.5
+   },
+   {
+    "bar": 10,
+    "step": "C",
+    "alter": 0,
+    "octave": 5,
+    "beats": 0.5
+   },
+   {
+    "bar": 10,
+    "step": "B",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 10,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 11,
+    "step": "A",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 11,
+    "step": "B",
+    "alter": 0,
+    "octave": 4,
+    "beats": 0.5
+   },
+   {
+    "bar": 11,
+    "step": "C",
+    "alter": 0,
+    "octave": 5,
+    "beats": 0.5
+   },
+   {
+    "bar": 11,
+    "step": "B",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 11,
+    "step": "A",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 12,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 12,
+    "step": "A",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 12,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 2
+   }
+  ],
+  [
+   {
+    "bar": 13,
+    "step": "B",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 13,
+    "step": "B",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 13,
+    "step": "C",
+    "alter": 0,
+    "octave": 5,
+    "beats": 1
+   },
+   {
+    "bar": 13,
+    "step": "D",
+    "alter": 0,
+    "octave": 5,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 14,
+    "step": "D",
+    "alter": 0,
+    "octave": 5,
+    "beats": 1
+   },
+   {
+    "bar": 14,
+    "step": "C",
+    "alter": 0,
+    "octave": 5,
+    "beats": 1
+   },
+   {
+    "bar": 14,
+    "step": "B",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 14,
+    "step": "A",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 15,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 15,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 15,
+    "step": "A",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 15,
+    "step": "B",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 16,
+    "step": "A",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1.5
+   },
+   {
+    "bar": 16,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 0.5
+   },
+   {
+    "bar": 16,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 2
+   }
+  ]
+ ],
+ "alto": [
+  [
+   {
+    "bar": 1,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 1,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 1,
+    "step": "A",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 1,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 2,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1.5
+   },
+   {
+    "bar": 2,
+    "step": "A",
+    "alter": 0,
+    "octave": 4,
+    "beats": 0.5
+   },
+   {
+    "bar": 2,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 2,
+    "step": "F",
+    "alter": 1,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 3,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 3,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 3,
+    "step": "F",
+    "alter": 1,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 3,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 4,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1.5
+   },
+   {
+    "bar": 4,
+    "step": "F",
+    "alter": 1,
+    "octave": 4,
+    "beats": 0.5
+   },
+   {
+    "bar": 4,
+    "step": "F",
+    "alter": 1,
+    "octave": 4,
+    "beats": 2
+   }
+  ],
+  [
+   {
+    "bar": 5,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 5,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 5,
+    "step": "A",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 5,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 6,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1.5
+   },
+   {
+    "bar": 6,
+    "step": "A",
+    "alter": 0,
+    "octave": 4,
+    "beats": 0.5
+   },
+   {
+    "bar": 6,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 6,
+    "step": "F",
+    "alter": 1,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 7,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 7,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 7,
+    "step": "F",
+    "alter": 1,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 7,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 8,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 8,
+    "step": "F",
+    "alter": 1,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 8,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 2
+   }
+  ],
+  [
+   {
+    "bar": 9,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 9,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 9,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 9,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 10,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 10,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 10,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 10,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 11,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 11,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 11,
+    "step": "F",
+    "alter": 1,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 11,
+    "step": "F",
+    "alter": 1,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 12,
+    "step": "E",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 12,
+    "step": "C",
+    "alter": 1,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 12,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 2
+   }
+  ],
+  [
+   {
+    "bar": 13,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 13,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 13,
+    "step": "A",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 13,
+    "step": "A",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 14,
+    "step": "B",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 14,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 0.5
+   },
+   {
+    "bar": 14,
+    "step": "A",
+    "alter": 0,
+    "octave": 4,
+    "beats": 0.5
+   },
+   {
+    "bar": 14,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 14,
+    "step": "E",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 15,
+    "step": "E",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 15,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 15,
+    "step": "F",
+    "alter": 1,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 15,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 16,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 16,
+    "step": "F",
+    "alter": 1,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 16,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 2
+   }
+  ]
+ ],
+ "tenor": [
+  [
+   {
+    "bar": 1,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 1,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 1,
+    "step": "C",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 1,
+    "step": "B",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 2,
+    "step": "E",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1.5
+   },
+   {
+    "bar": 2,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 0.5
+   },
+   {
+    "bar": 2,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 2,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 3,
+    "step": "B",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 3,
+    "step": "B",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 3,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 3,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 4,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1.5
+   },
+   {
+    "bar": 4,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 0.5
+   },
+   {
+    "bar": 4,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 2
+   }
+  ],
+  [
+   {
+    "bar": 5,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 5,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 5,
+    "step": "C",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 5,
+    "step": "B",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 6,
+    "step": "E",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1.5
+   },
+   {
+    "bar": 6,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 0.5
+   },
+   {
+    "bar": 6,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 6,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 7,
+    "step": "B",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 7,
+    "step": "B",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 7,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 7,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 8,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 8,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 8,
+    "step": "B",
+    "alter": 0,
+    "octave": 3,
+    "beats": 2
+   }
+  ],
+  [
+   {
+    "bar": 9,
+    "step": "F",
+    "alter": 1,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 9,
+    "step": "F",
+    "alter": 1,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 9,
+    "step": "G",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 9,
+    "step": "E",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 10,
+    "step": "F",
+    "alter": 1,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 10,
+    "step": "G",
+    "alter": 0,
+    "octave": 3,
+    "beats": 0.5
+   },
+   {
+    "bar": 10,
+    "step": "A",
+    "alter": 0,
+    "octave": 3,
+    "beats": 0.5
+   },
+   {
+    "bar": 10,
+    "step": "G",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 10,
+    "step": "E",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 11,
+    "step": "F",
+    "alter": 1,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 11,
+    "step": "F",
+    "alter": 1,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 11,
+    "step": "F",
+    "alter": 1,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 11,
+    "step": "B",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 12,
+    "step": "B",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 12,
+    "step": "A",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 12,
+    "step": "G",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 12,
+    "step": "F",
+    "alter": 1,
+    "octave": 3,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 13,
+    "step": "G",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 13,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 13,
+    "step": "F",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 13,
+    "step": "F",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 14,
+    "step": "G",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1.5
+   },
+   {
+    "bar": 14,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 0.5
+   },
+   {
+    "bar": 14,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 14,
+    "step": "C",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 15,
+    "step": "G",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 15,
+    "step": "G",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 15,
+    "step": "C",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 15,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 16,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 16,
+    "step": "D",
+    "alter": 0,
+    "octave": 4,
+    "beats": 1
+   },
+   {
+    "bar": 16,
+    "step": "B",
+    "alter": 0,
+    "octave": 3,
+    "beats": 2
+   }
+  ]
+ ],
+ "bass": [
+  [
+   {
+    "bar": 1,
+    "step": "G",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 1,
+    "step": "G",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 1,
+    "step": "G",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 1,
+    "step": "G",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 2,
+    "step": "E",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1.5
+   },
+   {
+    "bar": 2,
+    "step": "F",
+    "alter": 1,
+    "octave": 3,
+    "beats": 0.5
+   },
+   {
+    "bar": 2,
+    "step": "G",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 2,
+    "step": "D",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 3,
+    "step": "B",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 3,
+    "step": "B",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 3,
+    "step": "A",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 3,
+    "step": "G",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 4,
+    "step": "D",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1.5
+   },
+   {
+    "bar": 4,
+    "step": "D",
+    "alter": 0,
+    "octave": 3,
+    "beats": 0.5
+   },
+   {
+    "bar": 4,
+    "step": "D",
+    "alter": 0,
+    "octave": 3,
+    "beats": 2
+   }
+  ],
+  [
+   {
+    "bar": 5,
+    "step": "G",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 5,
+    "step": "G",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 5,
+    "step": "G",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 5,
+    "step": "G",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 6,
+    "step": "E",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1.5
+   },
+   {
+    "bar": 6,
+    "step": "F",
+    "alter": 1,
+    "octave": 3,
+    "beats": 0.5
+   },
+   {
+    "bar": 6,
+    "step": "G",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 6,
+    "step": "D",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 7,
+    "step": "B",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 7,
+    "step": "B",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 7,
+    "step": "A",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 7,
+    "step": "G",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 8,
+    "step": "D",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 8,
+    "step": "D",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 8,
+    "step": "G",
+    "alter": 0,
+    "octave": 2,
+    "beats": 2
+   }
+  ],
+  [
+   {
+    "bar": 9,
+    "step": "D",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 9,
+    "step": "D",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 9,
+    "step": "D",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 9,
+    "step": "D",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 10,
+    "step": "D",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 10,
+    "step": "D",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 10,
+    "step": "D",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 10,
+    "step": "D",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 11,
+    "step": "D",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 11,
+    "step": "D",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 11,
+    "step": "D",
+    "alter": 1,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 11,
+    "step": "D",
+    "alter": 1,
+    "octave": 3,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 12,
+    "step": "E",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 12,
+    "step": "A",
+    "alter": 0,
+    "octave": 2,
+    "beats": 1
+   },
+   {
+    "bar": 12,
+    "step": "D",
+    "alter": 0,
+    "octave": 3,
+    "beats": 2
+   }
+  ],
+  [
+   {
+    "bar": 13,
+    "step": "G",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 13,
+    "step": "G",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 13,
+    "step": "F",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 13,
+    "step": "F",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 14,
+    "step": "E",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1.5
+   },
+   {
+    "bar": 14,
+    "step": "F",
+    "alter": 1,
+    "octave": 3,
+    "beats": 0.5
+   },
+   {
+    "bar": 14,
+    "step": "G",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 14,
+    "step": "C",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 15,
+    "step": "C",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 15,
+    "step": "B",
+    "alter": 0,
+    "octave": 2,
+    "beats": 1
+   },
+   {
+    "bar": 15,
+    "step": "A",
+    "alter": 0,
+    "octave": 2,
+    "beats": 1
+   },
+   {
+    "bar": 15,
+    "step": "G",
+    "alter": 0,
+    "octave": 2,
+    "beats": 1
+   }
+  ],
+  [
+   {
+    "bar": 16,
+    "step": "D",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 16,
+    "step": "D",
+    "alter": 0,
+    "octave": 3,
+    "beats": 1
+   },
+   {
+    "bar": 16,
+    "step": "G",
+    "alter": 0,
+    "octave": 2,
+    "beats": 2
+   }
+  ]
+ ]
+}

@@ -1419,7 +1419,7 @@ export default function Home() {
       {stage === "settings" && <SettingsPage locale={locale} soundEnabled={noteSoundEnabled} onToggleSound={toggleNoteSound} onChangeLocale={changeLocale} onNavigate={(target) => navigateTo(target as Stage)} />}
       {stage === "pricing" && <PricingPage locale={locale} onOpenChat={() => window.dispatchEvent(new Event("notanota-open-chat"))} onStudio={() => navigateTo("setup")} />}
       {stage === "notfound" && <NotFound locale={locale} onHome={() => navigateTo("landing")} onStudio={() => navigateTo("practice")} />}
-      {!immersiveSession && <ChatWidget locale={locale} />}
+      {!immersiveSession && <ChatWidget locale={locale} onAction={handleTeacherAction} />}
       {stage === "teacher" && <Suspense fallback={<Skeleton kind="panel" locale={locale} />}><AiWorkspace locale={locale} evidence={evidence} owner={communityUserId} onQuickStart={startSession} onStartPlan={startPlan} onPractiseRange={practiseRange} onStudio={() => navigateTo("setup")} onTeacherAction={handleTeacherAction} /></Suspense>}
       {stage === "palettes" && <Suspense fallback={<Skeleton kind="panel" locale={locale} />}><PaletteReview locale={locale} soundEnabled={noteSoundEnabled} /></Suspense>}
       {(stage === "lessons" || stage === "progress" || stage === "practice") && <LearningStudio key={stage} view={stage} locale={locale} onNavigate={navigateTo} initialLessonId={stage === "lessons" ? requestedLessonId : null} />}

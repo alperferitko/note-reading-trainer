@@ -17,6 +17,9 @@ const LOOP = 52; // seconds for a golden note to cross the whole staff, a little
 const STEP = 13 / 2; // half a staff space on the ribbon, in px
 // The head of the note sits at this point of its 48 x 64 button (the glyph is drawn into inset 8px 10px).
 const HEAD: [number, number] = [22, 50];
+const LINGER = 1400; // ms a note keeps waiting after the pointer leaves it, so it is easy to come back to
+type Box = { left: number; top: number; right: number; bottom: number };
+const overlaps = (a: Box, b: Box, pad = 6) => a.left < b.right + pad && a.right > b.left - pad && a.top < b.bottom + pad && a.bottom > b.top - pad;
 
 const TEXT = {
   tr: {
@@ -56,17 +59,24 @@ export function GlowNotes({ locale, onStudio }: { locale: Locale; onStudio: () =
     const buttons = [...box.querySelectorAll<HTMLButtonElement>(".glow-note")];
     const progress = RIDERS.map(([start]) => start);
     const held = RIDERS.map(() => false);
-    let visible = true, frame = 0, last = 0, path: SVGPathElement | null = null, length = 0, dx = 0, dy = 0, boxLeft = 0;
+    const linger = RIDERS.map(() => 0);
+    let visible = true, frame = 0, last = 0, path: SVGPathElement | null = null, length = 0, dx = 0, dy = 0;
     const measure = () => {
       path = hero.querySelector<SVGPathElement>("#hero-ribbon-path");
       const svg = path?.ownerSVGElement;
       if (!path || !svg) { length = 0; return; }
       length = path.getTotalLength();
       const a = svg.getBoundingClientRect(), b = box.getBoundingClientRect();
-      dx = a.left - b.left; dy = a.top - b.top; boxLeft = b.left;
+      dx = a.left - b.left; dy = a.top - b.top;
     };
     const draw = () => {
       if (!path || !length) measure();
+      // The card and the copy sit above the notes. A note passing behind them offers nothing; an invitation
+      // opens below its note, or above it when below would run under the card or off the screen, or not at all.
+      const covers: Box[] = [...hero.querySelectorAll<HTMLElement>(".hero-quiz, .lp-hero-copy")].map((el) => el.getBoundingClientRect());
+      const origin = box.getBoundingClientRect();
+      const screen: Box = { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
+      let invited = buttons.some((b, j) => held[j]);
       buttons.forEach((button, i) => {
         if (!path || !length) { button.style.visibility = "hidden"; return; }
         const u = progress[i];
@@ -74,13 +84,28 @@ export function GlowNotes({ locale, onStudio }: { locale: Locale; onStudio: () =
         const x = point.x + dx - HEAD[0], y = point.y + dy - RIDERS[i][1] * STEP - HEAD[1];
         button.style.visibility = "";
         button.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
+        const left = origin.left + x, top = origin.top + y;
+        const note: Box = { left, top, right: left + 48, bottom: top + 64 };
+        const covered = covers.some((c) => overlaps(note, c, -8));
+        button.toggleAttribute("data-covered", covered);
         // The invitation opens toward the middle near either edge of the screen, never off it.
-        const screenX = x + boxLeft;
-        button.dataset.tip = screenX < 130 ? "start" : screenX > window.innerWidth - 150 ? "end" : "";
+        const tip = button.firstElementChild as HTMLElement | null;
+        const w = tip?.offsetWidth ?? 210, h = tip?.offsetHeight ?? 44;
+        const align = left < 130 ? "start" : left > window.innerWidth - 150 ? "end" : "";
+        button.dataset.tip = align;
+        const tipLeft = align === "start" ? left + 6 : align === "end" ? note.right - 6 - w : left + HEAD[0] - w / 2;
+        const fits = (tipTop: number) => {
+          const r: Box = { left: tipLeft, top: tipTop, right: tipLeft + w, bottom: tipTop + h };
+          return !covers.some((c) => overlaps(r, c)) && r.top >= screen.top + 8 && r.bottom <= screen.bottom - 8 && r.left >= 4 && r.right <= screen.right - 4;
+        };
+        const side = covered ? "off" : fits(note.bottom + 2) ? "" : fits(top - 2 - h) ? "above" : "off";
+        button.dataset.tipSide = side;
         // Soft in and out at the ends of the staff, where the painting's edge takes it; a held note stays lit.
         const edge = Math.min(1, u / 0.05, (1 - u) / 0.07);
         button.style.opacity = held[i] ? "1" : Math.max(0, edge).toFixed(2);
-        button.classList.toggle("is-inviting", i === 0 && u > 0.18 && u < 0.62 && !buttons.some((b, j) => j !== i && held[j]));
+        const invite = !invited && side !== "off" && u > 0.18 && u < 0.7 && i === buttons.findIndex((b, j) => !b.hasAttribute("data-covered") && b.dataset.tipSide !== "off" && progress[j] > 0.18 && progress[j] < 0.7);
+        if (invite) invited = true;
+        button.classList.toggle("is-inviting", invite);
       });
     };
     const tick = (now: number) => {
@@ -97,9 +122,13 @@ export function GlowNotes({ locale, onStudio }: { locale: Locale; onStudio: () =
       if (!run && frame) { window.cancelAnimationFrame(frame); frame = 0; }
       if (!run) draw();
     };
-    const hold = (i: number, on: boolean) => () => { held[i] = on || buttons[i] === document.activeElement || buttons[i].matches(":hover"); if (!frame) draw(); };
+    const hold = (i: number, on: boolean, wait = 0) => () => {
+      window.clearTimeout(linger[i]);
+      const settle = () => { held[i] = on || buttons[i] === document.activeElement || buttons[i].matches(":hover"); if (!frame) draw(); };
+      if (on || !wait) settle(); else linger[i] = window.setTimeout(settle, wait);
+    };
     const listeners = buttons.flatMap((button, i) => {
-      const pairs: [string, () => void][] = [["pointerenter", hold(i, true)], ["pointerleave", hold(i, false)], ["focus", hold(i, true)], ["blur", hold(i, false)]];
+      const pairs: [string, () => void][] = [["pointerenter", hold(i, true)], ["pointerleave", hold(i, false, LINGER)], ["focus", hold(i, true)], ["blur", hold(i, false, LINGER)]];
       pairs.forEach(([type, fn]) => button.addEventListener(type, fn));
       return pairs.map(([type, fn]) => () => button.removeEventListener(type, fn));
     });
@@ -116,6 +145,7 @@ export function GlowNotes({ locale, onStudio }: { locale: Locale; onStudio: () =
     sync();
     return () => {
       if (frame) window.cancelAnimationFrame(frame);
+      linger.forEach((id) => window.clearTimeout(id));
       seen.disconnect(); resize.disconnect(); ribbon.disconnect();
       listeners.forEach((off) => off());
       document.removeEventListener("visibilitychange", sync);

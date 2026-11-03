@@ -389,6 +389,9 @@ html:not([data-theme=dark]) .lp .lp-hero-scene .ribbon-lines { opacity: .22; }
 .glow-note:hover .glow-note-tip, .glow-note:focus-visible .glow-note-tip, .glow-note.is-inviting .glow-note-tip { opacity: 1; }
 .glow-note[data-tip=start] .glow-note-tip { left: 6px; transform: none; }
 .glow-note[data-tip=end] .glow-note-tip { left: auto; right: 6px; transform: none; }
+.glow-note[data-tip-side=above] .glow-note-tip { top: auto; bottom: calc(100% + 2px); }
+/* Never an invitation from a note behind the card or the copy, nor while another panel is open. */
+.glow-note[data-tip-side=off] .glow-note-tip, :root:has(dialog[open], .chat-panel) .glow-note-tip { opacity: 0 !important; }
 @keyframes glow-breathe { 0%, 100% { opacity: .5; transform: scale(.85); } 50% { opacity: 1; transform: scale(1.1); } }
 .glow-notes.is-paused .glow-note::after { animation-play-state: paused; }
 html:not([data-theme=dark]) .glow-note { color: #eaa823; }

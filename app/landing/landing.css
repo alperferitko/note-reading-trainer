@@ -91,6 +91,15 @@
 .lp :is(.lp-actions, .hero-quiz-actions) > :is(button, a) { margin: 0; }
 
 .hero-quiz { background: var(--surface); border-radius: 28px; padding: clamp(24px, 3vw, 40px); box-shadow: var(--shadow-2); }
+/* Learn and Guess are two modes of the card, chosen at its top; the active one reads as pressed. */
+.hero-quiz-mode { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 6px; }
+.hero-quiz-mode > button:first-child { border-radius: 10px 4px 4px 10px; }
+.hero-quiz-mode > button:nth-child(2) { border-radius: 4px 10px 10px 4px; margin-right: 10px; }
+.hero-quiz-mode button { min-height: 38px; padding: 0 16px; border: 0; background: var(--background-deep); color: var(--foreground-muted); font: 600 14px var(--fx-ui); cursor: pointer; transition: background-color 160ms ease, color 160ms ease; }
+.hero-quiz-mode button[aria-pressed="true"] { background: var(--primary); color: var(--primary-foreground); }
+.hero-quiz-mode button[aria-pressed="false"]:hover { color: var(--foreground); }
+.hero-quiz-mode button:focus-visible { outline: 3px solid var(--primary); outline-offset: 1px; }
+.hero-quiz-note { color: var(--foreground-muted); font-size: 14px; }
 .hero-quiz-stage { position: relative; }
 .hero-quiz[data-state="show"] .hero-quiz-staff .staff-note { animation: note-in 520ms cubic-bezier(.2, .7, .2, 1); }
 @keyframes note-in { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
@@ -211,28 +220,28 @@
 .lp-ai { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: clamp(28px, 5vw, 80px); align-items: center; }
 .lp-ai .lp-section-head { margin: 0; }
 .lp-ai-try { margin-top: 28px; }
-.ai-preview { margin: 0; background: var(--surface); border-radius: 28px; padding: clamp(22px, 3vw, 36px); box-shadow: var(--shadow-2); }
-.ai-preview-body { display: grid; gap: 14px; pointer-events: none; user-select: none; }
-.ai-preview-label { justify-self: start; padding: 3px 10px; border-radius: 999px; background: var(--background-deep); color: var(--foreground-muted); font-family: var(--fx-ui); font-size: 12px; font-weight: 600; }
+.ai-preview { margin: 0; background: var(--surface); border-radius: 24px; box-shadow: var(--shadow-2); overflow: hidden; }
+.ai-preview-body { display: grid; pointer-events: none; user-select: none; }
+.ai-preview .chat-head { padding: 18px 20px 10px; }
+.ai-preview .chat-log { overflow: visible; padding: 6px 20px 14px; gap: 12px; }
+.ai-preview .chat-msg { font-size: 16px; }
+.ai-preview .chat-msg--teacher { max-width: 94%; gap: 10px; }
+.ai-preview .chat-form { padding: 6px 20px 20px; }
+/* The student's line is there first; the answer's bubble and staff lines wait for the travelling clef, and
+   its words and notes appear once the clef is seated. Opacity only, space kept: the staff the clef lands on
+   must not move. */
 .ai-msg--you, .ai-suggest { opacity: 0; transition: opacity 600ms ease; }
-/* Opacity only, space kept: the staff inside the answer must not move, the travelling clef lands on it.
-   The answer's bubble and staff lines wait for the clef; its words and notes appear once it is seated. */
 .ai-msg--teacher > p, .ai-msg--teacher .staff-note { opacity: 0; transition: opacity 600ms ease; }
 .ai-msg--teacher .staff-note { transition-delay: 250ms; }
 .ai-msg--you.is-in, .ai-suggest.is-in, .ai-msg--teacher.is-in > p, .ai-msg--teacher.is-in .staff-note { opacity: 1; }
-.ai-typing { position: absolute; left: 16px; top: 18px; display: flex; gap: 5px; transition: opacity 300ms ease; }
-.ai-typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--foreground-muted); opacity: .5; animation: ai-typing 1.2s ease-in-out infinite; }
-.ai-typing i:nth-child(2) { animation-delay: .15s; } .ai-typing i:nth-child(3) { animation-delay: .3s; }
-.ai-msg--teacher { position: relative; }
-.ai-msg--teacher.is-in .ai-typing { opacity: 0; }
-@keyframes ai-typing { 0%, 100% { transform: translateY(0); opacity: .35; } 50% { transform: translateY(-3px); opacity: .8; } }
-.ai-msg { max-width: 88%; padding: 14px 16px; border-radius: 18px; line-height: 1.55; }
-.ai-msg--you { justify-self: end; background: var(--primary); color: var(--primary-foreground); border-bottom-right-radius: 6px; }
-.ai-msg--teacher { background: var(--background-deep); border-bottom-left-radius: 6px; display: grid; gap: 10px; }
-.ai-msg--teacher .staff-figure { max-width: 340px; }
-.ai-suggest { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 18px; border-radius: 18px; background: var(--accent-soft); }
-.ai-suggest span { font-size: 14px; color: var(--foreground-muted); }
-.ai-suggest b { color: var(--primary); }
+@media (max-width: 560px) {
+  .ai-preview .chat-head { padding: 14px 14px 8px; }
+  .ai-preview .chat-log { padding: 4px 14px 12px; }
+  .ai-preview .chat-form { padding: 4px 14px 14px; }
+  .ai-preview .chat-msg { font-size: 15px; }
+}
+.ai-msg--teacher > .chat-typing { position: absolute; left: 16px; top: 18px; transition: opacity 300ms ease; }
+.ai-msg--teacher.is-in > .chat-typing { opacity: 0; }
 
 /* ---------- Learning path ---------- */
 .lp-path { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px; align-items: start; }
@@ -324,39 +333,20 @@
 .chat-bubble {
   position: fixed; right: 20px; bottom: 20px; z-index: 70; width: 56px; height: 56px; border: 0; border-radius: 20px;
   display: grid; place-items: center; background: var(--primary); color: var(--primary-foreground); box-shadow: var(--shadow-2); cursor: pointer;
-  transition: transform 180ms ease;
+  transition: transform 180ms cubic-bezier(.2, .7, .3, 1), background-color 180ms ease;
 }
-.chat-bubble:hover { transform: translateY(-2px); }
+/* Hover only where a pointer really hovers, so a tap never leaves it stuck; it grows from its centre in place. */
+@media (hover: hover) and (pointer: fine) {
+  .chat-bubble:hover { transform: scale(1.025); background: color-mix(in srgb, var(--primary) 84%, #000); }
+}
+.chat-bubble:active { background: color-mix(in srgb, var(--primary) 80%, #000); }
+.chat-bubble:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
 .chat-bubble svg:not(.ai-icon) { width: 26px; height: 26px; }
 .chat-panel {
   position: fixed; right: 20px; bottom: 88px; z-index: 71; width: min(380px, calc(100vw - 24px)); height: min(560px, calc(100svh - 140px));
   display: grid; grid-template-rows: auto 1fr auto auto; background: var(--surface); color: var(--foreground); border-radius: 24px; box-shadow: var(--shadow-2);
   overflow: hidden; animation: open-down 260ms cubic-bezier(.2, .7, .2, 1);
 }
-.chat-head { display: flex; align-items: center; gap: 10px; padding: 16px 16px 12px 20px; }
-.chat-head h2 { font-family: var(--fx-display); font-size: 18px; font-weight: 600; margin: 0; }
-.chat-close { margin-left: auto; width: 40px; height: 40px; border: 0; border-radius: 12px; background: var(--background-deep); color: var(--foreground); display: grid; place-items: center; cursor: pointer; }
-.chat-close svg { width: 18px; height: 18px; }
-.chat-log { overflow-y: auto; padding: 4px 16px 12px; display: flex; flex-direction: column; gap: 10px; }
-.chat-empty { color: var(--foreground-muted); line-height: 1.5; font-size: 15px; margin: 0; }
-.chat-msg { max-width: 88%; padding: 10px 14px; border-radius: 16px; line-height: 1.5; font-size: 15px; display: grid; gap: 6px; }
-.chat-msg p { margin: 0; }
-.chat-msg--you { align-self: flex-end; background: var(--primary); color: var(--primary-foreground); border-bottom-right-radius: 6px; }
-.chat-msg--teacher { align-self: flex-start; background: var(--background-deep); border-bottom-left-radius: 6px; }
-.chat-waiting { display: flex; align-items: center; gap: 8px; color: var(--foreground-muted); font-size: 14px; }
-.chat-waiting span { display: inline-flex; gap: 3px; }
-.chat-waiting i { width: 6px; height: 6px; border-radius: 999px; background: currentColor; animation: dot 1s infinite ease-in-out; }
-.chat-waiting i:nth-child(2) { animation-delay: .15s; }
-.chat-waiting i:nth-child(3) { animation-delay: .3s; }
-@keyframes dot { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
-.chat-error { color: var(--danger); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.chat-topics { display: grid; gap: 6px; padding: 0 16px 10px; }
-.chat-topics button { text-align: left; padding: 10px 12px; border: 0; border-radius: 14px; background: var(--background-deep); color: var(--foreground); cursor: pointer; font-size: 14px; }
-.chat-topics button:hover { background: var(--accent-soft); color: var(--primary); }
-.chat-form { display: flex; gap: 8px; padding: 12px 16px 16px; }
-.chat-form input { flex: 1; min-width: 0; min-height: 44px; padding: 0 14px; border-radius: 14px; border: 0; background: var(--background-deep); color: var(--foreground); font: inherit; }
-.app-shell .chat-form .primary-button { width: auto; min-height: 44px; padding: 0 16px; border-radius: 14px; }
-.chat-form .primary-button:disabled { opacity: .5; }
 
 /* ---------- Skeleton ---------- */
 .skeleton { width: min(1240px, 100%); margin: 0 auto; padding: 48px var(--fx-margin); }
@@ -414,16 +404,15 @@
   .clef-traveler { display: none; }
   .lp-hero-scene { animation: none; }
   .ribbon-lines, .ribbon-riders { transition: none; transform: none; }
-  .sk, .nf-lost, [data-clef-host] > .clef-glow > i, .chat-waiting i { animation: none; }
-  .ai-msg, .ai-suggest, .ai-msg--teacher > p, .ai-msg--teacher .staff-note { opacity: 1; transform: none; transition: none; }
-  .ai-typing { display: none; }
+  .sk, .nf-lost, [data-clef-host] > .clef-glow > i { animation: none; }
+  .ai-msg--you, .ai-suggest, .ai-msg--teacher > p, .ai-msg--teacher .staff-note { opacity: 1; transform: none; transition: none; }
+  .ai-msg--teacher > .chat-typing { display: none; }
   .hero-quiz *, .lp-tile { animation: none !important; transition: none !important; }
 }
 
 /* NotaNota AI mark */
 .ai-icon { display: block; flex: none; }
 .chat-bubble .ai-icon { width: 30px; height: 30px; }
-.chat-head-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: var(--accent-soft); color: var(--primary); }
 
 /* ---------- NotaNota AI workspace ---------- */
 .aiw { padding-top: 40px; }

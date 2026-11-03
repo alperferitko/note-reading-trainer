@@ -3,9 +3,14 @@
 import { AiIcon } from "./ai-icon";
 import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { createDemoTeacher } from "@/lib/teacher-demo.mjs";
+import { ChatComposer, ChatHeader, ChatMessage, ChatStaff, ChatSuggestion, ChatTyping } from "../chat-ui";
+import type { TeacherAction } from "./teacher-demo";
 
 type Locale = "tr" | "en";
-type Message = { id: number; from: "you" | "teacher"; lines: string[] };
+type Reply = ReturnType<ReturnType<typeof createDemoTeacher>["ask"]>;
+type Message = { id: number; from: "you" | "teacher"; lines: string[]; reply?: Reply };
+const NAMES = { tr: ["Do", "Re", "Mi", "Fa", "Sol", "La", "Si"], en: ["C", "D", "E", "F", "G", "A", "B"] } as const;
+const nameAt = (position: number, locale: Locale) => NAMES[locale][((position + 2) % 7 + 7) % 7];
 
 const TEXT = {
   tr: {
@@ -19,6 +24,8 @@ const TEXT = {
     waiting: "Yanıt hazırlanıyor",
     error: "Yanıt alınamadı.",
     retry: "Tekrar dene",
+    suggestion: "Önerilen alıştırma",
+    staff: "Konuşmada geçen notalar",
   },
   en: {
     open: "Open the NotaNota AI chat",
@@ -31,11 +38,17 @@ const TEXT = {
     waiting: "Preparing an answer",
     error: "No answer came back.",
     retry: "Try again",
+    suggestion: "Suggested practice",
+    staff: "The notes in this answer",
   },
 } as const;
 
-/** The bottom-right chat: separate from the landing preview, labelled as sample answers. */
-export function ChatWidget({ locale, hidden = false }: { locale: Locale; hidden?: boolean }) {
+/**
+ * The bottom-right chat. It opens empty: the user writes their own message or picks a topic, and nothing
+ * prepared is ever shown as their history. Its answers are labelled as samples until a live teacher is
+ * connected; a suggested practice really opens.
+ */
+export function ChatWidget({ locale, hidden = false, onAction }: { locale: Locale; hidden?: boolean; onAction?: (action: TeacherAction) => void }) {
   const t = TEXT[locale];
   const teacher = useMemo(() => createDemoTeacher(), []);
   const [open, setOpen] = useState(false);
@@ -67,11 +80,19 @@ export function ChatWidget({ locale, hidden = false }: { locale: Locale; hidden?
     try {
       // The sample adapter answers at once; a connected teacher would resolve later through the same call.
       const reply = await Promise.resolve(teacher.ask({ ...request, locale }));
-      setMessages((list) => [...list, { id: ++serial.current, from: "teacher", lines: reply.teacher }]);
+      setMessages((list) => [...list, { id: ++serial.current, from: "teacher", lines: reply.teacher, reply }]);
       setState("idle");
     } catch {
       setState("error");
     }
+  }
+
+  function run(action: Reply["actions"][number]) {
+    if (!onAction) return;
+    if (action.id === "open-focus") onAction({ kind: "focus", notes: action.payload.notes ?? [], repeats: action.payload.repeats ?? 2 });
+    else if (action.id === "open-measure") onAction({ kind: "measure", from: action.payload.from ?? 1, to: action.payload.to ?? 1 });
+    else return;
+    setOpen(false);
   }
 
   function submit(event: FormEvent) {
@@ -100,20 +121,25 @@ export function ChatWidget({ locale, hidden = false }: { locale: Locale; hidden?
       </button>
       {open && (
         <div ref={panel} id="chat-panel" className="chat-panel" role="dialog" aria-modal="false" aria-labelledby="chat-title" onKeyDown={onKeyDown}>
-          <header className="chat-head">
-            <span className="chat-head-icon"><AiIcon size={24} /></span>
-            <h2 id="chat-title">{t.title}</h2>
-            <span className="teacher-badge">{t.badge}</span>
-            <button type="button" className="chat-close" aria-label={t.close} onClick={close}>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
-            </button>
-          </header>
+          <ChatHeader id="chat-title" title={t.title} badge={t.badge} onClose={close} closeLabel={t.close} />
           <div className="chat-log" ref={log} aria-live="polite">
             {messages.length === 0 && <p className="chat-empty">{t.empty}</p>}
             {messages.map((m) => (
-              <div key={m.id} className={`chat-msg chat-msg--${m.from}`}>{m.lines.map((line, i) => <p key={i}>{line}</p>)}</div>
+              <ChatMessage key={m.id} from={m.from}>
+                {m.lines.map((line, i) => <p key={i}>{line}</p>)}
+                {m.reply?.staff && (
+                  <ChatStaff label={t.staff} notes={m.reply.staff.notes.map((note: { id: string; position: number; beats?: number }, i: number, all: unknown[]) => ({
+                    id: note.id, position: note.position, beats: note.beats, x: (i + 1) / (all.length + 1),
+                    tone: note.id === m.reply?.staff?.focus ? "focus" : "quiet", label: nameAt(note.position, locale),
+                  }))} />
+                )}
+                {m.reply?.actions.map((action: Reply["actions"][number]) => (
+                  <ChatSuggestion key={action.id} label={t.suggestion} title={action.label} detail={action.detail}
+                    action={onAction ? { label: locale === "tr" ? "Başlat" : "Start", onClick: () => run(action) } : undefined} />
+                ))}
+              </ChatMessage>
             ))}
-            {state === "waiting" && <p className="chat-waiting"><span aria-hidden="true"><i /><i /><i /></span>{t.waiting}</p>}
+            {state === "waiting" && <p className="chat-waiting"><ChatTyping />{t.waiting}</p>}
             {state === "error" && <p className="chat-error">{t.error} <button type="button" className="ghost-button" onClick={() => lastAsk && void ask(lastAsk)}>{t.retry}</button></p>}
           </div>
           {messages.length === 0 && (
@@ -123,11 +149,8 @@ export function ChatWidget({ locale, hidden = false }: { locale: Locale; hidden?
               ))}
             </div>
           )}
-          <form className="chat-form" onSubmit={submit}>
-            <label htmlFor="chat-input" className="sr-only">{t.placeholder}</label>
-            <input ref={input} id="chat-input" value={text} maxLength={280} onChange={(e) => setText(e.target.value)} placeholder={t.placeholder} autoComplete="off" />
-            <button type="submit" className="primary-button" disabled={!text.trim() || state === "waiting"}>{t.send}</button>
-          </form>
+          <ChatComposer inputId="chat-input" inputRef={input} value={text} onChange={setText} onSubmit={submit}
+            placeholder={t.placeholder} sendLabel={t.send} disabled={state === "waiting"} />
         </div>
       )}
     </>

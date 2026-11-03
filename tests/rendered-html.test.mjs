@@ -39,7 +39,7 @@ test("NotaNota çalışma ekranını sunar", async () => {
   assert.match(html, /30 saniyede dene/);
   assert.match(html, /Tahmin et/);
   assert.match(html, /Ne çalışmak istersin\?/);
-  for (const area of ["Nota okuma", "Ritim", "Eser çalışma", "Enstrüman ve kulak", "Önceden hazırlanmış sonuç", "Örnek önizleme", "Soprano partisini çalış"]) assert.match(html, new RegExp(area));
+  for (const area of ["Nota okuma", "Ritim", "Eser çalışma", "Enstrüman ve kulak", "Önceden hazırlanmış sonuç", "Örnek konuşma", "Soprano partisini çalış"]) assert.match(html, new RegExp(area));
   // The staves and the clef anchors are in the first HTML, so the page reads without its script.
   // Four seats: the hero, the reading tile, the AI preview and the closing call (the PDF comparison is engraved by OSMD).
   assert.equal((html.match(/data-clef-anchor="/g) ?? []).length, 4);

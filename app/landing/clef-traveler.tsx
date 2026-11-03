@@ -112,10 +112,10 @@ export function ClefTraveler({ root }: { root: RefObject<HTMLElement | null> }) 
       // Words, actions, the slider and the score: the stops between staves are chosen clear of them.
       // A whole card that is a link counts by its words, not its box, so the margin of a card stays free.
       const boxes: DOMRect[] = [];
-      for (const el of host.querySelectorAll<HTMLElement>("h1, h2, h3, p, a, button, input, label, li, .pdf-frame, .ai-msg, .ai-suggest")) {
+      for (const el of host.querySelectorAll<HTMLElement>("h1, h2, h3, p, a, button, input, label, li, .pdf-frame, .chat-msg, .ai-suggest, .chat-form")) {
         if (el.closest(".clef-traveler") || el.querySelector("[data-clef-anchor]") || el.offsetParent === null) continue;
         const r = el.getBoundingClientRect();
-        if (r.width * r.height < 12000 || el.matches(".pdf-frame, .ai-msg, .ai-suggest")) { boxes.push(r); continue; }
+        if (r.width * r.height < 12000 || el.matches(".pdf-frame, .chat-msg, .ai-suggest, .chat-form")) { boxes.push(r); continue; }
         const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
         for (let t = walk.nextNode(); t; t = walk.nextNode()) if (t.textContent?.trim()) { const range = document.createRange(); range.selectNodeContents(t); boxes.push(range.getBoundingClientRect()); }
       }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { LearningGoals } from "./learning-goals";
 import { PALETTES } from "@/lib/palettes.mjs";
 import { pitchAt, pitchName, readNoteNaming, writeNoteNaming, type NoteNaming } from "@/lib/music-pitch.mjs";
 import { NOTE_VOICES, readNoteVoice, writeNoteVoice, type NoteVoice } from "@/lib/note-voices";
@@ -137,6 +138,8 @@ export function SettingsPage({ locale, soundEnabled, onToggleSound, onChangeLoca
           ))}
         </fieldset>
       </section>
+
+      <LearningGoals locale={locale} />
 
       <section className="settings-section" aria-labelledby="settings-data">
         <h2 id="settings-data">{t.data}</h2>

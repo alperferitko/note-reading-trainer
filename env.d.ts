@@ -8,6 +8,8 @@ interface ImportMetaEnv {
   readonly VITE_AI_GATEWAY_URL?: string;
   /** "true" only in builds whose Supabase project has the score library migration (staging). */
   readonly VITE_SCORE_LIBRARY?: string;
+  /** "true" only where the learning profile and weekly report migration is applied (staging). */
+  readonly VITE_LEARNING_PROFILE?: string;
 }
 
 interface ImportMeta {

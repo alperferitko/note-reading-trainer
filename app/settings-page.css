@@ -57,3 +57,8 @@
   .settings-palettes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .settings-voices { grid-template-columns: minmax(0, 1fr); }
 }
+.settings-goals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+.settings-goals label { display: grid; gap: 6px; font-size: 14px; color: var(--foreground-muted); }
+.settings-goals :is(select, input) { min-height: 44px; padding: 0 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--foreground); font: inherit; }
+.settings-goals-wide { grid-column: 1 / -1; }
+@media (max-width: 640px) { .settings-goals { grid-template-columns: minmax(0, 1fr); } }

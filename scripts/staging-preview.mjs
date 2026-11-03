@@ -39,7 +39,9 @@ if (!process.argv.includes('--no-build')) {
       VITE_SUPABASE_PUBLISHABLE_KEY: env.VITE_SUPABASE_PUBLISHABLE_KEY,
       VITE_AI_GATEWAY_URL: `${stagingUrl}/functions/v1/ai-gateway`,
       // Score uploads, "My scores" and the shared library exist only where their migration is applied.
-      VITE_SCORE_LIBRARY: "true" },
+      VITE_SCORE_LIBRARY: "true",
+      // Learning goals and weekly reports live in tables that also exist only on staging.
+      VITE_LEARNING_PROFILE: "true" },
   });
   if (build.status !== 0) process.exit(build.status ?? 1);
   // The page CSP only allows the production project; this copy must talk to staging instead.

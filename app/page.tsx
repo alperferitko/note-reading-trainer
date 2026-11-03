@@ -6,7 +6,6 @@ import { createPortal } from "react-dom";
 import {
   CommunityHeader,
   CommunityLeaderboardButton,
-  CommunityLegalLink,
   CommunityPracticeRecorder,
   CommunityPracticeStreak,
   CommunityProvider,
@@ -32,7 +31,9 @@ import { LocalResult } from "./local-progress";
 import { ReadingQuickStart } from "./reading-quick-start";
 import { buildTargetedPool, findWeakItems, saveEvidence, spreadRepeats } from "@/lib/practice-evidence.mjs";
 import { TargetedReviewCard, TargetedReviewResult, useEvidence, writtenNoteLabel } from "./targeted-review";
-import { InfoContent, SiteLinks, type InfoPage } from "./site-features";
+import { InfoContent, LEGAL_PAGES, type InfoPage } from "./site-features";
+import { SiteFooter } from "./site-footer";
+import { LegalContent } from "./legal-pages";
 import type { ScoreSubmission, SessionType } from "@/lib/leaderboard";
 import {
   buildSessionInsight,
@@ -60,6 +61,7 @@ const STAGE_ROUTES: Record<Stage, string> = {
   piano: pageRoute('piano'), violin: pageRoute('violin'), rhythm: pageRoute('rhythm'), listening: pageRoute('listening'),
   lessons: pageRoute('lessons'), progress: pageRoute('progress'), practice: pageRoute('practice'), about: pageRoute('about'), how: pageRoute('how'),
   faq: pageRoute('faq'), contact: pageRoute('contact'), roadmap: pageRoute('roadmap'),
+  privacy: pageRoute('privacy'), kvkk: pageRoute('kvkk'), terms: pageRoute('terms'), cookies: pageRoute('cookies'), copyright: pageRoute('copyright'),
   'score-import': pageRoute('score-import'), 'listen-play': pageRoute('listen-play'),
   teacher: pageRoute('teacher'), palettes: pageRoute('palettes'), pricing: pageRoute('pricing'), notfound: pageRoute('landing'),
 };
@@ -1307,7 +1309,7 @@ export default function Home() {
     learn: [
       { stage: "lessons", href: STAGE_ROUTES.lessons, label: "Dersler", hint: "Kısa teori dersleri" },
       { stage: "progress", href: STAGE_ROUTES.progress, label: "İlerlemem", hint: "Beceri haritası ve geçmiş" },
-      { stage: "pricing", href: STAGE_ROUTES.pricing, label: "NotaNota AI", hint: "Kişisel öğretmen" },
+      { stage: "teacher", href: STAGE_ROUTES.teacher, label: "NotaNota AI", hint: "Kişisel öğretmen" },
       { stage: "practice", href: STAGE_ROUTES.practice, label: "Tüm çalışmalar", hint: "Hepsi tek sayfada" },
     ],
   } : {
@@ -1322,7 +1324,7 @@ export default function Home() {
     learn: [
       { stage: "lessons", href: STAGE_ROUTES.lessons, label: "Lessons", hint: "Short theory lessons" },
       { stage: "progress", href: STAGE_ROUTES.progress, label: "My progress", hint: "Skill map and history" },
-      { stage: "pricing", href: STAGE_ROUTES.pricing, label: "NotaNota AI", hint: "A personal teacher" },
+      { stage: "teacher", href: STAGE_ROUTES.teacher, label: "NotaNota AI", hint: "A personal teacher" },
       { stage: "practice", href: STAGE_ROUTES.practice, label: "All practice", hint: "Everything on one page" },
     ],
   };
@@ -1377,7 +1379,7 @@ export default function Home() {
 
       {!immersiveSession && <nav className="mobile-module-navigation" aria-label={shell.navigation}>
         {MOBILE_LINKS.map(([target, key]) => {
-          const on = target === "practice" ? (navGroup !== "landing" && navGroup !== "pricing" && navGroup !== "progress" && navGroup !== "notfound") : navGroup === target;
+          const on = target === "practice" ? !(["landing", "pricing", "progress", "teacher", "notfound"] as (Stage | "more")[]).includes(navGroup) : navGroup === target;
           return (
             <a key={target} href={STAGE_ROUTES[target]} className={on ? "is-active" : ""} onClick={(event) => { event.preventDefault(); navigateTo(target); }} aria-current={on ? "page" : undefined}>
               {shell[key]}
@@ -1412,7 +1414,8 @@ export default function Home() {
         </Suspense>
       )}
       {(stage === 'piano' || stage === 'violin') && <Suspense fallback={<Skeleton kind="panel" locale={locale} />}><InstrumentTrainer key={stage} instrument={stage} locale={locale} noteSoundEnabled={noteSoundEnabled} onSessionActiveChange={setGuitarSessionActive} /></Suspense>}
-      {(['about','how','faq','contact','roadmap'] as string[]).includes(stage) && <InfoContent page={stage as InfoPage} locale={locale} />}
+      {(['about','how','faq','contact','roadmap'] as string[]).includes(stage) && <InfoContent page={stage as Exclude<InfoPage, (typeof LEGAL_PAGES)[number]>} locale={locale} />}
+      {(LEGAL_PAGES as string[]).includes(stage) && <LegalContent page={stage as (typeof LEGAL_PAGES)[number]} locale={locale} onNavigate={(target) => navigateTo(target as Stage)} />}
 
       {stage === "pieces" && (
         <Suspense fallback={<Skeleton kind="studio" locale={locale} />}>
@@ -1829,21 +1832,7 @@ export default function Home() {
       )}
 
       {!immersiveSession && (
-        <footer className="site-footer">
-          <div className="site-footer-bar">
-            <div className="site-footer-brand">
-              <a className="brand-mark brand-mark--footer" href={STAGE_ROUTES.landing} onClick={(event) => { event.preventDefault(); navigateTo("landing"); }} aria-label={copy.homeLabel}><BrandLogo palette={palette} className="footer-logo" /></a>
-              <span>NotaNota</span><p>{copy.footer}</p>
-            </div>
-            <div className="site-extras"><SiteLinks locale={locale} onNavigate={navigateTo} /></div>
-            <div className="site-footer-legal"><CommunityLegalLink /></div>
-          </div>
-          {/* Decorative scene only: every word and link above is real text. Notation for learning is always rendered, never this picture. */}
-          <div className="site-footer-scene" aria-hidden="true">
-            <div className="site-footer-atmos" />
-            <img src="./brand/footer-scene-1440.webp" srcSet="./brand/footer-scene-800.webp 800w, ./brand/footer-scene-1440.webp 1440w, ./brand/footer-scene-2172.webp 2172w" sizes="100vw" width={2172} height={724} alt="" loading="lazy" decoding="async" />
-          </div>
-        </footer>
+        <SiteFooter locale={locale} palette={palette} motto={copy.footer} homeLabel={copy.homeLabel} onNavigate={(target) => navigateTo(target as Stage)} />
       )}
     </main>
     </CommunityProvider>

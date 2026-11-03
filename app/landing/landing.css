@@ -28,7 +28,8 @@
 .clef-glyph { position: absolute; left: 0; width: 100%; display: block; overflow: visible; }
 .clef-travel-on [data-clef-anchor] > .clef-glyph { visibility: hidden; }
 .clef-traveler { position: absolute; top: 0; left: 0; z-index: 3; pointer-events: none; color: var(--foreground); transform-origin: 50% 50%; will-change: transform; opacity: 0; }
-.clef-traveler.is-flying { z-index: 1; color: var(--primary); }
+.clef-traveler.is-flying { z-index: 3; color: var(--primary); }
+.clef-traveler.is-flying.is-under { z-index: 1; }
 .clef-traveler.is-intro { z-index: 3; color: var(--primary); }
 .staff-note { color: var(--foreground); }
 .staff-note--ok { color: var(--success); }
@@ -502,3 +503,14 @@
 @media (prefers-reduced-motion: reduce) { .aiw-busy i { animation: none; } }
 .aiw-sheet-fail { position: absolute; inset: 14px; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--foreground-muted); }
 .app-shell .aiw .aiw-h:focus, .app-shell .aiw .aiw-h:focus-visible { outline: none; box-shadow: none; }
+
+/* The source side is the real Mutopia page (a clean PDF, not a scan): white paper, black print. */
+.pdf-frame--source .pdf-layer--print { background: #fff; color: #1c1b1a; gap: 6px; }
+.pdf-frame--source .pdf-layer--print::after { display: none; }
+.pdf-frame--source .pdf-sheet-head { grid-template-columns: 1fr auto; font-family: Georgia, "Times New Roman", serif; }
+.pdf-frame--source .pdf-sheet-head strong { text-align: left; font-style: normal; font-weight: 700; }
+.pdf-source-img { display: block; width: 100%; height: auto; min-height: 0; flex: 0 1 auto; object-fit: contain; object-position: left center; pointer-events: none; }
+.pdf-osmd { flex: 1 1 auto; min-height: 0; padding: 4px 8px; border-radius: 14px; background: #fff; color: #1c1b1a; overflow: hidden; }
+.osmd-view { position: relative; }
+.osmd-note { margin: 0; padding: 12px; color: #5b5650; font-size: 14px; }
+.osmd-box svg { display: block; max-width: 100%; height: auto; }

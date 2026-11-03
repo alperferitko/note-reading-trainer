@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { ODE_VOICES, voiceBars, voiceMusicXml, satbMusicXml, stepNote } from '../lib/samples/ode-satb.mjs';
+import { ODE_VOICES, voiceBars, voiceMusicXml, satbMusicXml, closeScoreMusicXml, stepNote } from '../lib/samples/ode-satb.mjs';
 import { readMusicXml, practiceEvents } from '../lib/musicxml.mjs';
 
 const ly = await readFile(new URL('./fixtures/mutopia/ode-528.ly', import.meta.url), 'utf8');
@@ -70,4 +70,20 @@ test('a correction moves a note by step and follows the key', () => {
   assert.deepEqual(stepNote({ ...first, step: 'G' }, -1), { ...first, step: 'F', alter: 1 });
   const corrected = voiceBars('soprano', { '0:0': { step: 'A' } })[0][0];
   assert.equal(corrected.step, 'A');
+});
+
+test('the landing comparison (bars 1-4 on two staves) carries the LilyPond notes of all four voices', () => {
+  const xml = closeScoreMusicXml({ from: 1, to: 4 });
+  const notes = [...xml.matchAll(/<note><pitch><step>([A-G])<\/step>(?:<alter>(-?\d)<\/alter>)?<octave>(\d)<\/octave><\/pitch><duration>(\d+)<\/duration><voice>(\d)<\/voice>.*?<staff>(\d)<\/staff><\/note>/g)]
+    .map(([, step, alter, octave, duration, voice, staff]) => ({ step, alter: Number(alter ?? 0), octave: Number(octave), beats: Number(duration) / 2, voice: Number(voice), staff: Number(staff) }));
+  ODE_VOICES.forEach((voice, v) => {
+    const mine = notes.filter((n) => n.voice === v + 1);
+    const expected = lilyVoice(LY_NAME[voice.id]);
+    let beats = 0, i = 0;
+    while (beats < 16) beats += expected[i++].beats;
+    assert.equal(mine.length, i, `${voice.id}: notes in bars 1-4`);
+    mine.forEach((n, k) => assert.deepEqual({ step: n.step, alter: n.alter, octave: n.octave, beats: n.beats }, expected[k], `${voice.id} note ${k + 1}`));
+    assert.ok(mine.every((n) => n.staff === (v < 2 ? 1 : 2)), `${voice.id} staff`);
+  });
+  assert.equal((xml.match(/<measure /g) ?? []).length, 4);
 });

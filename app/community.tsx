@@ -1183,6 +1183,12 @@ export function CommunityResult({ score, eligible }: { score: ScoreSubmission; e
   );
 }
 
+/** Opens the account panel: sign in, or, when signed in, the real delete-account flow. */
+export function CommunityAccountButton({ label }: { label: string }) {
+  const { openPanel } = useCommunity();
+  return <button className="primary-button" type="button" aria-haspopup="dialog" onClick={() => openPanel("account")}>{label}</button>;
+}
+
 export function CommunityLegalLink() {
   const { locale, openPanel } = useCommunity();
   const text = TEXT[locale];

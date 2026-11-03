@@ -1,48 +1,54 @@
 "use client";
+/* eslint-disable @next/next/no-img-element -- static Pages export: the source page is a plain image file. */
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
-import { DEMO_PIECE, layout, measureCount, midiOf, schedule, toMusicXml } from "@/lib/demo-piece.mjs";
+import { midiOf } from "@/lib/demo-piece.mjs";
+import { ODE_SOURCE, ODE_VOICES, closeScoreMusicXml, voiceBars, voiceMusicXml } from "@/lib/samples/ode-satb.mjs";
 import { playSequence, stopAllSound } from "./music";
-import { ScoreStaff, type ScoreEvent } from "./score-staff";
+import { OsmdView } from "./osmd-view";
 
 type Locale = "tr" | "en";
 
 const TEXT = {
   tr: {
     title: "Kâğıttaki partisyon, çalışabileceğin bir parçaya dönüşür",
-    lead: "Solda taranmış bir sayfa, sağda aynı müzik NotaNota'da: ölçüler numaralı, çalan nota vurgulu, tempo ayarlı.",
-    sample: "Örnek dönüşüm",
-    sampleNote: "Bu gösterim hazırlanmış bir örnektir; sayfa tanıma henüz bağlı değil.",
-    slider: "Taranmış sayfa ile NotaNota görünümünü karşılaştır",
-    sliderValue: (v: number) => `Taranmış sayfa yüzde ${v}`,
+    lead: "Solda gerçek bir PDF sayfası, sağda aynı ölçüler NotaNota'da: dört ses, iki porte, aynı notalar.",
+    sample: "Önceden hazırlanmış sonuç",
+    sampleNote: "Dijital sonuç bu PDF'ten elle hazırlandı ve LilyPond kaynağıyla nota nota karşılaştırıldı; sayfa tanıma henüz bağlı değil.",
+    source: "Kaynak: Mutopia Project #528, kamu malı",
+    slider: "Kaynak PDF ile NotaNota görünümünü karşılaştır",
+    sliderValue: (v: number) => `Kaynak PDF yüzde ${v}`,
     drag: "Karşılaştırmak için kolu sürükle",
-    printed: "Taranmış sayfa",
+    printed: "Kaynak PDF",
     digital: "NotaNota",
     play: "Dinle",
     stop: "Durdur",
     bar: (n: number, of: number) => `Ölçü ${n} / ${of}`,
-    tryIt: "Stüdyoda dene",
-    staffPrinted: "Taranmış sayfada üç ölçülük ezgi: diyez, bemol, sus, sekizlikler ve noktalı ikilik",
-    staffDigital: "Aynı ezginin NotaNota görünümü",
-    tempo: "Yürür adımla",
+    tryIt: "Soprano partisini çalış",
+    sourceAlt: (to: number) => `Ode to Joy, Mutopia PDF sayfasından 1–${to}. ölçüler: soprano ve alto sol anahtarında, tenor ve bas fa anahtarında`,
+    digitalLabel: (to: number) => `Aynı 1–${to}. ölçüler NotaNota'da çizildi`,
+    loading: "Nota çiziliyor…",
+    failed: "Nota çizilemedi; kaynak PDF solda duruyor.",
   },
   en: {
     title: "A score on paper becomes a piece you can practise",
-    lead: "A scanned page on the left, the same music in NotaNota on the right: numbered bars, the playing note highlighted, the tempo set.",
-    sample: "Sample conversion",
-    sampleNote: "This is a prepared example; page recognition is not connected yet.",
-    slider: "Compare the scanned page with the NotaNota view",
-    sliderValue: (v: number) => `Scanned page ${v} percent`,
+    lead: "A real PDF page on the left, the same bars in NotaNota on the right: four voices, two staves, the same notes.",
+    sample: "Prepared result",
+    sampleNote: "The digital result was prepared by hand from this PDF and checked note by note against the LilyPond source; page recognition is not connected yet.",
+    source: "Source: Mutopia Project #528, public domain",
+    slider: "Compare the source PDF with the NotaNota view",
+    sliderValue: (v: number) => `Source PDF ${v} percent`,
     drag: "Drag the handle to compare",
-    printed: "Scanned page",
+    printed: "Source PDF",
     digital: "NotaNota",
     play: "Listen",
     stop: "Stop",
     bar: (n: number, of: number) => `Bar ${n} / ${of}`,
-    tryIt: "Try it in the studio",
-    staffPrinted: "A three-bar tune on the scanned page: a sharp, a flat, rests, eighth notes and a dotted half",
-    staffDigital: "The same tune in NotaNota",
-    tempo: "At a walking pace",
+    tryIt: "Practise the soprano part",
+    sourceAlt: (to: number) => `Ode to Joy, bars 1–${to} from the Mutopia PDF page: soprano and alto in treble clef, tenor and bass in bass clef`,
+    digitalLabel: (to: number) => `The same bars 1–${to} engraved in NotaNota`,
+    loading: "Engraving the score…",
+    failed: "The score could not be drawn; the source PDF is on the left.",
   },
 } as const;
 
@@ -53,7 +59,7 @@ export function PdfCompare({ locale, onPractise }: { locale: Locale; onPractise:
   const frame = useRef<HTMLDivElement>(null);
   const stopRef = useRef<(() => void) | null>(null);
   const dragging = useRef(false);
-  // On a phone three bars would shrink the notes too far; the first two bars carry every kind of sign.
+  // On a phone four bars would shrink the notes too far; the first two bars show every voice.
   const [narrow, setNarrow] = useState(false);
   useEffect(() => {
     const media = window.matchMedia("(max-width: 560px)");
@@ -62,20 +68,20 @@ export function PdfCompare({ locale, onPractise }: { locale: Locale; onPractise:
     media.addEventListener("change", update);
     return () => { window.clearTimeout(timer); media.removeEventListener("change", update); };
   }, []);
-  const notes = useMemo(() => (narrow ? DEMO_PIECE.notes.slice(0, 9) : DEMO_PIECE.notes), [narrow]);
-  const events = useMemo(() => layout(notes) as ScoreEvent[], [notes]);
-  const measures = measureCount(notes);
-  const timed = useMemo(() => schedule(notes), [notes]);
-  const playing = beat === null ? null : timed.find((e) => beat >= e.start && beat < e.start + e.beats) ?? null;
-  const playingEvent = playing ? events.find((e) => e.id === playing.id) ?? null : null;
-  const bar = playingEvent ? playingEvent.measure : 1;
+  const to = narrow ? 2 : 4;
+  const xml = useMemo(() => closeScoreMusicXml({ from: 1, to }), [to]);
+  // All four voices sound together, from the same note data the staves are drawn from.
+  const sound = useMemo(() => ODE_VOICES.flatMap((voice) => {
+    let at = 0;
+    return voiceBars(voice.id).slice(0, to).flat().map((n) => { const note = { midi: midiOf(n), start: at, beats: n.beats }; at += n.beats; return note; });
+  }), [to]);
+  const bar = beat === null ? 1 : Math.min(to, Math.floor(beat / ODE_SOURCE.beats) + 1);
 
   useEffect(() => () => { stopRef.current?.(); stopAllSound(); }, []);
 
   function listen() {
     if (stopRef.current) { stopRef.current(); stopRef.current = null; return; }
-    const notes = timed.filter((e) => !e.rest).map((e) => ({ midi: midiOf(e as { step: string; octave: number; alter?: number }), start: e.start, beats: e.beats }));
-    stopRef.current = playSequence(notes, DEMO_PIECE.tempo, (b) => { setBeat(b); if (b === null) stopRef.current = null; });
+    stopRef.current = playSequence(sound, ODE_SOURCE.tempo, (b) => { setBeat(b); if (b === null) stopRef.current = null; });
   }
 
   function moveTo(clientX: number) {
@@ -113,26 +119,21 @@ export function PdfCompare({ locale, onPractise }: { locale: Locale; onPractise:
         <p>{t.lead}</p>
       </div>
 
-      <div className="pdf-stage" data-clef-host="">
-        <div ref={frame} className="pdf-frame" onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} style={{ ["--split" as string]: `${split}%` }}>
+      <div className="pdf-stage">
+        <div ref={frame} className="pdf-frame pdf-frame--source" onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} style={{ ["--split" as string]: `${split}%` }}>
           <div className="pdf-layer pdf-layer--print">
-            <svg className="pdf-grain" aria-hidden="true"><filter id="pdf-noise"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" /><feColorMatrix values="0 0 0 0 0.35  0 0 0 0 0.3  0 0 0 0 0.22  0 0 0 0.16 0" /></filter><rect width="100%" height="100%" filter="url(#pdf-noise)" /></svg>
-            <div className="pdf-sheet">
-              <div className="pdf-sheet-head">
-                <span className="pdf-tempo-mark">{t.tempo} <span aria-hidden="true">♩</span> = {DEMO_PIECE.tempo}</span>
-                <strong>{DEMO_PIECE.title[locale]}</strong>
-                <span className="pdf-composer">{DEMO_PIECE.composer}</span>
-              </div>
-              <ScoreStaff className="score-staff--print" events={events} measures={measures} space={13} width={760} label={t.staffPrinted} />
+            <div className="pdf-sheet-head">
+              <strong>{ODE_SOURCE.title}</strong>
+              <span className="pdf-composer">L. v. Beethoven</span>
             </div>
-            <span className="pdf-page-no">— 1 —</span>
+            <img className="pdf-source-img" src={`./samples/ode-to-joy-mutopia-528-bars-1-${to}.png`} width={to === 4 ? 1558 : 916} height={450} alt={t.sourceAlt(to)} draggable={false} />
           </div>
 
           <div className="pdf-layer pdf-layer--digital" aria-hidden={split >= 100 ? true : undefined}>
             <div className="pdf-app-bar">
-              <strong>{DEMO_PIECE.title[locale]}</strong>
-              <span className="pdf-chip"><span aria-hidden="true">♩</span> = {DEMO_PIECE.tempo}</span>
-              <span className="pdf-chip pdf-chip--quiet">{t.bar(bar, measures)}</span>
+              <strong>{ODE_SOURCE.title}</strong>
+              <span className="pdf-chip"><span aria-hidden="true">♩</span> = {ODE_SOURCE.tempo}</span>
+              <span className="pdf-chip pdf-chip--quiet">{t.bar(bar, to)}</span>
               <button type="button" className="pdf-play" onClick={listen} aria-pressed={beat !== null}>
                 {beat !== null
                   ? <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="6" width="3.5" height="12" rx="1" fill="currentColor" /><rect x="13.5" y="6" width="3.5" height="12" rx="1" fill="currentColor" /></svg>
@@ -140,7 +141,7 @@ export function PdfCompare({ locale, onPractise }: { locale: Locale; onPractise:
                 {beat !== null ? t.stop : t.play}
               </button>
             </div>
-            <ScoreStaff className="score-staff--app" events={events} measures={measures} space={13} width={760} anchor="pdf" anchorOrder={2} numbers highlight={playing?.rest ? null : playing?.id ?? null} playhead={playingEvent ? playingEvent.x : null} label={t.staffDigital} />
+            <OsmdView key={xml} xml={xml} zoom={narrow ? 0.62 : 1} label={t.digitalLabel(to)} failLabel={t.failed} className="pdf-osmd" />
           </div>
 
           <div className="pdf-handle" role="slider" tabIndex={0} aria-label={t.slider} aria-valuemin={0} aria-valuemax={100} aria-valuenow={split} aria-valuetext={t.sliderValue(split)} onKeyDown={onSliderKey}>
@@ -150,8 +151,8 @@ export function PdfCompare({ locale, onPractise }: { locale: Locale; onPractise:
           <span className="pdf-tag pdf-tag--right" aria-hidden="true">{t.digital}</span>
         </div>
         <div className="pdf-foot">
-          <p><span className="lp-sample-chip">{t.sample}</span> {t.sampleNote} <span className="pdf-drag-hint">{t.drag}</span></p>
-          <button type="button" className="secondary-button" onClick={() => { stopRef.current?.(); onPractise(toMusicXml()); }}>{t.tryIt}</button>
+          <p><span className="lp-sample-chip">{t.sample}</span> {t.sampleNote} <a href={ODE_SOURCE.page} target="_blank" rel="noreferrer">{t.source}</a> <span className="pdf-drag-hint">{t.drag}</span></p>
+          <button type="button" className="secondary-button" onClick={() => { stopRef.current?.(); onPractise(voiceMusicXml("soprano", { locale })); }}>{t.tryIt}</button>
         </div>
       </div>
     </section>

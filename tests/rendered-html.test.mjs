@@ -39,9 +39,10 @@ test("NotaNota çalışma ekranını sunar", async () => {
   assert.match(html, /30 saniyede dene/);
   assert.match(html, /Tahmin et/);
   assert.match(html, /Ne çalışmak istersin\?/);
-  for (const area of ["Nota okuma", "Ritim", "Eser çalışma", "Enstrüman ve kulak", "Örnek dönüşüm", "Örnek önizleme", "Stüdyoda dene"]) assert.match(html, new RegExp(area));
+  for (const area of ["Nota okuma", "Ritim", "Eser çalışma", "Enstrüman ve kulak", "Önceden hazırlanmış sonuç", "Örnek önizleme", "Soprano partisini çalış"]) assert.match(html, new RegExp(area));
   // The staves and the clef anchors are in the first HTML, so the page reads without its script.
-  assert.equal((html.match(/data-clef-anchor="/g) ?? []).length, 5);
+  // Four seats: the hero, the reading tile, the AI preview and the closing call (the PDF comparison is engraved by OSMD).
+  assert.equal((html.match(/data-clef-anchor="/g) ?? []).length, 4);
   assert.match(html, /data-palette="bordo"/);
   assert.match(html, /Ritme başla/);
   assert.match(html, /Enstrüman seç/);
@@ -347,7 +348,12 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(studio, /<RhythmPatternPreview variant="mixed"/);
   assert.match(scoreReading, /<RhythmPatternPreview variant="mixed"/);
   assert.match(scoreReading, /<RhythmScoreLine/);
-  assert.match(page, /className="brand-mark brand-mark--footer"[\s\S]*navigateTo\("landing"\)/);
+  // The footer is one scene with real links; its logo leads home.
+  assert.match(page, /<SiteFooter locale=\{locale\}[\s\S]*navigateTo\(target as Stage\)/);
+  const footer = await readFile(new URL('../app/site-footer.tsx', import.meta.url), 'utf8');
+  assert.match(footer, /className="site-footer-home" href=\{pageRoute\('landing', locale\)\} onClick=\{go\('landing'\)\}/);
+  for (const page of ['practice', 'lessons', 'about', 'how', 'teacher', 'pricing', 'roadmap', 'contact', 'faq', 'privacy', 'kvkk', 'terms', 'cookies', 'copyright']) assert.ok(footer.includes(`['${page}'`), page);
+  assert.doesNotMatch(footer, /href="#"|mailto:|instagram|twitter|facebook/i);
   assert.doesNotMatch(styles, /staff-note-wander|fret-note-wander/);
   assert.match(styles, /\.instrument-illustration--violin::before \{[\s\S]*linear-gradient\(90deg, #a56a34/);
   assert.match(styles, /\.community-result-card--ineligible \{[\s\S]*text-align: center/);

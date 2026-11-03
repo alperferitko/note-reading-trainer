@@ -17,6 +17,8 @@ const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim() ?? 
 const configured = gatewayEndpoint(import.meta.env.VITE_AI_GATEWAY_URL?.trim());
 // The user's token is only sent to the gateway of the same Supabase project that issued it.
 const endpoint = configured && (configured.kind === 'local' || (() => { try { return new URL(supabaseUrl).host === new URL(configured.url).host; } catch { return false; } })()) ? configured : null;
+/** True only in a build pointed at the staging gateway of the same Supabase project. */
+export const liveTeacherConfigured = Boolean(endpoint);
 
 const REASONS: Record<string, [string, string]> = {
   gateway_not_configured: ['Canlı AI bu sürümde bağlı değil.', 'Live AI is not connected in this build.'],

@@ -9,6 +9,7 @@ import { ODE_SOURCE, ODE_VOICES, voiceBars, voiceMusicXml, satbMusicXml, stepNot
 import { ScoreView } from "../score-workspace";
 import { AiIcon } from "./ai-icon";
 import { TeacherDemo, type TeacherAction } from "./teacher-demo";
+import { AITeacher, liveTeacherConfigured } from "../ai-teacher";
 import "./landing.css";
 
 type Locale = "tr" | "en";
@@ -88,6 +89,8 @@ const TEXT = {
     when: (d: Date) => { const days = Math.floor((Date.now() - d.getTime()) / 86400000); return days <= 0 ? "Bugün" : days === 1 ? "Dün" : `${days} gün önce`; },
     // ask
     askNote: "Bu konuşmalar hazırlanmış örneklerdir; önerdikleri alıştırmalar gerçekten başlar.",
+    askLive: "Öğretmen son çalışmanın ölçümlerini yorumlar. Meta Model API’ye yalnız toplu ölçümler gider (bağlam, doğruluk, süre); cevapların, e-postan ve kullanıcı adın gönderilmez. Yanıt bu ölçümlerle doğrulanmadan gösterilmez.",
+    askNone: "Henüz bu cihazda bir çalışma kaydı yok. Kısa bir tur çalışınca öğretmen onu yorumlayabilir.",
   },
   en: {
     title: "What would you like to practise today?",
@@ -146,6 +149,8 @@ const TEXT = {
     next: "Suggested exercise", doNext: "Start this exercise",
     when: (d: Date) => { const days = Math.floor((Date.now() - d.getTime()) / 86400000); return days <= 0 ? "Today" : days === 1 ? "Yesterday" : `${days} days ago`; },
     askNote: "These conversations are prepared samples; the exercises they suggest really start.",
+    askLive: "The teacher comments on the measurements of your last practice. Only aggregate measurements go to the Meta Model API (context, accuracy, timing); your answers, email and username are not sent. An answer is shown only after it is checked against those measurements.",
+    askNone: "There is no practice record on this device yet. Practise a short round and the teacher can comment on it.",
   },
 } as const;
 
@@ -408,6 +413,18 @@ function ReviewFlow({ locale, evidence, onQuickStart, onStartPlan, onStudio }: {
   );
 }
 
+/** The real teacher (staging builds only): the last session's own records, nothing invented when there are none. */
+function LiveAsk({ locale, evidence, onQuickStart, onStartPlan, onStudio }: { locale: Locale; evidence: EvidenceRecord[]; onQuickStart: () => void; onStartPlan: (plan: ReturnType<typeof planNext>) => void; onStudio: () => void }) {
+  const t = TEXT[locale];
+  const last = useMemo(() => lastSession(evidence), [evidence]);
+  if (!last) return <><p className="aiw-help">{t.askLive}</p><p className="aiw-empty">{t.askNone}</p><button type="button" className="primary-button" onClick={onQuickStart}>{t.quick}</button></>;
+  return <>
+    <p className="aiw-help">{t.askLive}</p>
+    <AITeacher locale={locale} session={last.session} evidence={evidence} module={last.module === 'score' ? 'score' : 'reading'}
+      onRepeat={onQuickStart} onProgress={onStudio} onPractiseWeak={() => onStartPlan(planNext(evidence, readGoal(), locale))} />
+  </>;
+}
+
 export function AiWorkspace({ locale, evidence, owner, onQuickStart, onStartPlan, onPractiseRange, onStudio, onTeacherAction }: {
   locale: Locale; evidence: EvidenceRecord[]; owner: string | null;
   onQuickStart: () => void; onStartPlan: (plan: ReturnType<typeof planNext>) => void;
@@ -438,8 +455,10 @@ export function AiWorkspace({ locale, evidence, owner, onQuickStart, onStartPlan
         {mode === "review" && <ReviewFlow locale={locale} evidence={evidence} onQuickStart={onQuickStart} onStartPlan={onStartPlan} onStudio={onStudio} />}
         {mode === "ask" && (
           <section aria-label={t.entries.ask[0]}>
-            <p className="aiw-help">{t.askNote}</p>
-            <TeacherDemo locale={locale} owner={owner} variant="full" onAction={onTeacherAction} />
+            {liveTeacherConfigured ? <LiveAsk locale={locale} evidence={evidence} onQuickStart={onQuickStart} onStartPlan={onStartPlan} onStudio={onStudio} /> : <>
+              <p className="aiw-help">{t.askNote}</p>
+              <TeacherDemo locale={locale} owner={owner} variant="full" onAction={onTeacherAction} />
+            </>}
           </section>
         )}
       </div>

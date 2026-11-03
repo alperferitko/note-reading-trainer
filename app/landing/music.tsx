@@ -6,7 +6,7 @@ import { CLEF_BOX, CLEF_PATH, CLEF_SPACE } from "@/lib/clef-path.mjs";
 /** Width of the clef in staff spaces, and where its box starts relative to the top staff line. */
 export const CLEF_WIDTH_SPACES = CLEF_BOX.width / CLEF_SPACE;
 const CLEF_TOP_SPACES = CLEF_BOX.y / CLEF_SPACE + 3; // the G line is three spaces under the top line
-const CLEF_HEIGHT_SPACES = CLEF_BOX.height / CLEF_SPACE;
+export const CLEF_HEIGHT_SPACES = CLEF_BOX.height / CLEF_SPACE;
 
 /** The treble clef drawn into a box exactly one staff tall (top line to bottom line). */
 export function ClefGlyph({ className = "" }: { className?: string }) {

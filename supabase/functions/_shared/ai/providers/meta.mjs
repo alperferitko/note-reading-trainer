@@ -52,14 +52,27 @@ async function boundedJson(response, signal) {
  * transport is explicitly injected. B3's staging composition requires reviewed pins,
  * short-lived approval and durable quota reservations before calling this adapter.
  */
+/**
+ * Three failure classes, kept apart so a failure never locks a user's budget by mistake:
+ * - `not_sent`: refused here before any byte left; settles at zero.
+ * - `provider_rejected`: Meta answered with a definite 4xx (not 408) and no usage; it declined the request, so zero.
+ * - anything else after sending (5xx, 408, timeout, broken stream) stays uncertain: charged in full until reconciled.
+ */
+function refused(code, status, failureClass = 'not_sent', retryable = false) {
+  const error = new AIError(code, status, retryable);
+  error.billingUsage = { inputTokens: 0, outputTokens: 0 };
+  error.failureClass = failureClass;
+  return error;
+}
+
 export function createMetaAdapter({ modelId, endpoint = META_DEFAULT_ENDPOINT, apiKey,
   responseFormat = 'json_schema', maxOutputTokens = 800, maxInputChars = 20000,
   timeoutMs = 10000, transport } = {}) {
   return Object.freeze({ provider: 'meta', mode: 'live',
     async generate(request, signal) {
-      if (typeof transport !== 'function') throw new AIError('live_calls_disabled', 503);
+      if (typeof transport !== 'function') throw refused('live_calls_disabled', 503);
       let url;
-      try { url = new URL(endpoint); } catch { throw new AIError('invalid_model_configuration', 503); }
+      try { url = new URL(endpoint); } catch { throw refused('invalid_model_configuration', 503); }
       if (url.origin !== 'https://api.meta.ai' || url.username || url.password || url.search || url.hash
         || url.pathname !== '/v1/chat/completions' || typeof modelId !== 'string' || !modelId.trim()
         || request.modelId !== modelId || !['json_schema', 'json_object'].includes(responseFormat)
@@ -69,10 +82,10 @@ export function createMetaAdapter({ modelId, endpoint = META_DEFAULT_ENDPOINT, a
         || !Number.isSafeInteger(maxOutputTokens) || maxOutputTokens < 1
         || !Number.isSafeInteger(request.maxOutputTokens) || request.maxOutputTokens < 1
         || !['practice-feedback', 'adaptive-exercises'].includes(request.task)
-        || !['tr', 'en'].includes(request.locale)) throw new AIError('invalid_model_configuration', 503);
+        || !['tr', 'en'].includes(request.locale)) throw refused('invalid_model_configuration', 503);
       // Project allowlisted aggregate fields only; never serialize arbitrary input.
       const source = request.evidenceSummary;
-      if (!source || !Array.isArray(source.contexts) || !Array.isArray(source.measurements)) throw new AIError('invalid_request');
+      if (!source || !Array.isArray(source.contexts) || !Array.isArray(source.measurements)) throw refused('invalid_request', 400);
       // A long history has one context per note; only the ones worth explaining go to the model, so the
       // body stays under maxInputChars. Weak notes first, then the most practised. Any reference the
       // model returns is still checked against the full summary.
@@ -108,9 +121,7 @@ export function createMetaAdapter({ modelId, endpoint = META_DEFAULT_ENDPOINT, a
       while (wire.length > maxInputChars && count > 1) wire = build(--count);
       if (wire.length > maxInputChars) {
         // Rejected before anything was sent: nothing was billed, so the reservation settles at zero.
-        const tooLarge = new AIError('request_too_large', 413);
-        tooLarge.billingUsage = { inputTokens: 0, outputTokens: 0 };
-        throw tooLarge;
+        throw refused('request_too_large', 413);
       }
       const controller = new AbortController();
       const abort = () => controller.abort();
@@ -128,7 +139,11 @@ export function createMetaAdapter({ modelId, endpoint = META_DEFAULT_ENDPOINT, a
             let detail = '';
             try { detail = (await response.text()).slice(0, 300).replace(/\s+/g, ' '); } catch { detail = ''; }
             console.warn(JSON.stringify({ provider: 'meta', event: 'http_error', status: response.status, detail }));
-            throw new AIError('provider_unavailable', 503, response.status === 429 || response.status >= 500);
+            const status = response.status;
+            if (status >= 400 && status < 500 && status !== 408) throw refused('provider_unavailable', 503, 'provider_rejected', status === 429);
+            const failed = new AIError('provider_unavailable', 503, status >= 500);
+            failed.failureClass = 'provider_error';
+            throw failed;
           }
           const data = await boundedJson(response, controller.signal);
           const reported = { inputTokens: data.usage?.prompt_tokens ?? null, outputTokens: data.usage?.completion_tokens ?? null };
@@ -155,7 +170,7 @@ export function createMetaAdapter({ modelId, endpoint = META_DEFAULT_ENDPOINT, a
       } catch (error) {
         if (controller.signal.aborted) throw new AIError('provider_timeout', 504, true);
         const safe = error instanceof AIError ? error : new AIError('invalid_model_response', 503);
-        if (billingUsage) safe.billingUsage = billingUsage; // internal only, never serialized
+        if (billingUsage && !safe.billingUsage) safe.billingUsage = billingUsage; // internal only, never serialized
         throw safe;
       } finally { clearTimeout(timer); signal?.removeEventListener('abort', abort); if (rejectTimeout) controller.signal.removeEventListener('abort', rejectTimeout); }
     },

@@ -31,6 +31,7 @@ export function createAIGateway({ registry = createModelRegistry(), adapters = [
       let reservationId = null;
       let actualUsd = null;
       let measuredUsage = null;
+      let failureClass = null;
       const started = clock();
       const errorResponse = error => ({ schemaVersion: '1', requestId, error: { code: error.code, status: error.status, retryable: error.retryable } });
       try {
@@ -57,7 +58,12 @@ export function createAIGateway({ registry = createModelRegistry(), adapters = [
         if (reservation.status === 'conflict') throw new AIError('idempotency_conflict', 409);
         if (reservation.status !== 'reserved' || !identifier(reservation.reservationId)) throw new AIError('quota_exceeded', 429, true);
         reservationId = reservation.reservationId;
-        if (context?.signal?.aborted || (live && !isStagingAuthorization(stagingAuthorization))) throw new AIError('provider_timeout', 504, true);
+        if (context?.signal?.aborted || (live && !isStagingAuthorization(stagingAuthorization))) {
+          // Still nothing sent: the reservation is released at zero instead of staying uncertain.
+          measuredUsage = { inputTokens: 0, outputTokens: 0 };
+          actualUsd = 0;
+          throw new AIError('provider_timeout', 504, true);
+        }
         const controller = new AbortController();
         const cancel = () => controller.abort();
         context?.signal?.addEventListener('abort', cancel, { once: true });
@@ -74,6 +80,7 @@ export function createAIGateway({ registry = createModelRegistry(), adapters = [
             measuredUsage = error.billingUsage;
             actualUsd = usageCost(model, measuredUsage);
           }
+          failureClass = error instanceof AIError && error.failureClass ? error.failureClass : 'uncertain';
           throw error;
         } finally { clearTimeout(timer); context?.signal?.removeEventListener('abort', cancel); }
         const providerResult = validateProviderResult(generated, { ...model, maxOutputTokens: outputLimit });
@@ -98,7 +105,7 @@ export function createAIGateway({ registry = createModelRegistry(), adapters = [
           try { await store.settle(reservationId, { response: structuredClone(response), actualUsd, usage: measuredUsage }); }
           catch { /* Fail closed: reservation must remain charged until reconciled. */ }
         }
-        log({ requestId, code: error.code, durationMs: Math.max(0, clock() - started) });
+        log({ requestId, code: error.code, failureClass: reservationId ? (actualUsd === null ? 'uncertain' : failureClass ?? 'settled') : 'not_reserved', durationMs: Math.max(0, clock() - started) });
         return response;
       }
     },

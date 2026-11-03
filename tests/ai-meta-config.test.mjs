@@ -138,3 +138,20 @@ test('a single context too large on its own is refused before sending, at zero b
     && error.billingUsage?.inputTokens === 0 && error.billingUsage?.outputTokens === 0);
   assert.equal(calls, 0);
 });
+
+test('failures are classed: refused before sending and a definite 4xx settle at zero, 5xx stays uncertain', async () => {
+  const { createMetaAdapter } = await import('../supabase/functions/_shared/ai/providers/meta.mjs');
+  const request = { task: 'practice-feedback', locale: 'tr', modelId: 'm', maxOutputTokens: 800,
+    evidenceSummary: { eligible: true, contexts: [{ id: 'c1', module: 'reading', clef: 'treble', timed: false, recentAttempts: 3, status: 'needs-work' }],
+      measurements: [{ id: 'c1-a', context: 'c1', kind: 'accuracy', value: 50, unit: 'percent', sampleSize: 3 }] } };
+  const zero = error => error.billingUsage?.inputTokens === 0 && error.billingUsage?.outputTokens === 0;
+  let calls = 0;
+  const misconfigured = createMetaAdapter({ modelId: 'm', endpoint: 'https://example.com/v1/chat/completions', apiKey: 'k', transport: async () => { calls++; } });
+  await assert.rejects(misconfigured.generate(request), error => error.code === 'invalid_model_configuration' && error.failureClass === 'not_sent' && zero(error));
+  assert.equal(calls, 0);
+  const answering = status => createMetaAdapter({ modelId: 'm', apiKey: 'k', transport: async () => new Response('{"error":"x"}', { status }) });
+  await assert.rejects(answering(400).generate(request), error => error.failureClass === 'provider_rejected' && zero(error) && !error.retryable);
+  await assert.rejects(answering(429).generate(request), error => error.failureClass === 'provider_rejected' && zero(error) && error.retryable);
+  await assert.rejects(answering(503).generate(request), error => error.failureClass === 'provider_error' && !error.billingUsage);
+  await assert.rejects(answering(408).generate(request), error => error.failureClass === 'provider_error' && !error.billingUsage);
+});

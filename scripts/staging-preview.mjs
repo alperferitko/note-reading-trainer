@@ -37,7 +37,9 @@ if (!process.argv.includes('--no-build')) {
     cwd: root, stdio: 'inherit', shell: true,
     env: { ...process.env, VITE_SUPABASE_URL: stagingUrl,
       VITE_SUPABASE_PUBLISHABLE_KEY: env.VITE_SUPABASE_PUBLISHABLE_KEY,
-      VITE_AI_GATEWAY_URL: `${stagingUrl}/functions/v1/ai-gateway` },
+      VITE_AI_GATEWAY_URL: `${stagingUrl}/functions/v1/ai-gateway`,
+      // Score uploads, "My scores" and the shared library exist only where their migration is applied.
+      VITE_SCORE_LIBRARY: "true" },
   });
   if (build.status !== 0) process.exit(build.status ?? 1);
   // The page CSP only allows the production project; this copy must talk to staging instead.

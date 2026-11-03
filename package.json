@@ -22,6 +22,8 @@
     "db:generate": "drizzle-kit generate",
     "test:sql": "node scripts/verify-leaderboard-sql.mjs",
     "test:ai:b4": "node --test tests/edge-bundle.test.mjs tests/ai-ledger-pglite.test.mjs tests/ai-client.test.mjs tests/ai-meta-config.test.mjs",
+    "test:scores": "node --test tests/score-library-pglite.test.mjs",
+    "test:upload": "node --test tests/upload-check.test.mjs tests/score-check.test.mjs",
     "test:features": "node --test tests/musicxml.test.mjs tests/pitch-detect.test.mjs tests/practice-plan.test.mjs tests/ode-satb.test.mjs",
     "sync:edge": "node scripts/sync-edge-shared.mjs",
     "test:edge:deno": "cd supabase/functions/ai-gateway && npx -y deno@2.5.6 task check && npx -y deno@2.5.6 task test",
@@ -32,6 +34,7 @@
     "drizzle-orm": "0.45.2",
     "next": "16.3.0",
     "opensheetmusicdisplay": "2.2.1",
+    "pdfjs-dist": "5.7.284",
     "pitchy": "4.1.0",
     "react": "19.2.6",
     "react-dom": "19.2.6"

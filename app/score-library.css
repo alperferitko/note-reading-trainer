@@ -1,0 +1,76 @@
+/* My scores and the shared library, inside score practice. */
+.shelf { display: grid; gap: 16px; padding: clamp(18px, 2.4vw, 28px); border-radius: 24px; background: var(--surface); box-shadow: var(--shadow-1); }
+.shelf-head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
+.shelf-head h2 { margin: 0; font-family: var(--fx-display); font-size: clamp(22px, 2.2vw, 28px); font-weight: 600; }
+.shelf-head > .primary-button { margin-left: auto; }
+.shelf-tabs { display: inline-flex; gap: 4px; }
+.shelf-tabs button { min-height: 40px; padding: 0 16px; border: 0; border-radius: 12px; background: var(--background-deep); color: var(--foreground-muted); font: 600 15px var(--fx-ui); cursor: pointer; }
+.shelf-tabs button[aria-selected="true"] { background: var(--primary); color: var(--primary-foreground); }
+.shelf-tabs button:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+.shelf-note { margin: 0; color: var(--foreground-muted); font-size: 15px; line-height: 1.5; }
+.shelf-warn { margin: 0; font-weight: 600; }
+.shelf-error { margin: 0; padding: 10px 14px; border-radius: 12px; background: color-mix(in srgb, var(--danger) 12%, var(--surface)); color: var(--danger); font-size: 15px; }
+.shelf-list { display: grid; gap: 10px; }
+.shelf-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 16px; align-items: center; padding: 14px 16px; border-radius: 16px; background: var(--background-deep); }
+.shelf-row h3 { margin: 0; font-size: 17px; font-weight: 600; }
+.shelf-row h3 small { font-weight: 400; color: var(--foreground-muted); }
+.shelf-row-main p { margin: 6px 0 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.shelf-meta { color: var(--foreground-muted); font-size: 14px; }
+.shelf-row-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.shelf-row > .shelf-share, .shelf-row > .shelf-note { grid-column: 1 / -1; }
+.shelf-status { display: inline-block; padding: 2px 10px; border-radius: 999px; background: var(--surface); font: 600 13px var(--fx-ui); color: var(--foreground-muted); }
+.shelf-status--needs_correction { color: var(--primary); background: var(--accent-soft); }
+.shelf-status--ready_personal, .shelf-status--published { color: var(--primary-foreground); background: var(--primary); }
+.shelf-status--rejected { color: var(--danger); }
+.shelf-job { font-size: 14px; color: var(--foreground-muted); }
+.shelf-search input { width: 100%; min-height: 44px; padding: 0 14px; border: 0; border-radius: 14px; background: var(--background-deep); color: var(--foreground); font: inherit; }
+.shelf-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.shelf-share, .shelf-meta-form { display: grid; gap: 12px; padding: 14px; border-radius: 14px; background: var(--surface); }
+.shelf-meta-form { grid-template-columns: repeat(2, minmax(0, 1fr)); background: none; padding: 0; }
+.shelf-wide { grid-column: 1 / -1; }
+.shelf-share p { margin: 0; line-height: 1.5; font-size: 15px; }
+.shelf :is(.shelf-share, .shelf-meta-form, .shelf-edit) label { display: grid; gap: 6px; font-size: 14px; color: var(--foreground-muted); }
+.shelf :is(input:not([type=checkbox]), select, textarea) { min-height: 40px; padding: 8px 12px; border: 1px solid var(--border, transparent); border-radius: 12px; background: var(--background-deep); color: var(--foreground); font: inherit; font-size: 15px; }
+.shelf .shelf-check { display: flex !important; grid-template-columns: none; align-items: center; gap: 10px; color: var(--foreground) !important; }
+.shelf-upload { display: grid; gap: 14px; }
+.shelf-steps { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; counter-reset: step; }
+.shelf-steps li { counter-increment: step; padding: 4px 12px; border-radius: 999px; background: var(--background-deep); color: var(--foreground-muted); font: 600 13px var(--fx-ui); }
+.shelf-steps li::before { content: counter(step) ". "; }
+.shelf-steps li[aria-current="step"] { background: var(--primary); color: var(--primary-foreground); }
+.shelf-steps li.is-done { color: var(--foreground); }
+.shelf-pick { display: grid; gap: 10px; justify-items: start; }
+.shelf-file { position: relative; overflow: hidden; cursor: pointer; }
+.shelf-file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.shelf-file:focus-within { outline: 3px solid var(--primary); outline-offset: 3px; }
+.shelf-pages { display: grid; gap: 12px; }
+.shelf-pages > p { margin: 0; }
+.shelf-thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+.shelf-thumb { position: relative; display: grid; gap: 4px; justify-items: center; padding: 6px; border-radius: 12px; background: var(--background-deep); cursor: pointer; outline: 2px solid transparent; }
+.shelf-thumb.is-on { outline-color: var(--primary); }
+.shelf-thumb:focus-within { outline: 3px solid var(--primary); }
+.shelf-thumb input { position: absolute; top: 8px; left: 8px; width: 18px; height: 18px; }
+.shelf-thumb img { width: 100%; height: auto; border-radius: 6px; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .15); }
+.shelf-thumb span { font-size: 13px; color: var(--foreground-muted); }
+.shelf-review { display: grid; gap: 14px; }
+.shelf-review-head { display: grid; gap: 6px; }
+.shelf-review-head h3 { margin: 0; font-size: 22px; }
+.shelf-review-body { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); gap: 16px; align-items: start; }
+.shelf-review-score { min-width: 0; padding: 10px; border-radius: 16px; background: #fff; max-height: 70vh; overflow: auto; }
+.shelf-review-side { display: grid; gap: 12px; }
+.shelf-review-side h4 { margin: 0; font-size: 16px; }
+.shelf-issues { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; max-height: 260px; overflow: auto; font-size: 14px; line-height: 1.45; }
+.shelf-issues li { padding: 8px 10px; border-radius: 10px; background: var(--background-deep); }
+.shelf-issues li.is-error { border-left: 3px solid var(--danger); }
+.shelf-issues li.is-warn { border-left: 3px solid var(--primary); }
+.shelf-issues button { padding: 0; border: 0; background: none; color: var(--primary); font: 600 14px var(--fx-ui); cursor: pointer; text-decoration: underline; }
+.shelf-edit { display: grid; gap: 10px; padding: 14px; border-radius: 14px; background: var(--background-deep); }
+.shelf-edit :is(input:not([type=checkbox]), select) { background: var(--surface); }
+.shelf-edit-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 760px) {
+  .shelf-row { grid-template-columns: minmax(0, 1fr); }
+  .shelf-row-actions { justify-content: flex-start; }
+  .shelf-meta-form, .shelf-review-body { grid-template-columns: minmax(0, 1fr); }
+  .shelf-head > .primary-button { margin-left: 0; }
+}
+.app-shell .shelf :is(.primary-button, .secondary-button, .ghost-button) { width: auto; }
+.shelf-meta-form > .shelf-note { grid-column: 1 / -1; }

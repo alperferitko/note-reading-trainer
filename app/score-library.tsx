@@ -71,7 +71,14 @@ function useUser() {
 export function ScoreShelf({ locale, onOpen }: { locale: Locale; onOpen: (opened: Opened) => void }) {
   const tr = locale === "tr";
   const user = useUser();
-  const [tab, setTab] = useState<"mine" | "library">("mine");
+  const [tab, setTab] = useState<"mine" | "library" | "review">("mine");
+  const [admin, setAdmin] = useState(false);
+  useEffect(() => {
+    if (!user || !supabase) return;
+    let alive = true;
+    supabase.rpc("is_app_admin").then(({ data }) => { if (alive) setAdmin(data === true); }, () => undefined);
+    return () => { alive = false; };
+  }, [user]);
   const [adding, setAdding] = useState(false);
   const [reviewing, setReviewing] = useState<string | null>(null);
   if (!scoreLibraryEnabled || !supabase) return null;
@@ -80,9 +87,9 @@ export function ScoreShelf({ locale, onOpen }: { locale: Locale; onOpen: (opened
       <div className="shelf-head">
         <h2 id="shelf-title">{tr ? "Eserler" : "Pieces"}</h2>
         <div className="shelf-tabs" role="tablist" aria-label={tr ? "Eser alanları" : "Piece areas"}>
-          {(["mine", "library"] as const).map((id) => (
+          {([...(["mine", "library"] as const), ...(admin && user ? (["review"] as const) : [])]).map((id) => (
             <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => { setTab(id); setAdding(false); setReviewing(null); }}>
-              {id === "mine" ? (tr ? "Eserlerim" : "My scores") : (tr ? "Ortak kütüphane" : "Shared library")}
+              {id === "mine" ? (tr ? "Eserlerim" : "My scores") : id === "library" ? (tr ? "Ortak kütüphane" : "Shared library") : (tr ? "İnceleme" : "Review")}
             </button>
           ))}
         </div>
@@ -93,6 +100,7 @@ export function ScoreShelf({ locale, onOpen }: { locale: Locale; onOpen: (opened
       {tab === "mine" && user && reviewing && <ScoreReview locale={locale} scoreId={reviewing} onClose={() => setReviewing(null)} onOpen={onOpen} />}
       {tab === "mine" && user && !adding && !reviewing && <MyScores locale={locale} onReview={setReviewing} onOpen={onOpen} />}
       {tab === "library" && <Library locale={locale} signedIn={Boolean(user)} onOpen={onOpen} />}
+      {tab === "review" && admin && user && <ReviewQueue locale={locale} />}
     </section>
   );
 }
@@ -248,6 +256,65 @@ function ReportForm({ locale, onSubmit, onCancel }: { locale: Locale; onSubmit: 
       <label>{tr ? "Ne yanlış?" : "What is wrong?"}<textarea rows={2} maxLength={500} value={message} onChange={(e) => setMessage(e.target.value)} /></label>
       <div className="shelf-actions"><button type="submit" className="primary-button" disabled={message.trim().length < 5}>{tr ? "Gönder" : "Send"}</button><button type="button" className="ghost-button" onClick={onCancel}>{tr ? "Vazgeç" : "Cancel"}</button></div>
     </form>
+  );
+}
+
+/**
+ * Administrators only (the database checks it again): scores waiting for the shared library. Approval needs
+ * all three checks; a rejection needs a reason the owner will see.
+ */
+function ReviewQueue({ locale }: { locale: Locale }) {
+  const tr = locale === "tr";
+  type Pending = { id: string; title: string; composer: string | null; license: string; share_statement: string | null; source_note: string | null; current_version_id: string };
+  const [rows, setRows] = useState<Pending[] | null>(null);
+  const [open, setOpen] = useState<{ id: string; xml: string } | null>(null);
+  const [checks, setChecks] = useState({ accuracy: false, content: false, rights: false });
+  const [reason, setReason] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const load = useCallback(async () => {
+    const { data, error: failed } = await supabase!.from("scores").select("id,title,composer,license,share_statement,source_note,current_version_id").eq("status", "pending_review").order("submitted_at");
+    if (failed) setError(errorText(failed, tr)); else setRows((data ?? []) as Pending[]);
+  }, [tr]);
+  useEffect(() => { void Promise.resolve().then(load); }, [load]);
+  async function show(row: Pending) {
+    const { data } = await supabase!.from("score_versions").select("musicxml").eq("id", row.current_version_id).maybeSingle();
+    setOpen(data?.musicxml ? { id: row.id, xml: data.musicxml } : null);
+    setChecks({ accuracy: false, content: false, rights: false }); setReason("");
+  }
+  async function decide(id: string, decision: "approve" | "reject") {
+    const { error: failed } = await supabase!.rpc("score_review", { p_score_id: id, p_decision: decision, p_reason: reason.trim() || null, p_checks: checks });
+    if (failed) { setError(errorText(failed, tr)); return; }
+    setOpen(null); setError(null); await load();
+  }
+  if (!rows) return <p className="shelf-note">{error ?? (tr ? "Yükleniyor…" : "Loading…")}</p>;
+  return (
+    <div className="shelf-list">
+      {error && <p className="shelf-error" role="alert">{error}</p>}
+      {rows.length === 0 && <p className="shelf-note">{tr ? "İnceleme bekleyen eser yok." : "Nothing is waiting for review."}</p>}
+      {rows.map((row) => (
+        <article key={row.id} className="shelf-row">
+          <div className="shelf-row-main">
+            <h3>{row.title}{row.composer && <small> · {row.composer}</small>}</h3>
+            <p className="shelf-meta">{LICENSE[row.license]?.[tr ? 0 : 1] ?? row.license}{row.source_note ? ` · ${row.source_note}` : ""}</p>
+            {row.share_statement && <p className="shelf-meta">“{row.share_statement}”</p>}
+          </div>
+          <div className="shelf-row-actions"><button type="button" className="secondary-button" onClick={() => (open?.id === row.id ? setOpen(null) : void show(row))}>{open?.id === row.id ? (tr ? "Kapat" : "Close") : (tr ? "İncele" : "Review")}</button></div>
+          {open?.id === row.id && (
+            <div className="shelf-share">
+              <div className="shelf-review-score"><ScoreView xml={open.xml} label={tr ? "İncelenen sürüm" : "Version under review"} failLabel={tr ? "Nota çizilemedi." : "The score could not be drawn."} /></div>
+              {([["accuracy", ["Notalar kaynakla karşılaştırıldı, doğru", "Notes compared with the source and correct"]], ["content", ["İçerik uygun", "Content is appropriate"]], ["rights", ["Paylaşım hakkı ve lisans yeterli", "Right to share and licence are sufficient"]]] as const).map(([key, label]) => (
+                <label key={key} className="shelf-check"><input type="checkbox" checked={checks[key]} onChange={(e) => setChecks({ ...checks, [key]: e.target.checked })} />{label[tr ? 0 : 1]}</label>
+              ))}
+              <label>{tr ? "Not (ret için zorunlu, eser sahibine gösterilir)" : "Note (required to reject; shown to the owner)"}<textarea rows={2} maxLength={1000} value={reason} onChange={(e) => setReason(e.target.value)} /></label>
+              <div className="shelf-actions">
+                <button type="button" className="primary-button" disabled={!checks.accuracy || !checks.content || !checks.rights} onClick={() => decide(row.id, "approve")}>{tr ? "Onayla ve yayınla" : "Approve and publish"}</button>
+                <button type="button" className="secondary-button" disabled={!reason.trim()} onClick={() => decide(row.id, "reject")}>{tr ? "Reddet" : "Reject"}</button>
+              </div>
+            </div>
+          )}
+        </article>
+      ))}
+    </div>
   );
 }
 

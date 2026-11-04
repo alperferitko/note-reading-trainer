@@ -1,59 +1,48 @@
-<div style="display:none;max-height:0;overflow:hidden;opacity:0">NotaNota hesabına güvenli giriş bağlantın hazır.</div>
-<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#E9E2D5;color:#20231F;font-family:Arial,'Helvetica Neue',sans-serif">
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>NotaNota giriş bağlantın</title>
+</head>
+<body style="margin:0;padding:0;background:#F1E9DF">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#F1E9DF">NotaNota hesabına giriş bağlantın hazır. Bağlantı kısa süreli ve tek kullanımlık.</div>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#F1E9DF;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;color:#2B2326">
   <tr>
-    <td align="center" style="padding:40px 16px">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:600px">
+    <td align="center" style="padding:40px 16px 32px">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:560px">
         <tr>
-          <td style="padding:0 4px 18px">
-            <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-              <tr>
-                <td width="46" height="46" align="center" valign="middle" style="width:46px;height:46px;border:1px solid #C6A15B;border-radius:50%;background:#FFFDF8">
-                  <img src="https://notanota.online/notanota-monogram.png" width="34" height="34" alt="" style="display:block;width:34px;height:34px;margin:0 auto;border:0;object-fit:contain">
-                </td>
-                <td style="padding-left:13px;font-family:Georgia,'Times New Roman',serif;font-size:26px;font-weight:bold;letter-spacing:-0.7px;color:#20231F">NotaNota</td>
-              </tr>
-            </table>
+          <td style="padding:0 8px 20px">
+            <a href="https://notanota.online" style="text-decoration:none"><img src="https://notanota.online/brand/notanota-wordmark-email.png" width="160" height="48" alt="NotaNota" style="display:block;width:160px;height:48px;border:0"></a>
           </td>
         </tr>
         <tr>
-          <td style="border:1px solid #D5CABA;border-radius:8px;background:#FBF8F1;box-shadow:10px 12px 0 rgba(54,43,30,0.07)">
-            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+          <td style="background:#FFFDFA;border:1px solid #E6DACB;border-radius:24px;padding:40px 40px 32px">
+            <h1 style="margin:0;font-size:30px;line-height:1.15;font-weight:700;letter-spacing:-0.5px;color:#2B2326">NotaNota'ya giriş yap</h1>
+            <p style="margin:16px 0 0;font-size:16px;line-height:1.6;color:#67595B">Şifre yok: aşağıdaki düğmeye dokun, açılan sayfada girişi onayla. Bağlantı kısa süreli ve tek kullanımlık.</p>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:28px 0 0">
               <tr>
-                <td style="padding:8px 42px 0">
-                  <div style="height:3px;background:#8B2F3C"></div>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:36px 42px 18px">
-                  <div style="margin-bottom:15px;color:#8B2F3C;font-size:11px;font-weight:bold;letter-spacing:2px;text-transform:uppercase">Güvenli giriş / Secure sign-in</div>
-                  <h1 style="margin:0;color:#20231F;font-family:Georgia,'Times New Roman',serif;font-size:36px;line-height:1.08;letter-spacing:-1.2px;font-weight:600">Bu e-posta adresini<br>doğruluyor musun?</h1>
-                  <p style="margin:22px 0 0;color:#64665F;font-size:16px;line-height:1.65">NotaNota hesabına şifresiz giriş yapmak için aşağıdaki düğmeye dokun. Bağlantı kısa süreli ve tek kullanımlıdır.</p>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:10px 42px 34px">
-                  <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-                    <tr>
-                      <td style="border:1px solid #772533;border-radius:4px;background:#8B2F3C">
-                        <a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&amp;type=email" style="display:inline-block;padding:16px 24px;color:#FFFDF8;font-size:14px;font-weight:bold;text-decoration:none">E-postamı doğrula&nbsp;&nbsp;<span style="color:#E7D7B6">→</span></a>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-              <tr>
-                <td style="border-top:1px solid #D5CABA;padding:26px 42px 34px">
-                  <p style="margin:0;color:#64665F;font-size:13px;line-height:1.6"><strong style="color:#20231F">English</strong><br>Use the button above to confirm this email and securely sign in. This link is short-lived and can only be used once.</p>
-                  <p style="margin:22px 0 0;color:#73756F;font-size:12px;line-height:1.55">Bu isteği sen yapmadıysan bu e-postayı güvenle yok sayabilirsin. E-posta adresin reklam veya pazarlama amacıyla kullanılmaz.</p>
+                <td style="border-radius:14px;background:#8B2435">
+                  <a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&amp;type=email" style="display:inline-block;padding:15px 28px;border-radius:14px;font-size:16px;font-weight:600;line-height:1;color:#FFFFFF;text-decoration:none">Girişi onayla</a>
                 </td>
               </tr>
             </table>
+            <p style="margin:28px 0 0;padding:16px 20px;border-radius:14px;background:#F7EFEA;font-size:14px;line-height:1.55;color:#2B2326">Yeni hesapsan: NotaNota AI'nin bütün özellikleri ilk 3 gün ücretsiz. Kişisel öğretmen, tur yorumları ve haftalık rapor seni bekliyor.</p>
+            <p style="margin:28px 0 0;font-size:13px;line-height:1.6;color:#67595B">Düğme çalışmazsa bu adresi tarayıcına yapıştır:<br><a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&amp;type=email" style="color:#8B2435;word-break:break-all">{{ .RedirectTo }}?token_hash={{ .TokenHash }}&amp;type=email</a></p>
+            <p style="margin:28px 0 0;padding-top:24px;border-top:1px solid #EEE4D8;font-size:13px;line-height:1.6;color:#67595B"><strong style="color:#2B2326;font-weight:600">English</strong><br>Tap the button to sign in to NotaNota and confirm on the page that opens. The link is short-lived and works once. New accounts get every NotaNota AI feature free for 3 days.</p>
           </td>
         </tr>
         <tr>
-          <td align="center" style="padding:26px 20px 0;color:#64665F;font-size:11px;line-height:1.5">© NotaNota. Her nota, bir adım ilerlemedir.</td>
+          <td style="padding:24px 16px 0;font-size:12px;line-height:1.6;color:#7A6B6D">Bu isteği sen yapmadıysan e-postayı yok sayabilirsin; hesabında hiçbir şey değişmez. E-posta adresin reklam için kullanılmaz.<br>If you didn't ask for this, you can ignore this email.</td>
+        </tr>
+        <tr>
+          <td style="padding:16px 16px 0;font-size:12px;line-height:1.6;color:#7A6B6D"><a href="https://notanota.online" style="color:#7A6B6D;text-decoration:underline">notanota.online</a>, müziği çalışarak öğren.</td>
         </tr>
       </table>
     </td>
   </tr>
 </table>
+</body>
+</html>

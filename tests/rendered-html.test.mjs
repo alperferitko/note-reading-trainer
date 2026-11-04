@@ -389,12 +389,13 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.brand::before \{[\s\S]*repeating-linear-gradient\([\s\S]*rgba\(32, 35, 31, \.42\)/);
   assert.match(styles, /\.brand-name \{[\s\S]*margin-left: 3px;[\s\S]*background: transparent;[\s\S]*text-shadow: none;/);
   assert.match(styles, /\.result-flourish \{[\s\S]*border-radius: 0;[\s\S]*background: transparent;/);
-  assert.match(magicLink, /https:\/\/notanota\.online\/notanota-monogram\.png/);
-  assert.match(magicLink, /background:#E9E2D5/);
-  assert.match(magicLink, /background:#FBF8F1/);
-  assert.match(magicLink, /background:#8B2F3C/);
-  assert.match(magicLink, /border:1px solid #C6A15B/);
-  assert.match(magicLink, /\{\{ \.RedirectTo \}\}\?token_hash=\{\{ \.TokenHash \}\}/);
+  // The email matches the live site: the bordo wordmark as a PNG (mail clients drop SVG), cream ground, bordo button.
+  assert.match(magicLink, /https:\/\/notanota\.online\/brand\/notanota-wordmark-email\.png/);
+  assert.match(magicLink, /background:#F1E9DF/);
+  assert.match(magicLink, /background:#FFFDFA/);
+  assert.match(magicLink, /background:#8B2435/);
+  assert.match(magicLink, /\{\{ \.RedirectTo \}\}\?token_hash=\{\{ \.TokenHash \}\}&amp;type=email/);
+  assert.doesNotMatch(magicLink, /\{\{ \.ConfirmationURL \}\}/);
   assert.doesNotMatch(page, /level-indicator/);
   assert.match(styles, /\.brand-name \{[\s\S]*margin-left: -7px;[\s\S]*transform: translate\(-3px, -2px\);/);
   assert.doesNotMatch(styles, /inset 0 4px var\(--coral\)/);

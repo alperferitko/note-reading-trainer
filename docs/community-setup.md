@@ -17,7 +17,7 @@ The static frontend can be deployed independently, but authentication, email del
 
 1. Configure a production SMTP provider such as Resend in Supabase Auth.
 2. Verify the sending domain and use a sender such as `login@notanota.online`.
-3. Replace the hosted Magic Link template with `supabase/templates/magic-link.html`. It uses the allow-listed redirect requested by the app, sends the token hash to Nota Nota, and requires an explicit confirmation click before `verifyOtp` consumes it.
+3. Replace the hosted Magic Link and Confirm signup templates with `supabase/templates/magic-link.html` (subject: `NotaNota giriş bağlantın`). It uses the allow-listed redirect requested by the app, sends the token hash to Nota Nota, and requires an explicit confirmation click before `verifyOtp` consumes it.
 4. Disable click tracking for authentication emails.
 
 ## Before considering production setup complete

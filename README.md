@@ -1,92 +1,75 @@
-<div align="center">
+# NotaNota
 
-# ♪ NotaNota
+A bilingual (Turkish / English) music-reading studio: read notes and scores, keep rhythm, train your ear and find notes on an instrument, with a personal AI teacher that works from what you actually answered.
 
-**Build fluent treble-clef note recognition through focused practice.**
+**Live:** [notanota.online](https://notanota.online)
 
-[![Status](https://img.shields.io/badge/Status-Active_Development-EA5A42?style=for-the-badge)](#development-status)
-[![React](https://img.shields.io/badge/React-19-182D28?style=for-the-badge&logo=react)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-182D28?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
-[![Languages](https://img.shields.io/badge/Languages-TR_%2F_EN-EA5A42?style=for-the-badge)](#language-support)
+![NotaNota practice studio](./public/og.png)
 
-[Live site](https://notanota.online) · [Features](#features) · [Practice modes](#practice-modes) · [Local development](#local-development)
+## What you can practise
 
-</div>
+| Area | What it does | What it measures |
+|---|---|---|
+| Note reading | Treble and bass clef, naturals, sharps and flats in four ranges; from the staff or from a written position; normal and endless modes | First-attempt accuracy and response time per note |
+| Rhythm | Steady pulse and five tapped patterns (rests, eighths, dotted, sixteenths) in 4/4 | Mean timing offset of your taps in ms |
+| Score reading | Ten graded studies and staff lines with bars, rests, 3/4, key signatures and bass clef | Note names, rests and timing, reported separately |
+| Instruments | Find the note on piano (one staff or grand staff), guitar (0–3, 0–5, 0–12 frets) and violin (1st and 3rd position) | Correct position on screen; the instrument's sound is not listened to |
+| Listening | Pitch direction, intervals, chord quality and short melodic dictation | Correct answers |
+| Microphone | Play the shown note on piano, guitar or violin; audio stays in the browser | Pitch of a single note (±35 cents); no rhythm or live score following |
+| Lessons | 24 short lessons with prerequisites, knowledge checks and spaced review | Lesson progress |
+| MusicXML | Open a `.musicxml`, `.xml` or `.mxl` file, see the score and practise its single-line bars | Same as score reading |
 
-![NotaNota practice studio preview](./public/og.png)
+Progress and the skill map are kept in the browser. Accounts (passwordless email or Google) add a username, a private daily streak and the leaderboards.
 
-## About
+## NotaNota AI
 
-**NotaNota** is a bilingual, mobile-friendly music-reading studio for learners who want to improve steadily. It combines short lessons, note and score reading, rhythm and listening practice, instrument mapping, question-level review, daily streaks and optional community rankings.
+- **Round feedback.** After a round, Meta AI comments on the notes you struggled with and suggests the next drill. A clean round is not turned into invented difficulty.
+- **Teacher chat.** A personal teacher that asks about your goal, instrument and week, and can save a day-by-day plan.
+- **Weekly report.** The app computes the numbers; the model only explains them.
+- **Score check.** An uploaded PDF or photo is screened before it is saved: is it a score, and is anything inappropriate in it.
 
-## Development status
+The model never sees raw answers or account data, only a measured summary. Every answer is validated before it is shown, and rule-based feedback takes over when AI is unavailable.
 
-NotaNota is under active development. The static frontend is deployed from `main` through GitHub Pages and is available at [notanota.online](https://notanota.online).
+**Free trial.** Every account gets 3 days of NotaNota AI from sign-up; accounts older than the launch count from the launch. A fair-use limit applies, enforced in the database:
 
-Practice runs in the browser. Passwordless accounts, private streaks, and leaderboards use the configured Supabase project and transactional email provider.
-
-## Features
-
-- Four progressive practice ranges in treble and bass clef, with natural, sharp and flat notes
-- Ten graded score-reading studies with bars, rests, 3/4 time, key signatures and bass clef; note names, rests and timing are reported separately
-- Guitar, piano (single staff or both hands on the grand staff) and violin (first and third position)
-- 24 short lessons with prerequisites, rotating knowledge checks, spaced review and a separate “shown in practice” status
-- Question-level targeted review and a skill map, stored only in the browser and deletable
-- Listening practice: pitch direction, intervals, chord quality and short melodic dictation
-- Rhythm workshop: steady pulse and tapped patterns with rests and subdivisions
-- Visual staff and written-position question modes
-- Turkish solfege and English letter names
-- Normal and endless practice modes
-- Automatic repetition of incorrectly answered notes
-- First-attempt accuracy and response-time statistics
-- Responsive controls designed for desktop and mobile
-- Passwordless email sign-in and a 3–7 character username
-- Private, account-backed daily practice streaks with a Monday-to-Sunday activity view
-- Separate, privacy-conscious leaderboards for each mode, range, and question style
-- Turkish and English privacy information
-- Home page that is itself the first exercise, with one-click note practice, "continue where you left off" and a measured next-step suggestion
-- Personal goal (aim, answers a day, days a week) kept on the device, with progress counted from measured answers
-- MusicXML workspace: open an uncompressed `.musicxml`/`.xml` file, see the score (OpenSheetMusicDisplay) and practise single-line bars by name or by microphone; unsupported bars are named, not guessed
-- Microphone practice (pitchy): single notes on piano, guitar or violin, compared with the written note; audio stays in the browser and only pitch is measured
-- AI teacher panel with three labelled sources: `live` (Meta, staging only), `mock` (test answer) and `deterministic` (rules on measurements, no AI)
-
-## Practice modes
-
-### Normal
-
-Every selected staff position appears once in the initial shuffled queue. A missed note returns later and remains in the session until answered correctly.
-
-Only perfect sessions—with every note answered and no mistakes—qualify for the leaderboard. Qualifying sessions are ranked by fastest total completion time.
-
-### Endless
-
-Questions continue until the learner chooses to end the session or makes the first mistake. Only runs with no mistakes qualify for the leaderboard. Rankings prioritize the highest number of correct answers, with average response speed breaking ties.
-
-## Practice ranges
-
-| Level | Range | Notes |
-|---|---|---:|
-| **1** | Five staff lines and four spaces | 9 |
-| **2** | Staff and nearby ledger lines | 13 |
-| **3** | Every natural note from middle C to high C | 15 |
-| **4** | Full staff with four ledger lines above and below | 25 |
-
-## Musical instruments
-
-The main learning focus remains fluent note reading. An optional guitar module extends that skill to the fretboard, with selectable 0–3, 0–5, and 0–12 fret ranges in standard tuning.
-
-## Language support
-
-| Interface | Note names |
+| Scope | Limit |
 |---|---|
-| **Türkçe** | Do, Re, Mi, Fa, Sol, La, Si |
-| **English** | C, D, E, F, G, A, B |
+| Per account | 6 requests a minute, 25 a day, 60 for the whole trial |
+| Everyone together | a daily and a total USD budget, after which AI pauses |
 
-Language preference is stored locally in the browser.
+## Architecture
+
+```
+Browser (React 19, Vite) ── GitHub Pages, static
+   │  practice, measurement and progress run here
+   ▼
+Supabase
+   ├─ Auth, Postgres with row-level security (profiles, streaks, leaderboards, scores, goals)
+   ├─ Edge Function ai-gateway ── Meta Model API (muse-spark)
+   │     JWT check, per-target approval, usage ledger (reserve → settle), output validation
+   └─ Edge Function delete-account
+Optional: worker/omr ── reads uploaded PDF/PNG scores into MusicXML (Audiveris)
+```
+
+No provider key reaches the browser: the Meta key lives only in Edge Function secrets.
+
+## Repository
+
+| Path | Contents |
+|---|---|
+| `app/` | Pages, practice modules, the shell (navbar, footer) and styles |
+| `lib/` | Music logic, measurement, AI client and Supabase helpers, mostly framework-free `.mjs` |
+| `supabase/functions/` | `ai-gateway` and its shared modules (`_shared/ai`), `delete-account` |
+| `supabase/migrations/` | Database schema in order: community, leaderboards, AI ledger, score library, learning profile, free trial |
+| `supabase/templates/` | Auth email templates |
+| `scripts/` | Build helpers, staging preview, production AI setup |
+| `tests/` | Node test runner suites; SQL runs on PGlite (PostgreSQL in WebAssembly) |
+| `worker/omr/` | Score recognition worker and its benchmark |
+| `docs/` | Setup notes; `docs/hackathon/` design and AI decisions; `docs/archive/` earlier plans |
 
 ## Local development
 
-Requirements: Node.js 22.13 or newer and npm.
+Requires Node.js 22.13 or newer.
 
 ```bash
 git clone https://github.com/alperferitko/note-reading-trainer.git
@@ -96,50 +79,39 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Community features remain disabled when the Supabase variables are blank. See [Community setup](./docs/community-setup.md) for the private backend and email configuration checklist.
+With blank Supabase variables the practice studio works on its own; accounts and AI stay off.
 
-Useful commands:
+| Variable | Purpose |
+|---|---|
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` | Accounts, streaks and leaderboards |
+| `VITE_GOOGLE_AUTH_ENABLED` | Shows Google sign-in |
+| `VITE_AI_GATEWAY_URL` | NotaNota AI; must be the `ai-gateway` of the same Supabase project |
+| `VITE_SCORE_LIBRARY`, `VITE_LEARNING_PROFILE` | Score uploads and library; goals and weekly reports |
+
+## Tests
 
 ```bash
 npm run lint
-npm test
-npm run build
-npm run build:pages
-npm run test:pages
-npm run test:sql   # leaderboard SQL checks in a disposable Docker database
-npm run test:ai && npm run test:ai:http && npm run test:ai:learning && npm run test:ai:b3
-npm run test:ai:b4      # Edge import graph, AI ledger on PostgreSQL (PGlite), AI client, Meta config
-npm run test:features   # MusicXML reader, pitch detection, goals and next-step plan
-npm run test:edge:deno  # Deno type check and Edge test for the ai-gateway (downloads Deno 2.5.6)
-npm run sync:edge       # refresh the Edge copies after editing lib/practice-evidence.mjs or the staging pins
+npm test                 # build, then the core suites
+npm run test:ai          # gateway, teacher, weekly metrics, score screen
+npm run test:ai:b4       # ledger and free trial on PostgreSQL, AI client, Meta configuration
+npm run test:scores      # score library SQL
+npm run test:features    # MusicXML, pitch detection, practice plan
+npm run test:pages       # static Pages output
 ```
 
-The only audio feedback is the pitch played after a correct answer. It is
-generated in the browser with Web Audio, so no ambient music or interface
-sound files are loaded.
+## Deployment
 
-## Architecture
+- **Frontend.** Every push to `main` runs lint, tests and the static build in GitHub Actions and publishes to GitHub Pages. Build variables come from the repository's Actions variables.
+- **AI backend, staging.** `npm run preview:staging` builds against staging; `scripts/meta-activate.ps1` writes its secrets, with an approval of at most 24 hours.
+- **AI backend, production.** Three steps:
+  1. `node scripts/production-ai-sql.mjs` writes one SQL file for the SQL Editor.
+  2. `scripts/meta-activate.ps1 -Production` writes the secrets, with an approval of at most 62 days.
+  3. `npx supabase functions deploy ai-gateway --project-ref <production ref>` deploys the gateway.
 
-The interface is built with React, TypeScript, Vinext, and Vite. Practice sessions run in the browser. Supabase provides passwordless authentication, profiles, private daily practice streaks, row-level security, and leaderboard score validation; email delivery is intended to use Resend through Supabase SMTP.
+  Always name the project with `--project-ref`.
+- **Accounts and email.** See [docs/community-setup.md](./docs/community-setup.md) and [docs/weekly-leaderboard-setup.md](./docs/weekly-leaderboard-setup.md).
 
-GitHub Pages hosts the static frontend. Supabase provides the external authenticated data layer, so no secrets or server runtime are bundled into the Pages output. Pushes to `main` run linting, tests, the static build, and deployment through GitHub Actions.
+## Privacy
 
-## Privacy and safety
-
-Public leaderboard entries contain only a username and the qualifying score. Email addresses and daily practice dates stay private and are used only for authentication, account communication, and personal streak calculations.
-
-Signed-in users can permanently delete their Supabase account and cascading profile, score, and practice-day records from the Account panel after typing an explicit confirmation phrase.
-
-The in-app KVKK/privacy notice describes the current data flow and service providers. The cross-border transfer mechanism still requires final legal and operational review before it should be represented as complete.
-
-## Contributing
-
-Bug reports, accessibility improvements, translations, and focused feature proposals are welcome during development.
-
----
-
-<div align="center">
-
-**A little more fluent every day.**
-
-</div>
+Leaderboards show only a username and the qualifying score. Email addresses and practice dates stay private. Signed-in users can delete their account and its records from the account panel. The in-app KVKK / privacy notice describes the data flow and service providers.

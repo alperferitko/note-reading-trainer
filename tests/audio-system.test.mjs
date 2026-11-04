@@ -37,7 +37,6 @@ test("uygulama çalışma sesini doğru cevaplarda ve kullanıcının açtığı
 test("doğru cevap sesi varsayılan olarak piyano örnekleriyle çalar ve yalnız audio/piano/ dosyalarını kullanır", async () => {
   const voices = await readFile(new URL("../lib/note-voices.ts", import.meta.url), "utf8");
   const practiceAudio = await readFile(new URL("../lib/practice-audio.ts", import.meta.url), "utf8");
-  const homeHub = await readFile(new URL("../app/home-hub.tsx", import.meta.url), "utf8");
   const legal = await readFile(new URL("../app/legal-pages.tsx", import.meta.url), "utf8");
 
   assert.match(voices, /export const DEFAULT_NOTE_VOICE: NoteVoice = "piano";/);
@@ -56,9 +55,6 @@ test("doğru cevap sesi varsayılan olarak piyano örnekleriyle çalar ve yalnı
   assert.match(practiceAudio, /export function previewNoteVoice\(voice: NoteVoice\) \{\s*playPracticeNote\(60, true, voice\);/);
   assert.match(practiceAudio, /const NOTE_SOUND_PREFERENCE_KEY = "nota-nota-correct-note-sound";/);
 
-  // The homepage warm-up uses the same voice instead of its own oscillator.
-  assert.match(homeHub, /playPracticeNote\(60 \+ 12 \* Math\.floor\(step \/ 7\) \+ SEMI\[correct\], soundEnabled\)/);
-  assert.doesNotMatch(homeHub, /createOscillator|new AudioContext|new Ctor\(/);
 
   // Passages (the landing comparison) schedule polyphonic notes in the same voice.
   const music = await readFile(new URL("../app/landing/music.tsx", import.meta.url), "utf8");

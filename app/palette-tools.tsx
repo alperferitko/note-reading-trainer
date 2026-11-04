@@ -206,3 +206,65 @@ export function SoundToggle({ locale, enabled, onToggle }: { locale: Locale; ena
     </div>
   );
 }
+
+/**
+ * The navbar's theme picker: colour theme and light/dark, without leaving the page. A small menu that
+ * closes with Escape or a click outside; the choices are radio groups, so the keyboard works, and they
+ * are saved like the ones in Settings.
+ */
+export function NavThemeMenu({ locale, onSettings }: { locale: Locale; onSettings: () => void }) {
+  const tr = locale === "tr";
+  const palette = usePalette();
+  const [mode, setMode] = useMode();
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  const button = useRef<HTMLButtonElement>(null);
+  const id = useId();
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (event: PointerEvent) => { if (!box.current?.contains(event.target as Node)) setOpen(false); };
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") { setOpen(false); button.current?.focus(); } };
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("pointerdown", onDown); document.removeEventListener("keydown", onKey); };
+  }, [open]);
+  const modes: [Mode, string][] = tr ? [["light", "Açık"], ["dark", "Koyu"], ["system", "Sistem"]] : [["light", "Light"], ["dark", "Dark"], ["system", "System"]];
+  return (
+    <div className="nav-menu theme-menu" ref={box}>
+      <button ref={button} type="button" className="nav-theme-button" aria-expanded={open} aria-controls={id} onClick={() => setOpen((value) => !value)}>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.3 0 2-.9 2-1.9 0-1.2-1-1.6-1-2.6 0-1 .8-1.7 1.9-1.7h1.9a3.7 3.7 0 0 0 3.7-3.8C20.5 6.9 16.7 3.5 12 3.5Z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+          <circle cx="7.6" cy="11.2" r="1.2" fill="currentColor" /><circle cx="10.4" cy="7.4" r="1.2" fill="currentColor" /><circle cx="14.9" cy="7.6" r="1.2" fill="currentColor" />
+        </svg>
+        <span>{tr ? "Tema" : "Theme"}</span>
+      </button>
+      {open && (
+        <div id={id} className="theme-menu-panel" role="group" aria-label={tr ? "Tema" : "Theme"}>
+          <fieldset>
+            <legend>{tr ? "Renk" : "Colour"}</legend>
+            <div className="theme-menu-palettes">
+              {PALETTES.map((item) => (
+                <label key={item.id} className={palette === item.id ? "is-on" : ""}>
+                  <input type="radio" name={`${id}-palette`} value={item.id} checked={palette === item.id} onChange={() => applyPalette(item.id)} />
+                  <span className="theme-menu-swatch" aria-hidden="true" style={{ background: `linear-gradient(135deg, ${item.light.primary} 50%, ${item.dark.primary} 50%)` }} />
+                  <span>{item.name[locale]}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>{tr ? "Görünüm" : "Appearance"}</legend>
+            <div className="theme-menu-modes">
+              {modes.map(([value, label]) => (
+                <label key={value} className={mode === value ? "is-on" : ""}>
+                  <input type="radio" name={`${id}-mode`} value={value} checked={mode === value} onChange={() => setMode(value)} />{label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <button type="button" className="theme-menu-more" onClick={() => { setOpen(false); onSettings(); }}>{tr ? "Tüm ayarlar" : "All settings"}</button>
+        </div>
+      )}
+    </div>
+  );
+}

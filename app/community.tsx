@@ -451,6 +451,7 @@ export function CommunityProvider({
       {panel && (
         <Modal title={panel === "account" && profile ? text.account : panelTitle(panel, text)} closeLabel={text.close} onClose={closePanel} wide={panel === "leaderboard"} dismissible={!deletionBusy}>
           {panel === "auth" && <AuthPanel locale={locale} notice={panelNotice} />}
+          {(panel === "auth" || panel === "account") && <p className="panel-settings-link"><button type="button" className="ghost-button" onClick={() => { closePanel(); window.dispatchEvent(new Event("notanota-open-settings")); }}>{locale === "tr" ? "Ayarlar" : "Settings"}</button></p>}
           {panel === "account" && (
             <AccountPanel
               locale={locale}
@@ -968,10 +969,15 @@ export function CommunityHeader() {
   const text = TEXT[locale];
   return (
     <div className="community-header-actions">
-      <button type="button" aria-haspopup="dialog" onClick={() => openPanel("leaderboard")}>{text.leaderboard}</button>
       <button type="button" aria-haspopup="dialog" onClick={() => openPanel(user ? "account" : "auth")}>{profile ? `@${profile.username}` : user ? text.account : text.signIn}</button>
     </div>
   );
+}
+
+/** "Sıralama" in the navigation group, next to Studio and NotaNota AI, in their link style. */
+export function CommunityNavLeaderboard() {
+  const { locale, openPanel } = useCommunity();
+  return <button type="button" className="nav-link-button" aria-haspopup="dialog" onClick={() => openPanel("leaderboard")}><b>{TEXT[locale].leaderboard}</b></button>;
 }
 
 export function CommunityLeaderboardButton({ label }: { label: string }) {

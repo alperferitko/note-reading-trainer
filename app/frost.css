@@ -297,7 +297,7 @@ html[data-theme=dark] body .app-shell .site-header .community-header-actions but
   max-width: none;
 }
 @media (max-width: 820px) {
-  html body .app-shell .site-header .community-header-actions button:first-child { display: none; }
+  /* The header now holds only the account button here; the leaderboard moved into the navigation. */
   html body .app-shell .mobile-module-navigation,
   html[data-theme=dark] body .app-shell .mobile-module-navigation { left: 0; right: 0; bottom: 0; width: 100%; border: 0; border-top: 1px solid var(--border); border-radius: 0; background: var(--background); box-shadow: none; }
   html body .app-shell .mobile-module-navigation a.is-active { background: var(--background-deep); color: var(--foreground); }

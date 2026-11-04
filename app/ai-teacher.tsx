@@ -64,6 +64,9 @@ export function AITeacher({ locale, session, evidence, onRepeat, onProgress, onP
   const pick = (pair: [string, string] | undefined, fallback: string) => pair ? pair[tr ? 0 : 1] : fallback;
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<TeacherResult | null>(null);
+  // A retry after a failed answer goes out as a new, numbered request (the stored failure would otherwise
+  // replay for the same key). Only failures can be retried, and at most twice; an answer is never re-asked.
+  const [retries, setRetries] = useState(0);
   const [signedIn, setSignedIn] = useState(false);
   const controller = useRef<AbortController | null>(null);
   useEffect(() => () => controller.current?.abort(), []);
@@ -83,7 +86,9 @@ export function AITeacher({ locale, session, evidence, onRepeat, onProgress, onP
       : `${pitchName(pitchAt(item.position, item.clef, item.accidental ?? 0), locale, true)} (${item.clef === 'bass' ? (tr ? 'fa anahtarı' : 'bass clef') : (tr ? 'sol anahtarı' : 'treble clef')})`]));
   }, [request, tr, locale]);
 
-  async function ask() {
+  async function ask(retry = false) {
+    const attempt = retry ? retries + 1 : retries;
+    if (retry) setRetries(attempt);
     controller.current?.abort();
     const next = new AbortController();
     controller.current = next;
@@ -92,7 +97,7 @@ export function AITeacher({ locale, session, evidence, onRepeat, onProgress, onP
       const { data } = (await supabase?.auth.getSession()) ?? { data: { session: null } };
       const value = await requestTeacherFeedback({
         endpoint, accessToken: data.session?.access_token ?? null, apiKey: publishableKey, request,
-        idempotencyKey: idempotencyKeyFor(session, module), signal: next.signal,
+        idempotencyKey: attempt ? `${idempotencyKeyFor(session, module)}-r${attempt}` : idempotencyKeyFor(session, module), signal: next.signal,
       });
       if (!next.signal.aborted) setResult(value as TeacherResult);
     } finally {
@@ -123,6 +128,10 @@ export function AITeacher({ locale, session, evidence, onRepeat, onProgress, onP
   // states (not asked, waiting, answered, failed) told apart, and anything long behind "Devamını gör".
   if (compact) {
     const observations = mode !== 'deterministic' ? shown.result.observations : [];
+    // What the round really was decides what the teacher is asked to do; a clean round is not "difficulty".
+    const clean = !evidence.some((row) => row.session === session && !row.correct);
+    const answered = mode !== 'deterministic';
+    const canRetry = failed && retries < 2;
     const evidenceLine = (refs: string[]) => refs.map((ref) => {
       const measurement = summary.measurements.find((m) => m.id === ref);
       return `${contextLabels.get(measurement?.context ?? '') ?? ref}: ${describeMeasurement(summary, ref, locale) ?? ref}`;
@@ -136,11 +145,18 @@ export function AITeacher({ locale, session, evidence, onRepeat, onProgress, onP
       <div className="ai-teacher-body" aria-live="polite">
         {mode !== 'deterministic' && <p className="ai-teacher-summary">{shown.result.summary}</p>}
         {busy && <p className="chat-waiting"><ChatTyping />{tr ? 'Meta yanıtı bekleniyor…' : 'Waiting for Meta…'}</p>}
-        {failed && !busy && <p className="ai-teacher-alert" role="status"><span>{reason}</span> <code className="ai-teacher-code">{shown.reason}</code></p>}
+        {/* Failed: the reason, the code and the retry are one group; no answer is implied. */}
+        {failed && !busy && <div className="ai-teacher-ask ai-teacher-ask--failed" role="status">
+          <p><span>{reason}</span> <code className="ai-teacher-code">{shown.reason}</code></p>
+          {canRetry ? <button type="button" className="secondary-button" onClick={() => void ask(true)}>{tr ? 'Yeniden dene' : 'Try again'}</button>
+            : <small className="ai-teacher-evidence">{tr ? 'Şimdilik yanıt alınamadı; bir sonraki turda yeniden sorabilirsin.' : 'No answer for now; you can ask again after your next round.'}</small>}
+        </div>}
         {!failed && !busy && mode === 'deterministic' && !canAsk && <p className="ai-teacher-reason">{reason ?? (tr ? 'Bu tur için yapay zekâ yorumu yok.' : 'No AI comment for this round.')}</p>}
-        {canAsk && !busy && <div className="ai-teacher-ask">
-          <p>{tr ? 'Bu turu Meta AI yorumlasın: neden zorlandığını açıklasın ve sana özel bir alıştırma önersin.' : 'Let Meta AI explain this round and suggest an exercise for you.'}</p>
-          <button type="button" className="primary-button" onClick={ask}>{failed ? (tr ? 'Yeniden dene' : 'Try again') : (tr ? 'Meta AI\'ya yorumlat' : 'Ask Meta AI')}</button>
+        {canAsk && !busy && !failed && <div className="ai-teacher-ask">
+          <p>{clean
+            ? (tr ? 'Meta AI bu turdaki performansını değerlendirip bir sonraki adımını önersin.' : 'Let Meta AI look at this round and suggest your next step.')
+            : (tr ? 'Meta AI takıldığın notaları değerlendirip bir sonraki çalışmanı önersin.' : 'Let Meta AI look at the notes that tripped you up and suggest what to practise next.')}</p>
+          <button type="button" className="primary-button" onClick={() => void ask()}>{tr ? 'Meta AI\'ya yorumlat' : 'Ask Meta AI'}</button>
           <small className="ai-teacher-evidence">{tr ? 'Yalnız toplu ölçümler gönderilir.' : 'Only aggregate measurements are sent.'}</small>
         </div>}
         {exercises.length > 0 && <div className="chat-suggest ai-teacher-suggest">
@@ -148,7 +164,7 @@ export function AITeacher({ locale, session, evidence, onRepeat, onProgress, onP
             <small>{tr ? `${exercises[0].repetitions} tekrar` : `${exercises[0].repetitions} repetitions`}</small></div>
           {onPractiseWeak && <button type="button" className="chat-suggest-go" onClick={() => onPractiseWeak(exercises)}>{tr ? 'Bu alıştırmayı başlat' : 'Start this exercise'}</button>}
         </div>}
-        {(observations.length > 0 || limitations.length > 0) && <details className="ai-teacher-more">
+        {answered && (observations.length > 0 || limitations.length > 0) && <details className="ai-teacher-more">
           <summary>{tr ? 'Devamını gör' : 'See more'}</summary>
           {observations.length > 0 && <ul className="ai-teacher-observations">
             {observations.map((item, index) => <li key={index}><p>{item.text}</p><p className="ai-teacher-evidence">{tr ? 'Dayandığı ölçüm: ' : 'Based on: '}{evidenceLine(item.evidenceRefs)}</p></li>)}
@@ -206,7 +222,7 @@ export function AITeacher({ locale, session, evidence, onRepeat, onProgress, onP
           <p className="ai-teacher-ask-title">{tr ? 'Meta AI bu ölçümleri yorumlasın' : 'Let Meta AI explain these measurements'}</p>
           <p className="ai-teacher-evidence">{tr ? 'Yalnız toplu ölçümler gönderilir; cevapların ve hesabın gönderilmez. Yanıt ölçümlerle doğrulanmadan gösterilmez.' : 'Only aggregate measurements are sent, never your answers or account. The answer is checked against them before it is shown.'}</p>
         </div>
-        <button type="button" className="primary-button" disabled={busy} onClick={ask}>{busy ? (tr ? 'Meta yanıtı bekleniyor…' : 'Waiting for Meta…') : failed ? (tr ? 'Yeniden dene' : 'Try again') : (tr ? 'Meta AI\'ya yorumlat' : 'Ask Meta AI')}</button>
+        <button type="button" className="primary-button" disabled={busy} onClick={() => void ask(failed)}>{busy ? (tr ? 'Meta yanıtı bekleniyor…' : 'Waiting for Meta…') : failed ? (tr ? 'Yeniden dene' : 'Try again') : (tr ? 'Meta AI\'ya yorumlat' : 'Ask Meta AI')}</button>
       </div>}
 
       <div className="ai-teacher-actions">

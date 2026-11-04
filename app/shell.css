@@ -44,6 +44,7 @@ html body .app-shell .site-header .app-navigation { grid-area: nav; justify-self
 html body .app-shell .site-header .app-navigation > * { flex: none; width: auto; }
 html body .app-shell .site-header .app-navigation > a,
 html body .app-shell .site-header .app-navigation > a:not(.is-active),
+html body .app-shell .site-header .nav-link-button,
 .nav-text-button {
   min-height: 44px; padding: 0 14px; display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 14px; line-height: 1;
   background: transparent; color: var(--foreground); font-family: var(--fx-text); font-size: 15px; font-weight: 500; cursor: pointer; text-decoration: none; box-shadow: none;
@@ -129,7 +130,6 @@ html body .app-shell .site-header .app-navigation .nav-panel .studio-menu-item:f
   html[data-theme=dark] body .app-shell .site-header.site-header--float { top: 8px; margin-top: 8px; width: calc(100% - 20px); height: 60px; border-radius: 18px; gap: 6px; padding: 0 6px; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "brand actions"; }
   .brand-logo, html body .app-shell .site-header .brand-logo.brand-tile { width: 42px; height: 42px; }
   html body .app-shell .site-header .header-actions { gap: 2px; }
-  html body .app-shell .site-header .community-header-actions button:first-child { display: none; }
   .nav-lang-code { display: none; }
   .nav-panel--theme { position: fixed; top: 76px; right: 8px; left: 8px; width: auto; }
 }
@@ -345,7 +345,7 @@ html[data-theme=dark] .scene-land--night { opacity: 1; }
 html[data-theme=dark] .scene-land--day { opacity: 0; }
 
 /* The wordmark: the original N continued as otaNota, one SVG used as a mask so it takes any colour. */
-.brand-wordmark { display: block; aspect-ratio: 1404 / 430; height: 34px; background: var(--primary); -webkit-mask: url('./scene/wordmark.svg') center / contain no-repeat; mask: url('./scene/wordmark.svg') center / contain no-repeat; }
+.brand-wordmark { display: block; aspect-ratio: 1424 / 430; height: 34px; background: var(--primary); -webkit-mask: url('./scene/wordmark.svg') center / contain no-repeat; mask: url('./scene/wordmark.svg') center / contain no-repeat; }
 html[data-theme=dark] .brand-wordmark { background: var(--foreground); }
 html body .app-shell .site-header .brand { gap: 0; }
 @media (max-width: 420px) { .brand-wordmark { height: 28px; } }
@@ -532,3 +532,35 @@ html:not([data-theme=dark]) .footer-riders { color: #f0b43a; }
   html body .app-shell > footer.site-footer .site-footer-legal { margin-top: 12px; padding-top: 10px; }
   html body .app-shell > footer.site-footer .site-footer-legal :is(span, a) { min-height: 28px; }
 }
+
+/* Navbar: brand | Stüdyo · NotaNota AI · Sıralama | account, then Tema. */
+html body .app-shell .site-header .nav-link-button > b { font: inherit; white-space: nowrap; }
+html body .app-shell .site-header .nav-link-button:hover { background: var(--background-deep); }
+html body .app-shell .site-header .nav-link-button:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+html body .app-shell .site-header .header-actions > .nav-link-button { display: none; }
+@media (max-width: 1100px) { html body .app-shell .site-header .header-actions > .nav-link-button { display: inline-flex; } }
+@media (max-width: 520px) { html body .app-shell .site-header .header-actions > .nav-link-button { display: none; } }
+.theme-menu { position: relative; }
+html body .app-shell .site-header .nav-theme-button { flex: 0 0 auto; min-height: 44px; padding: 0 14px 0 11px; display: inline-flex; align-items: center; gap: 7px; border: 0; border-radius: 14px; background: transparent; color: var(--foreground); font: 500 15px var(--fx-text); cursor: pointer; box-shadow: none; width: auto; margin: 0; }
+html body .app-shell .site-header .nav-theme-button:hover, html body .app-shell .site-header .nav-theme-button[aria-expanded="true"] { background: var(--background-deep); }
+html body .app-shell .site-header .nav-theme-button:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+.nav-theme-button svg { width: 20px; height: 20px; flex: none; }
+.theme-menu-panel { position: absolute; right: 0; top: calc(100% + 10px); z-index: 80; width: 380px; display: grid; gap: 16px; padding: 16px; border-radius: 18px; background: var(--surface); color: var(--foreground); box-shadow: var(--shadow-2); }
+.theme-menu-panel fieldset { margin: 0; padding: 0; border: 0; min-width: 0; display: grid; gap: 8px; }
+.theme-menu-panel legend { padding: 0; margin-bottom: 8px; color: var(--foreground-muted); font: 600 13px var(--fx-ui); }
+.theme-menu-palettes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.theme-menu-palettes label, .theme-menu-modes label { position: relative; display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 10px; border-radius: 12px; cursor: pointer; font-size: 14px; }
+.theme-menu-palettes label:hover, .theme-menu-modes label:hover { background: var(--background-deep); }
+.theme-menu-palettes label.is-on, .theme-menu-modes label.is-on { background: var(--background-deep); color: var(--primary); font-weight: 600; }
+.theme-menu-panel input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.theme-menu-panel label:has(input:focus-visible) { outline: 3px solid var(--primary); outline-offset: 1px; }
+.theme-menu-swatch { width: 18px; height: 18px; flex: none; border-radius: 6px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--foreground) 12%, transparent); }
+.theme-menu-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 14px; background: color-mix(in srgb, var(--background-deep) 55%, transparent); }
+.theme-menu-modes label { justify-content: center; }
+html body .app-shell .theme-menu-more { justify-self: start; margin: 0; width: auto; padding: 4px 0; border: 0; background: none; color: var(--primary); font: 600 14px var(--fx-ui); cursor: pointer; box-shadow: none; }
+.panel-settings-link { margin: 16px 0 0; display: flex; justify-content: center; }
+@media (max-width: 720px) {
+  .theme-menu-panel { position: fixed; top: 76px; right: 8px; left: 8px; width: auto; }
+  html body .app-shell .site-header .nav-theme-button { padding: 0 10px; }
+}
+@media (max-width: 400px) { html body .app-shell .site-header .nav-theme-button span { display: none; } }

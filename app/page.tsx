@@ -2,13 +2,13 @@
 
 import { FormEvent, lazy, MouseEvent, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { CommunityHeader, CommunityLeaderboardButton, CommunityPracticeRecorder, CommunityProvider, CommunityResult, CommunityPracticeStreakChip } from "./community";
+import { CommunityHeader, CommunityLeaderboardButton, CommunityPracticeRecorder, CommunityProvider, CommunityResult, CommunityPracticeStreakChip, CommunityNavLeaderboard } from "./community";
 import { pitchAt, pitchName, matchesPitch, accidentalsFor, parsePitchAnswer, namesLocale } from "@/lib/music-pitch.mjs";
 import { SITE_PAGES, pageRoute, pageFromPath, isKnownRoute } from "@/lib/site-routes.mjs";
 import { LearningStudio } from './learning-studio';
 import { LandingPage, type LandingStage, type NextPlan } from './landing/landing-page';
 import type { TeacherAction } from './landing/teacher-demo';
-import { BrandWordmark, SoundToggle, usePalette } from './palette-tools';
+import { BrandWordmark, NavThemeMenu, usePalette } from './palette-tools';
 import { SettingsPage } from './settings-page';
 import { LOCALE_CHOICE_KEY } from '@/lib/locale-default.mjs';
 import { StudioMenu, type StudioLink } from './site-nav';
@@ -1088,6 +1088,14 @@ export default function Home() {
     navigateTo(stages[suggestion.studio]);
   }
 
+  // The account panel opens Settings through an event (it lives outside the router).
+  useEffect(() => {
+    const open = () => navigateTo("settings");
+    window.addEventListener("notanota-open-settings", open);
+    return () => window.removeEventListener("notanota-open-settings", open);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- navigateTo is stable in behaviour
+  }, []);
+
   function handleTeacherAction(action: TeacherAction) {
     if (action.kind === "focus") { startFocusDrill(action.notes, action.repeats); return; }
     setScoreInitial({ xml: toMusicXml(), from: action.from, to: action.to });
@@ -1376,14 +1384,12 @@ export default function Home() {
         <nav className="app-navigation" aria-label={shell.navigation}>
           <StudioMenu locale={locale} practise={studioLinks.practise} learn={studioLinks.learn} active={stage !== "landing" && stage !== "pricing" && stage !== "teacher"} onGo={(target) => navigateTo(target as Stage)} />
           <a href={STAGE_ROUTES.teacher} className={stage === "teacher" ? "is-active" : ""} aria-current={stage === "teacher" ? "page" : undefined} onClick={(event) => { event.preventDefault(); navigateTo("teacher"); }}><b>NotaNota AI</b></a>
+          <CommunityNavLeaderboard />
         </nav>
         <div className="header-actions">
-          <SoundToggle locale={locale} enabled={noteSoundEnabled} onToggle={toggleNoteSound} />
+          <CommunityNavLeaderboard />
           <CommunityHeader />
-          <a href={STAGE_ROUTES.settings} className={`nav-settings-link${stage === "settings" ? " is-active" : ""}`} aria-current={stage === "settings" ? "page" : undefined} onClick={(event) => { event.preventDefault(); navigateTo("settings"); }}>
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /><circle cx="16" cy="7" r="2.2" fill="none" stroke="currentColor" strokeWidth="1.7" /><circle cx="10" cy="17" r="2.2" fill="none" stroke="currentColor" strokeWidth="1.7" /></svg>
-            <span>{locale === "tr" ? "Ayarlar" : "Settings"}</span>
-          </a>
+          <NavThemeMenu locale={locale} onSettings={() => navigateTo("settings")} />
         </div>
       </header>}
 

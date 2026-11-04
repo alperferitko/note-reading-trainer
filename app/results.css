@@ -92,3 +92,6 @@ html body .app-shell :is(.rv-actions, .rv-leaderboard, .community-result-inline)
 .hero-copy--compact h2 { margin: 0; font-family: var(--fx-display); font-size: clamp(24px, 2.4vw, 30px); font-weight: 600; }
 .hero-copy--compact .hero-lead, .hero-copy--compact .hero-staff { display: none; }
 .targeted-review-row > div { flex: 1 1 420px; min-width: 0; }
+.app-shell .ai-teacher--compact .ai-teacher-ask :is(.primary-button, .secondary-button) { width: auto; min-width: 0; padding: 0 20px; min-height: 44px; }
+.ai-teacher--compact .ai-teacher-ask--failed { border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent); }
+.ai-teacher--compact .ai-teacher-ask--failed p { margin: 0; }

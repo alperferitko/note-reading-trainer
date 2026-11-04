@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Measures Audiveris (AGPL-3.0, official release) on the NotaNota OMR test pages. Evaluation only.
-# Run from Windows:  wsl -d Ubuntu-24.04 -- bash /mnt/c/VSC/Notes/scripts/omr/bench-audiveris.sh
+# Run from Windows:  wsl -d Ubuntu-24.04 -- bash /mnt/c/VSC/Notes/worker/omr/bench/bench-audiveris.sh
 # Nothing is installed system-wide: the official .deb is unpacked into ~/omr-bench (it carries its own Java).
 set -euo pipefail
 VERSION=5.11.0

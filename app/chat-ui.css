@@ -53,3 +53,15 @@ button.chat-suggest-go:focus-visible { outline: 3px solid var(--primary); outlin
 .chat-note { margin: 0; font-size: 13px; color: var(--foreground-muted); }
 .chat-goals { justify-self: start; }
 .chat-code { font-size: 12px; color: var(--foreground-muted); }
+/* The send button always keeps its room: the field takes what is left, at any zoom or text size. */
+.chat-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; min-width: 0; }
+.chat-form .chat-input { width: 100%; box-sizing: border-box; }
+.chat-panel > .chat-form { padding-right: 16px; }
+.app-shell .chat-form .chat-send { width: auto; white-space: nowrap; }
+.week-plan { display: grid; gap: 6px; padding: 10px 12px; border-radius: 14px; background: var(--surface); }
+.week-plan ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.week-plan li { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 8px; align-items: baseline; font-size: 14px; }
+.week-plan li b { font: 600 13px var(--fx-ui); color: var(--primary); }
+.week-plan li small { color: var(--foreground-muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.week-plan li.is-rest span, .week-plan li.is-rest b { color: var(--foreground-muted); }
+.week-plan > p { margin: 0; font-size: 13px; color: var(--foreground-muted); }

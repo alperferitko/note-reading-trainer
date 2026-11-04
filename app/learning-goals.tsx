@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { WeekPlanView } from "./chat-ui";
 import { EMPTY_PROFILE, learningProfileEnabled, loadProfile, localTimezone, saveProfile, type LearningProfile } from "@/lib/learning-profile";
 
 type Locale = "tr" | "en";
@@ -10,6 +11,7 @@ const T = {
     signIn: "Hedeflerini kaydetmek için giriş yap.", purpose: "Amacın", instrument: "Enstrüman", level: "Nota bilgin", minutes: "Haftada ayırabileceğin süre (dakika)", interests: "Çalmak istediğin eser ya da tarz",
     purposes: { hobby: "Hobi olarak", detailed: "Ayrıntılı eğitim" }, levels: { none: "Hiç bilmiyorum", beginner: "Yeni başladım", some: "Biraz okuyabiliyorum", reads: "Rahat okuyorum" },
     instruments: { piano: "Piyano", guitar: "Gitar", violin: "Keman", voice: "Ses", flute: "Flüt", other: "Diğer", none: "Henüz yok" },
+    plan: "Haftalık planın", clearPlan: "Planı kaldır", noPlan: "Henüz kayıtlı bir plan yok. NotaNota AI sohbetinde hedeflerini konuşunca haftanı günlere bölen bir plan önerir.",
     save: "Kaydet", saved: "Kaydedildi.", failed: "Kaydedilemedi; biraz sonra tekrar dene.", unset: "Belirtmedim", timezone: (z: string) => `Haftalık raporlar ${z} saatine göre hesaplanır.`,
   },
   en: {
@@ -17,6 +19,7 @@ const T = {
     signIn: "Sign in to save your goals.", purpose: "Your aim", instrument: "Instrument", level: "Reading music", minutes: "Time per week (minutes)", interests: "Pieces or styles you want to play",
     purposes: { hobby: "As a hobby", detailed: "Thorough study" }, levels: { none: "Not at all", beginner: "Just started", some: "A little", reads: "Comfortably" },
     instruments: { piano: "Piano", guitar: "Guitar", violin: "Violin", voice: "Voice", flute: "Flute", other: "Other", none: "None yet" },
+    plan: "Your weekly plan", clearPlan: "Remove the plan", noPlan: "No plan saved yet. Talk about your goals in the NotaNota AI chat and it proposes a week split into days.",
     save: "Save", saved: "Saved.", failed: "Could not save; try again in a moment.", unset: "Not set", timezone: (z: string) => `Weekly reports follow ${z} time.`,
   },
 } as const;
@@ -54,6 +57,10 @@ export function LearningGoals({ locale }: { locale: Locale }) {
           <label>{t.minutes}<input type="number" min={0} max={1200} step={10} value={p.weeklyMinutes ?? ""} onChange={(e) => set({ weeklyMinutes: e.target.value === "" ? null : Number(e.target.value) })} /></label>
           <label className="settings-goals-wide">{t.interests}<input maxLength={120} value={p.interests ?? ""} onChange={(e) => set({ interests: e.target.value || null })} /></label>
           {p.timezone && <p className="settings-help settings-goals-wide">{t.timezone(p.timezone)}</p>}
+          <div className="settings-goals-wide settings-goals-plan">
+            <span>{t.plan}</span>
+            {p.weekPlan ? <><WeekPlanView days={p.weekPlan} locale={locale} /><button type="button" className="ghost-button" onClick={() => set({ weekPlan: null })}>{t.clearPlan}</button></> : <p className="settings-help">{t.noPlan}</p>}
+          </div>
           <div className="settings-row-actions settings-goals-wide"><button type="submit" className="primary-button">{t.save}</button>{status && <p role="status">{status}</p>}</div>
         </form>
       )}

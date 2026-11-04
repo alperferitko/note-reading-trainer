@@ -102,7 +102,7 @@ export function AITeacher({ locale, session, evidence, onRepeat, onProgress, onP
   const summary = shown.evidenceSummary;
   const canAsk = Boolean(endpoint) && signedIn && summary.eligible && !(result && result.mode !== 'deterministic');
   const badge = mode === 'live'
-    ? (tr ? `Canlı · Meta · ${shown.provenance.modelId}` : `Live · Meta · ${shown.provenance.modelId}`)
+    ? (tr ? 'Canlı · Meta' : 'Live · Meta')
     : mode === 'mock' ? (tr ? 'Test yanıtı · gerçek model değil' : 'Test answer · not a real model')
       : canAsk ? (tr ? 'Ölçüm hazır · Meta\'ya henüz sorulmadı' : 'Measured · not yet sent to Meta')
         : (tr ? 'Kurallarla · AI kullanılmadı' : 'Rules only · no AI used');

@@ -62,3 +62,5 @@
 .settings-goals :is(select, input) { min-height: 44px; padding: 0 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--foreground); font: inherit; }
 .settings-goals-wide { grid-column: 1 / -1; }
 @media (max-width: 640px) { .settings-goals { grid-template-columns: minmax(0, 1fr); } }
+.settings-goals-plan { display: grid; gap: 8px; justify-items: start; font-size: 14px; color: var(--foreground-muted); }
+.settings-goals-plan .week-plan { width: 100%; max-width: 460px; background: var(--background-deep); color: var(--foreground); }

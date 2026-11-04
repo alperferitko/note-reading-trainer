@@ -80,3 +80,27 @@ function LiveChatComposer({ placeholder, sendLabel, value, onChange, onSubmit, d
     </form>
   );
 }
+
+const DAY_NAMES = {
+  tr: { mon: "Pzt", tue: "Sal", wed: "Çar", thu: "Per", fri: "Cum", sat: "Cmt", sun: "Paz" },
+  en: { mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun" },
+} as const;
+
+/** The week the teacher proposes: one row per day, rest days quiet. */
+export function WeekPlanView({ days, locale }: { days: { day: keyof (typeof DAY_NAMES)["tr"]; minutes: number; focus: string }[]; locale: "tr" | "en" }) {
+  const total = days.reduce((sum, day) => sum + day.minutes, 0);
+  return (
+    <div className="week-plan">
+      <ol>
+        {days.map((day) => (
+          <li key={day.day} className={day.minutes ? "" : "is-rest"}>
+            <b>{DAY_NAMES[locale][day.day]}</b>
+            <span>{day.minutes ? day.focus : (locale === "tr" ? "Dinlenme" : "Rest")}</span>
+            <small>{day.minutes ? `${day.minutes} ${locale === "tr" ? "dk" : "min"}` : ""}</small>
+          </li>
+        ))}
+      </ol>
+      <p>{locale === "tr" ? `Haftada toplam ${total} dakika` : `${total} minutes in all`}</p>
+    </div>
+  );
+}

@@ -9,12 +9,15 @@ export type LearningProfile = {
   weeklyMinutes: number | null;
   interests: string | null;
   timezone: string | null;
+  /** Seven days mon..sun, accepted from the teacher's proposal; null until one is saved. */
+  weekPlan: WeekPlanDay[] | null;
 };
+export type WeekPlanDay = { day: 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'; minutes: number; focus: string };
 
 /** On only where the table exists (the staging build). */
 export const learningProfileEnabled = communityConfigured && import.meta.env.VITE_LEARNING_PROFILE === 'true';
 
-export const EMPTY_PROFILE: LearningProfile = { purpose: null, instrument: null, level: null, weeklyMinutes: null, interests: null, timezone: null };
+export const EMPTY_PROFILE: LearningProfile = { purpose: null, instrument: null, level: null, weeklyMinutes: null, interests: null, timezone: null, weekPlan: null };
 
 export function localTimezone(): string | null {
   try { return Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch { return null; }
@@ -24,10 +27,10 @@ export async function loadProfile(): Promise<LearningProfile | null> {
   if (!learningProfileEnabled || !supabase) return null;
   const { data: session } = await supabase.auth.getSession();
   if (!session.session) return null;
-  const { data, error } = await supabase.from('learning_profiles').select('purpose,instrument,level,weekly_minutes,interests,timezone').maybeSingle();
+  const { data, error } = await supabase.from('learning_profiles').select('purpose,instrument,level,weekly_minutes,interests,timezone,week_plan').maybeSingle();
   if (error) throw new Error('profile_unavailable');
   if (!data) return { ...EMPTY_PROFILE, timezone: localTimezone() };
-  return { purpose: data.purpose, instrument: data.instrument, level: data.level, weeklyMinutes: data.weekly_minutes, interests: data.interests, timezone: data.timezone ?? localTimezone() };
+  return { purpose: data.purpose, instrument: data.instrument, level: data.level, weeklyMinutes: data.weekly_minutes, interests: data.interests, timezone: data.timezone ?? localTimezone(), weekPlan: Array.isArray(data.week_plan) ? data.week_plan : null };
 }
 
 export async function saveProfile(profile: LearningProfile): Promise<void> {
@@ -39,7 +42,7 @@ export async function saveProfile(profile: LearningProfile): Promise<void> {
   const minutes = profile.weeklyMinutes === null ? null : Math.max(0, Math.min(1200, Math.round(profile.weeklyMinutes)));
   const { error } = await supabase.from('learning_profiles').upsert({
     user_id: userId, purpose: profile.purpose, instrument: profile.instrument, level: profile.level,
-    weekly_minutes: minutes, interests, timezone: profile.timezone ?? localTimezone(),
+    weekly_minutes: minutes, interests, timezone: profile.timezone ?? localTimezone(), week_plan: profile.weekPlan,
   }, { onConflict: 'user_id' });
   if (error) throw new Error('profile_save_failed');
 }

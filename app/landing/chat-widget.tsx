@@ -3,11 +3,11 @@
 import { AiIcon } from "./ai-icon";
 import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { createDemoTeacher } from "@/lib/teacher-demo.mjs";
-import { ChatComposer, ChatHeader, ChatMessage, ChatStaff, ChatSuggestion, ChatTyping } from "../chat-ui";
+import { ChatComposer, ChatHeader, ChatMessage, ChatStaff, ChatSuggestion, ChatTyping, WeekPlanView } from "../chat-ui";
 import type { TeacherAction } from "./teacher-demo";
 import { buildTeacherChatRequest, newIdempotencyKey, requestTeacherChat } from "@/lib/ai-client.mjs";
 import type { EvidenceRecord } from "@/lib/practice-evidence.mjs";
-import { learningProfileEnabled, loadProfile, profileForTeacher, saveProfile, EMPTY_PROFILE, type LearningProfile } from "@/lib/learning-profile";
+import { learningProfileEnabled, loadProfile, profileForTeacher, saveProfile, EMPTY_PROFILE, type LearningProfile, type WeekPlanDay } from "@/lib/learning-profile";
 import { supabase } from "@/lib/supabase";
 import { liveTeacherConfigured, teacherApiKey, teacherEndpoint } from "../ai-teacher";
 
@@ -17,7 +17,7 @@ export type TeacherSuggestion =
   | { kind: "focus-drill"; notes: string[]; repetitions: number; label: string }
   | { kind: "studio"; studio: "reading" | "rhythm" | "score" | "ear" | "instrument" | "lessons"; label: string }
   | { kind: "lesson"; lesson: string; label: string };
-type LiveReply = { reply: string; ask: string | null; profileUpdates: Partial<LearningProfile> | null; suggestions: TeacherSuggestion[]; modelId: string | null };
+type LiveReply = { reply: string; ask: string | null; profileUpdates: Partial<LearningProfile> | null; suggestions: TeacherSuggestion[]; weekPlan: { days: WeekPlanDay[] } | null; modelId: string | null };
 type Message = { id: number; from: "you" | "teacher"; lines: string[]; reply?: Reply; live?: LiveReply; key?: string };
 const LIVE_REASONS: Record<string, [string, string]> = {
   sign_in_required: ["Canlı öğretmen için giriş yapman gerekir.", "Sign in to talk to the live teacher."],
@@ -49,9 +49,7 @@ const TEXT = {
     suggestion: "Önerilen alıştırma",
     staff: "Konuşmada geçen notalar",
     liveEmpty: "Merhaba! Müziğe nasıl başlayacağını ya da nasıl ilerleyeceğini birlikte planlayalım. Ne çalmak istediğini ya da nerede zorlandığını yaz.",
-    liveBadge: (model: string) => `Canlı · Meta${model ? ` · ${model}` : ""}`,
-    connected: "Meta'ya bağlı",
-    saveGoals: "Bunu hedeflerime kaydet", goalsSaved: "Hedeflerine kaydedildi.",
+    saveGoals: "Bunu hedeflerime kaydet", goalsSaved: "Hedeflerine kaydedildi.", savePlan: "Bu planı kaydet", planSaved: "Plan kaydedildi; Ayarlar'da da görebilirsin.",
     openSuggestion: "Aç",
   },
   en: {
@@ -68,9 +66,7 @@ const TEXT = {
     suggestion: "Suggested practice",
     staff: "The notes in this answer",
     liveEmpty: "Hello! Let's plan how you start with music or how you move on. Tell me what you want to play or where you get stuck.",
-    liveBadge: (model: string) => `Live · Meta${model ? ` · ${model}` : ""}`,
-    connected: "Connected to Meta",
-    saveGoals: "Save this to my goals", goalsSaved: "Saved to your goals.",
+    saveGoals: "Save this to my goals", goalsSaved: "Saved to your goals.", savePlan: "Save this plan", planSaved: "Plan saved; you can also see it in Settings.",
     openSuggestion: "Open",
   },
 } as const;
@@ -101,6 +97,7 @@ export function ChatWidget({ locale, hidden = false, onAction, onSuggestion, evi
   const [signedIn, setSignedIn] = useState(false);
   const [profile, setProfile] = useState<LearningProfile | null>(null);
   const [savedGoals, setSavedGoals] = useState<number | null>(null);
+  const [savedPlan, setSavedPlan] = useState<number | null>(null);
   const live = liveTeacherConfigured && signedIn;
   useEffect(() => {
     if (!supabase || !liveTeacherConfigured) return;
@@ -115,7 +112,6 @@ export function ChatWidget({ locale, hidden = false, onAction, onSuggestion, evi
     loadProfile().then((value) => { if (alive) setProfile(value); }, () => undefined);
     return () => { alive = false; };
   }, [open, live]);
-  const lastLive = [...messages].reverse().find((m) => m.live)?.live ?? null;
 
   useEffect(() => {
     const show = () => setOpen(true);
@@ -199,7 +195,7 @@ export function ChatWidget({ locale, hidden = false, onAction, onSuggestion, evi
       </button>
       {open && (
         <div ref={panel} id="chat-panel" className="chat-panel" role="dialog" aria-modal="false" aria-labelledby="chat-title" onKeyDown={onKeyDown}>
-          <ChatHeader id="chat-title" title={t.title} badge={live ? (lastLive ? t.liveBadge(lastLive.modelId ?? "") : t.connected) : t.badge} onClose={close} closeLabel={t.close} />
+          <ChatHeader id="chat-title" title={t.title} badge={live ? undefined : t.badge} onClose={close} closeLabel={t.close} />
           <div className="chat-log" ref={log} aria-live="polite">
             {messages.length === 0 && <p className="chat-empty">{live ? t.liveEmpty : t.empty}</p>}
             {messages.map((m) => (
@@ -216,6 +212,12 @@ export function ChatWidget({ locale, hidden = false, onAction, onSuggestion, evi
                     detail={item.kind === "focus-drill" ? (locale === "tr" ? `${item.repetitions} tekrar` : `${item.repetitions} repetitions`) : undefined}
                     action={onSuggestion ? { label: item.kind === "focus-drill" ? (locale === "tr" ? "Başlat" : "Start") : t.openSuggestion, onClick: () => { onSuggestion(item); setOpen(false); } } : undefined} />
                 ))}
+                {m.live?.weekPlan && <WeekPlanView days={m.live.weekPlan.days} locale={locale} />}
+                {m.live?.weekPlan && learningProfileEnabled && (savedPlan === m.id
+                  ? <p className="chat-note">{t.planSaved}</p>
+                  : <button type="button" className="chat-suggest-go chat-goals" onClick={async () => {
+                    try { const next = { ...EMPTY_PROFILE, ...(profile ?? {}), weekPlan: m.live!.weekPlan!.days } as LearningProfile; await saveProfile(next); setProfile(next); setSavedPlan(m.id); } catch { setLiveError("profile_save_failed"); setState("error"); }
+                  }}>{t.savePlan}</button>)}
                 {m.live?.profileUpdates && learningProfileEnabled && (savedGoals === m.id
                   ? <p className="chat-note">{t.goalsSaved}</p>
                   : <button type="button" className="chat-suggest-go chat-goals" onClick={async () => {

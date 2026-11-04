@@ -26,7 +26,7 @@ export function OsmdView({ xml, label, failLabel, className = "", zoom = 1 }: { 
         const { OpenSheetMusicDisplay } = await import("opensheetmusicdisplay");
         if (cancelled) return;
         node.innerHTML = "";
-        const osmd = new OpenSheetMusicDisplay(node, { autoResize: true, backend: "svg", drawTitle: false, drawComposer: false, drawPartNames: false, drawCredits: false, drawingParameters: "compacttight", stretchLastSystemLine: true });
+        const osmd = new OpenSheetMusicDisplay(node, { autoResize: true, backend: "svg", drawTitle: false, drawComposer: false, drawPartNames: false, drawCredits: false, drawMeasureNumbers: false, drawingParameters: "compacttight", stretchLastSystemLine: true });
         await osmd.load(xml);
         if (cancelled) return;
         osmd.Zoom = zoom;

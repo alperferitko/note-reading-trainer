@@ -44,6 +44,7 @@ html body .app-shell .site-header .app-navigation { grid-area: nav; justify-self
 html body .app-shell .site-header .app-navigation > * { flex: none; width: auto; }
 html body .app-shell .site-header .app-navigation > a,
 html body .app-shell .site-header .app-navigation > a:not(.is-active),
+html body .app-shell .site-header .nav-link-button,
 .nav-text-button {
   min-height: 44px; padding: 0 14px; display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 14px; line-height: 1;
   background: transparent; color: var(--foreground); font-family: var(--fx-text); font-size: 15px; font-weight: 500; cursor: pointer; text-decoration: none; box-shadow: none;
@@ -129,7 +130,6 @@ html body .app-shell .site-header .app-navigation .nav-panel .studio-menu-item:f
   html[data-theme=dark] body .app-shell .site-header.site-header--float { top: 8px; margin-top: 8px; width: calc(100% - 20px); height: 60px; border-radius: 18px; gap: 6px; padding: 0 6px; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "brand actions"; }
   .brand-logo, html body .app-shell .site-header .brand-logo.brand-tile { width: 42px; height: 42px; }
   html body .app-shell .site-header .header-actions { gap: 2px; }
-  html body .app-shell .site-header .community-header-actions button:first-child { display: none; }
   .nav-lang-code { display: none; }
   .nav-panel--theme { position: fixed; top: 76px; right: 8px; left: 8px; width: auto; }
 }
@@ -312,3 +312,255 @@ html body .app-shell .legal-page .legal-status { max-width: 76ch; margin: 16px 0
 .legal-actions p { flex-basis: 100%; margin: 0; }
 .legal-actions > button:not(.primary-button) { min-height: 44px; padding: 0 16px; border: 0; border-radius: 12px; background: var(--background-deep); color: var(--foreground); font: inherit; cursor: pointer; }
 .legal-mail, .legal-more a { color: var(--primary); font-weight: 500; }
+
+/* Mute switch and its one-time hint; the hint points at the button from below. */
+.nav-sound .nav-icon-button[aria-checked="false"] { color: var(--foreground-muted); }
+.sound-hint {
+  position: absolute; top: calc(100% + 12px); right: -8px; z-index: 90; width: min(280px, calc(100vw - 24px));
+  display: flex; align-items: flex-start; gap: 8px; padding: 12px 10px 12px 14px;
+  background: var(--foreground); color: var(--background); border-radius: 14px; box-shadow: var(--shadow-2);
+  font: 500 14px/1.45 var(--fx-text); animation: menu-in 200ms cubic-bezier(.2, .7, .2, 1);
+}
+.sound-hint::before { content: ""; position: absolute; top: -6px; right: 22px; width: 12px; height: 12px; background: inherit; transform: rotate(45deg); border-radius: 2px; }
+.sound-hint button { flex: 0 0 auto; width: 28px; height: 28px; border: 0; border-radius: 8px; background: transparent; color: inherit; font-size: 18px; line-height: 1; cursor: pointer; }
+.sound-hint button:hover { background: color-mix(in srgb, var(--background) 16%, transparent); }
+
+.nav-settings-link { flex: 0 0 auto;
+  height: 40px; padding: 0 14px 0 11px; display: inline-flex; align-items: center; gap: 7px; border-radius: 999px;
+  color: var(--foreground); text-decoration: none; font: 500 15px var(--fx-text);
+}
+.nav-settings-link svg { width: 20px; height: 20px; }
+.nav-settings-link:hover, .nav-settings-link.is-active { background: var(--background-deep); }
+@media (max-width: 640px) {
+  .nav-settings-link { min-width: 40px; flex: 0 0 40px; padding: 0; justify-content: center; }
+  .nav-settings-link span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+}
+
+/* ---------- Day / night scene (asset kit 2026-11-03) ----------
+   Two paintings of the same lake view. They are separate layers crossfaded with the theme mode, never
+   blended or split into parallax planes (they are not pixel aligned). Text never sits on a blur. */
+.scene-land { position: absolute; inset: 0; background: url('./scene/day.webp') 50% 100% / cover no-repeat; transition: opacity 750ms ease; pointer-events: none; }
+.scene-land--night { background-image: url('./scene/night.webp'); opacity: 0; }
+html[data-theme=dark] .scene-land--night { opacity: 1; }
+html[data-theme=dark] .scene-land--day { opacity: 0; }
+
+/* The wordmark: the original N continued as otaNota, one SVG used as a mask so it takes any colour. */
+.brand-wordmark { display: block; aspect-ratio: 1424 / 430; height: 34px; background: var(--primary); -webkit-mask: url('./scene/wordmark.svg') center / contain no-repeat; mask: url('./scene/wordmark.svg') center / contain no-repeat; }
+html[data-theme=dark] .brand-wordmark { background: var(--foreground); }
+html body .app-shell .site-header .brand { gap: 0; }
+@media (max-width: 420px) { .brand-wordmark { height: 28px; } }
+
+/* Hero: the painting replaces the drifting tone; the copy sits in its sky, the lake below. */
+.lp .lp-hero-scene { background: none; animation: none; }
+.lp .lp-hero-scene::after { content: ""; position: absolute; inset: auto 0 0; height: 18%; background: linear-gradient(180deg, transparent, var(--background)); pointer-events: none; }
+.lp .lp-hero-scene .hero-ribbon { z-index: 1; }
+html:not([data-theme=dark]) .lp .lp-hero-scene .ribbon-lines { opacity: .22; }
+@media (max-width: 760px) {
+  .lp .lp-hero-scene .scene-land { background-size: auto max(100%, 620px); background-position: 30% 100%; }
+}
+
+/* Golden notes on the hero staff: a sharp gold note with a small warm light around it. The light
+   breathes; the note itself never fades. Position comes from the script (transform), along the staff. */
+.glow-notes { position: absolute; z-index: 1; inset: 0; pointer-events: none; }
+.lp-hero > .lp-hero-copy, .lp-hero > .hero-quiz { z-index: 2; }
+.glow-note {
+  position: absolute; left: 0; top: 0; width: 48px; height: 64px; padding: 0; margin: 0; border: 0; border-radius: 14px; background: none; color: #ffd36e; cursor: pointer; pointer-events: auto;
+  will-change: transform, opacity; transition: opacity 300ms linear;
+}
+.glow-note::after {
+  content: ""; position: absolute; left: 22px; top: 46px; width: 84px; height: 84px; margin: -42px 0 0 -42px; border-radius: 50%; pointer-events: none; z-index: -1;
+  background: radial-gradient(closest-side, rgba(255, 222, 130, .95), rgba(255, 200, 90, .45) 42%, rgba(255, 190, 80, .12) 70%, transparent 100%);
+  animation: glow-breathe 4.2s ease-in-out infinite;
+}
+.glow-note-glyph, .glow-mark {
+  content: ""; display: block; background: currentColor; -webkit-mask: url('./scene/quarter-note.svg') center / contain no-repeat; mask: url('./scene/quarter-note.svg') center / contain no-repeat;
+  filter: drop-shadow(0 0 2px rgba(255, 236, 170, 1)) drop-shadow(0 0 6px rgba(255, 210, 110, .8)) drop-shadow(0 1px 1px rgba(60, 38, 0, .45));
+}
+/* The glyph turns with the staff around its head (22, 50 in the button); the button itself stays upright. */
+.glow-note-glyph { position: absolute; inset: 6px 9px; transform-origin: 13px 44px; pointer-events: none; }
+.glow-note--eighth .glow-note-glyph, .glow-mark--eighth { -webkit-mask-image: url('./scene/eighth-note.svg'); mask-image: url('./scene/eighth-note.svg'); }
+.glow-note[data-tip-open] { color: #ffe7a6; }
+.glow-note[data-tip-open]::after { animation: none; opacity: 1; transform: scale(1.15); }
+.glow-note:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.glow-note-tip {
+  position: absolute; top: calc(100% + 2px); left: 22px; width: max-content; max-width: 210px; padding: 8px 12px; border-radius: 12px; transform: translateX(-50%);
+  background: var(--surface); color: var(--foreground); box-shadow: var(--shadow-2); font: 500 13px/1.4 var(--fx-text); text-align: left;
+  opacity: 0; pointer-events: none;
+}
+/* Shown only while the script says so (pointer on the note, or keyboard focus); gone at once when it leaves. */
+.glow-note[data-tip-open] .glow-note-tip { opacity: 1; transition: opacity 120ms ease; }
+.glow-note[data-tip=start] .glow-note-tip { left: 6px; transform: none; }
+.glow-note[data-tip=end] .glow-note-tip { left: auto; right: 6px; transform: none; }
+.glow-note[data-tip-side=above] .glow-note-tip { top: auto; bottom: calc(100% + 2px); }
+/* Never an invitation from a note behind the card or the copy, nor while another panel is open. */
+.glow-note[data-tip-side=off] .glow-note-tip, :root:has(dialog[open], .chat-panel) .glow-note-tip { opacity: 0 !important; }
+@keyframes glow-breathe { 0%, 100% { opacity: .5; transform: scale(.85); } 50% { opacity: 1; transform: scale(1.1); } }
+.glow-notes.is-paused .glow-note::after { animation-play-state: paused; }
+html:not([data-theme=dark]) .glow-note { color: #eaa823; }
+html:not([data-theme=dark]) .glow-note::after { background: radial-gradient(closest-side, rgba(255, 214, 100, .95), rgba(255, 190, 60, .5) 42%, rgba(255, 180, 60, .14) 70%, transparent 100%); }
+@media (max-width: 560px) { .glow-note-tip { max-width: 160px; font-size: 12px; } }
+@media (prefers-reduced-motion: reduce) { .glow-note::after { animation: none; opacity: .85; } .glow-note { transition: none; } }
+
+/* The question the notes open: a real treble staff, Do4 to La4. */
+.glow-quiz { width: min(460px, calc(100% - 32px)); padding: 28px; border: 0; border-radius: 28px; background: var(--surface); color: var(--foreground); box-shadow: 0 30px 100px rgba(0, 0, 0, .3); }
+.glow-quiz::backdrop { background: rgba(10, 23, 43, .5); }
+.glow-quiz h2 { margin: 4px 0 8px; font: 600 28px/1.15 var(--fx-display); letter-spacing: -.02em; }
+.glow-quiz-eyebrow { margin: 0; color: var(--primary); font: 600 14px var(--fx-ui); }
+.glow-quiz-close { position: absolute; top: 12px; right: 12px; width: 44px; height: 44px; border: 0; border-radius: 12px; background: transparent; color: inherit; font-size: 26px; cursor: pointer; }
+.glow-quiz-close:hover { background: var(--background-deep); }
+.glow-quiz-staff { margin: 8px 0 14px; }
+.glow-quiz-answers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.glow-quiz-answers button { min-height: 48px; border: 0; border-radius: 12px; background: var(--background-deep); color: inherit; font: 600 17px var(--fx-ui); cursor: pointer; }
+.glow-quiz-answers button:hover { background: var(--accent-soft); }
+.glow-quiz-feedback { min-height: 44px; margin: 12px 0 6px; color: var(--foreground-muted); font-size: 15px; line-height: 1.5; }
+.glow-quiz-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.glow-quiz-actions > button { margin: 0; min-height: 44px; }
+
+/* Footer: the painting is the footer. Its calm sky carries the brand and the links as real text, the
+   golden staff runs over the lake. No flat band above it and no panel over it: a light tonal veil at the
+   very top (no blur) keeps the words readable where the tree's leaves reach into the sky. */
+html body .app-shell > footer.site-footer {
+  --sky: #c9def7; --sky-ink: #13213a; --sky-muted: rgba(19, 33, 58, .86); --sky-quiet: rgba(19, 33, 58, .72); --sky-line: rgba(19, 33, 58, .16);
+  --veil: rgba(214, 229, 248, .78);
+  display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; min-height: min(calc(100vw * 1024 / 1536), 1040px); margin-top: 32px; background: var(--sky);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 56px); mask-image: linear-gradient(180deg, transparent 0, #000 56px);
+}
+html[data-theme=dark] body .app-shell > footer.site-footer {
+  --sky: #0b1440; --sky-ink: #ffffff; --sky-muted: rgba(238, 240, 255, .88); --sky-quiet: rgba(238, 240, 255, .72); --sky-line: rgba(255, 255, 255, .18);
+  --veil: rgba(10, 18, 60, .62);
+}
+html body .app-shell > footer.site-footer .site-footer-sky { position: relative; z-index: 2; grid-area: 1 / 1; align-self: start; justify-self: stretch; width: 100%; padding: clamp(72px, 7vw, 104px) 0 0; }
+html body .app-shell > footer.site-footer .site-footer-sky::before {
+  content: ""; position: absolute; inset: 0 0 -80px; z-index: -1; pointer-events: none; opacity: 1;
+  background: linear-gradient(180deg, var(--veil) 0%, var(--veil) 45%, transparent 100%);
+}
+html body .app-shell footer.site-footer .footer-wordmark { height: 40px; background: var(--primary); }
+html[data-theme=dark] body .app-shell footer.site-footer .footer-wordmark { background: #fff; }
+.site-footer-scene { position: absolute; inset: 0; z-index: 0; margin: 0; aspect-ratio: auto; overflow: hidden; pointer-events: none; -webkit-mask-image: none; mask-image: none; }
+.site-footer-scene .scene-land { background-position: 50% 100%; background-size: cover; }
+@media (min-width: 1120px) {
+  /* Wide: the text block moves right of the tree's crown, into the open sky. */
+  html body .app-shell > footer.site-footer .site-footer-inner, html body .app-shell > footer.site-footer .site-footer-legal { width: min(1060px, calc(100% - 2 * var(--fx-margin))); margin-left: max(var(--fx-margin), calc(100% - 1060px - var(--fx-margin))); }
+  html body .app-shell > footer.site-footer .site-footer-inner { grid-template-columns: minmax(220px, 280px) minmax(0, 1fr); gap: 24px 48px; }
+  html body .app-shell > footer.site-footer .site-footer-sky::before { background: linear-gradient(180deg, var(--veil) 0%, color-mix(in srgb, var(--veil) 60%, transparent) 55%, transparent 100%); }
+}
+html body .app-shell > footer.site-footer .site-footer-legal { margin-top: 24px; }
+
+/* The golden staff: lines, clef and notes are vector layers in the painting's own coordinates. */
+.footer-staff { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; color: #ffd98a; }
+.footer-staff .fs-lines use { fill: none; stroke: currentColor; stroke-width: 1.8; opacity: .85; }
+.footer-staff .fs-clef, .footer-staff .fs-riders { fill: currentColor; }
+.footer-staff .fs-stem { fill: none; stroke: currentColor; stroke-width: 1.7; }
+/* The still staff keeps the big glow on its own layer, painted once; the moving notes glow per note. */
+.footer-staff--still { filter: drop-shadow(0 0 3px rgba(255, 214, 120, .85)) drop-shadow(0 0 10px rgba(255, 200, 90, .45)); will-change: transform; }
+/* Each gliding note is its own compositor layer: painted (with its glow) once, then only transformed. */
+.footer-riders { position: absolute; inset: 0; pointer-events: none; color: #ffd98a; }
+.footer-rider { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; will-change: transform, opacity; }
+.footer-rider svg { position: absolute; overflow: visible; fill: currentColor; filter: drop-shadow(0 0 3px rgba(255, 214, 120, .9)) drop-shadow(0 0 7px rgba(255, 200, 90, .45)); }
+.footer-rider .fs-stem { fill: none; stroke: currentColor; stroke-width: 1.7; }
+html:not([data-theme=dark]) .footer-staff--still { color: #f0b43a; filter: drop-shadow(0 0 3px rgba(255, 226, 150, .95)) drop-shadow(0 0 9px rgba(255, 196, 80, .55)) drop-shadow(0 1px 1px rgba(80, 50, 0, .45)); }
+
+@media (max-width: 760px) {
+  /* Phone: the links come first on the painting's own sky colour, then the scene in its own frame,
+     so neither the words nor the staff and the tree get cropped away. */
+  html body .app-shell > footer.site-footer { display: flex; flex-direction: column; min-height: 0; background: var(--sky); }
+  html body .app-shell > footer.site-footer .site-footer-scene { order: 2; }
+  html body .app-shell > footer.site-footer .site-footer-sky { padding-top: 64px; padding-bottom: 8px; }
+  html body .app-shell > footer.site-footer .site-footer-sky::before { content: none; }
+  /* Closer in on the lake: the painting and the staff are zoomed together around the clef's corner,
+     so the staff keeps a readable size and stays on the water. */
+  html body .app-shell > footer.site-footer .site-footer-scene > * { transform: scale(1.7); transform-origin: 14% 92%; }
+  .footer-staff .fs-lines use { stroke-width: 2.4; }
+  .footer-staff .fs-stem { stroke-width: 2.2; }
+  html body .app-shell > footer.site-footer .site-footer-scene { position: relative; inset: auto; flex: none; width: 100%; aspect-ratio: 4 / 3; margin-top: -40px;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22%); mask-image: linear-gradient(180deg, transparent 0, #000 22%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scene-land { transition: none; }
+}
+/* Readability: a tonal veil only behind the copy column (no blur); the painting stays clear on the right. */
+.lp .lp-hero-scene::before {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--background) 90%, transparent) 0%, color-mix(in srgb, var(--background) 82%, transparent) 34%, color-mix(in srgb, var(--background) 30%, transparent) 50%, transparent 60%);
+}
+.lp .lp-hero .lp-lead { color: var(--foreground); }
+@media (max-width: 960px) {
+  .lp .lp-hero-scene::before { background: linear-gradient(180deg, color-mix(in srgb, var(--background) 88%, transparent) 0%, color-mix(in srgb, var(--background) 80%, transparent) 55%, transparent 80%); }
+}
+.lp .lp-hero-scene .scene-land { z-index: 0; }
+.lp .lp-hero-scene::before { z-index: 1; }
+.lp .lp-hero-scene::after { z-index: 1; }
+.lp .lp-hero-scene .hero-ribbon { z-index: 2; }
+/* Daylight needs a deeper gold and a firmer edge to read on the pale lake; night keeps the soft light. */
+html body .glow-quiz[open] { position: fixed; inset: 0; margin: auto; height: fit-content; max-height: calc(100svh - 32px); overflow: auto; }
+/* Text that lands on the busy lower part of the painting gets a soft halo in its own sky colour, so it
+   stays readable over rocks and flowers without a panel behind it. */
+html body .app-shell footer.site-footer :is(.site-footer-group a, .site-footer-legal :is(span, a), .site-footer-group h2) {
+  text-shadow: 0 0 2px color-mix(in srgb, var(--sky-veil, #f3f1ff) 90%, transparent), 0 0 10px color-mix(in srgb, var(--sky-veil, #f3f1ff) 75%, transparent);
+}
+html[data-theme=dark] body .app-shell footer.site-footer :is(.site-footer-group a, .site-footer-legal :is(span, a), .site-footer-group h2) {
+  text-shadow: 0 0 2px rgba(10, 12, 40, .9), 0 0 10px rgba(10, 12, 40, .7);
+}
+/* The sky's veil reaches below the links; where the sky is as tall as the footer it must not lengthen the page. */
+html body .app-shell > footer.site-footer { overflow: clip; }
+/* Keep the last legal link clear of the round chat button in the corner. */
+html body .app-shell > footer.site-footer .site-footer-legal { padding-right: 84px; }
+@media (max-width: 760px) { html body .app-shell > footer.site-footer .site-footer-legal { padding-right: 72px; } }
+html:not([data-theme=dark]) .footer-riders { color: #f0b43a; }
+@media (max-width: 760px) { .footer-rider .fs-stem { stroke-width: 2.2; } }
+/* Tablet widths (761-999 px): the link block is too tall for the painting's sky there, so the footer
+   stacks like on a phone — links first on the sky colour, then the whole painting in its own frame, at
+   its own proportion, so no link ever sits on the lake or the golden staff. */
+@media (min-width: 761px) and (max-width: 999px) {
+  html body .app-shell > footer.site-footer { display: flex; flex-direction: column; min-height: 0; background: var(--sky); }
+  html body .app-shell > footer.site-footer .site-footer-scene { order: 2; position: relative; inset: auto; flex: none; width: 100%; aspect-ratio: 1536 / 1024; margin-top: -56px;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 18%); mask-image: linear-gradient(180deg, transparent 0, #000 18%); }
+  html body .app-shell > footer.site-footer .site-footer-sky { padding-top: 64px; padding-bottom: 8px; }
+  html body .app-shell > footer.site-footer .site-footer-sky::before { content: none; }
+}
+
+/* Desktop (1000 px and wider): at the very end of the page the whole footer is on screen at once, the
+   brand and every link in the sky and the lit staff on the lake. The footer is never taller than the
+   window, so the page ends where the painting does; the painting keeps its proportion, anchored at the
+   bottom, and only gives up sky at the top when the window is short. The link block is tighter and sits
+   a little lower, on the calm sky and the pale far mountains, well above the water. */
+@media (min-width: 1000px) {
+  html body .app-shell > footer.site-footer { min-height: 0; height: min(100svh, calc(100vw * 1024 / 1536), 1080px); }
+  html body .app-shell > footer.site-footer .site-footer-sky { padding-top: clamp(48px, 8svh, 96px); }
+  html body .app-shell footer.site-footer .site-footer-group a { min-height: 30px; }
+  html body .app-shell > footer.site-footer .site-footer-group h2 { margin-bottom: 6px; }
+  html body .app-shell > footer.site-footer .site-footer-legal { margin-top: 12px; padding-top: 10px; }
+  html body .app-shell > footer.site-footer .site-footer-legal :is(span, a) { min-height: 28px; }
+}
+
+/* Navbar: brand | Stüdyo · NotaNota AI · Sıralama | account, then Tema. */
+html body .app-shell .site-header .nav-link-button > b { font: inherit; white-space: nowrap; }
+html body .app-shell .site-header .nav-link-button:hover { background: var(--background-deep); }
+html body .app-shell .site-header .nav-link-button:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+html body .app-shell .site-header .header-actions > .nav-link-button { display: none; }
+@media (max-width: 1100px) { html body .app-shell .site-header .header-actions > .nav-link-button { display: inline-flex; } }
+@media (max-width: 520px) { html body .app-shell .site-header .header-actions > .nav-link-button { display: none; } }
+.theme-menu { position: relative; }
+html body .app-shell .site-header .nav-theme-button { flex: 0 0 auto; min-height: 44px; padding: 0 14px 0 11px; display: inline-flex; align-items: center; gap: 7px; border: 0; border-radius: 14px; background: transparent; color: var(--foreground); font: 500 15px var(--fx-text); cursor: pointer; box-shadow: none; width: auto; margin: 0; }
+html body .app-shell .site-header .nav-theme-button:hover, html body .app-shell .site-header .nav-theme-button[aria-expanded="true"] { background: var(--background-deep); }
+html body .app-shell .site-header .nav-theme-button:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+.nav-theme-button svg { width: 20px; height: 20px; flex: none; }
+.theme-menu-panel { position: absolute; right: 0; top: calc(100% + 10px); z-index: 80; width: 380px; display: grid; gap: 16px; padding: 16px; border-radius: 18px; background: var(--surface); color: var(--foreground); box-shadow: var(--shadow-2); }
+.theme-menu-panel fieldset { margin: 0; padding: 0; border: 0; min-width: 0; display: grid; gap: 8px; }
+.theme-menu-panel legend { padding: 0; margin-bottom: 8px; color: var(--foreground-muted); font: 600 13px var(--fx-ui); }
+.theme-menu-palettes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.theme-menu-palettes label, .theme-menu-modes label { position: relative; display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 10px; border-radius: 12px; cursor: pointer; font-size: 14px; }
+.theme-menu-palettes label:hover, .theme-menu-modes label:hover { background: var(--background-deep); }
+.theme-menu-palettes label.is-on, .theme-menu-modes label.is-on { background: var(--background-deep); color: var(--primary); font-weight: 600; }
+.theme-menu-panel input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.theme-menu-panel label:has(input:focus-visible) { outline: 3px solid var(--primary); outline-offset: 1px; }
+.theme-menu-swatch { width: 18px; height: 18px; flex: none; border-radius: 6px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--foreground) 12%, transparent); }
+.theme-menu-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 14px; background: color-mix(in srgb, var(--background-deep) 55%, transparent); }
+.theme-menu-modes label { justify-content: center; }
+html body .app-shell .theme-menu-more { justify-self: start; margin: 0; width: auto; padding: 4px 0; border: 0; background: none; color: var(--primary); font: 600 14px var(--fx-ui); cursor: pointer; box-shadow: none; }
+.panel-settings-link { margin: 16px 0 0; display: flex; justify-content: center; }
+@media (max-width: 720px) {
+  .theme-menu-panel { position: fixed; top: 76px; right: 8px; left: 8px; width: auto; }
+  html body .app-shell .site-header .nav-theme-button { padding: 0 10px; }
+}
+@media (max-width: 400px) { html body .app-shell .site-header .nav-theme-button span { display: none; } }

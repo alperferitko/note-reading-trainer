@@ -6,6 +6,10 @@ interface ImportMetaEnv {
   readonly VITE_GOOGLE_AUTH_ENABLED?: string;
   /** Pinned staging ai-gateway URL, or a loopback mock. Any other value is ignored by lib/ai-client.mjs. */
   readonly VITE_AI_GATEWAY_URL?: string;
+  /** "true" only in builds whose Supabase project has the score library migration (staging). */
+  readonly VITE_SCORE_LIBRARY?: string;
+  /** "true" only where the learning profile and weekly report migration is applied (staging). */
+  readonly VITE_LEARNING_PROFILE?: string;
 }
 
 interface ImportMeta {

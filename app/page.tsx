@@ -1,28 +1,24 @@
 "use client";
-/* eslint-disable @next/next/no-img-element -- Relative public assets must work on both the custom domain and GitHub Pages subpath. */
 
 import { FormEvent, lazy, MouseEvent, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import {
-  CommunityHeader,
-  CommunityLeaderboardButton,
-  CommunityPracticeRecorder,
-  CommunityPracticeStreak,
-  CommunityProvider,
-  CommunityResult,
-} from "./community";
-import { pitchAt, pitchName, matchesPitch, accidentalsFor, parsePitchAnswer } from "@/lib/music-pitch.mjs";
+import { CommunityHeader, CommunityLeaderboardButton, CommunityPracticeRecorder, CommunityProvider, CommunityResult, CommunityPracticeStreakChip, CommunityNavLeaderboard } from "./community";
+import { pitchAt, pitchName, matchesPitch, accidentalsFor, parsePitchAnswer, namesLocale } from "@/lib/music-pitch.mjs";
 import { SITE_PAGES, pageRoute, pageFromPath, isKnownRoute } from "@/lib/site-routes.mjs";
 import { LearningStudio } from './learning-studio';
 import { LandingPage, type LandingStage, type NextPlan } from './landing/landing-page';
 import type { TeacherAction } from './landing/teacher-demo';
-import { BrandLogo, LanguageMenu, ThemeMenu, usePalette } from './palette-tools';
+import { BrandWordmark, NavThemeMenu, usePalette } from './palette-tools';
+import { SettingsPage } from './settings-page';
+import { LOCALE_CHOICE_KEY } from '@/lib/locale-default.mjs';
 import { StudioMenu, type StudioLink } from './site-nav';
 import { PricingPage } from './landing/pricing-page';
-import { ChatWidget } from './landing/chat-widget';
+import { ChatWidget, type TeacherSuggestion } from './landing/chat-widget';
+import { WeeklyReport } from './weekly-report';
+import { Staff as StaffFigure } from './landing/music';
 import { NotFound, Skeleton } from './landing/states';
 import { toMusicXml } from '@/lib/demo-piece.mjs';
-import { AITeacher } from './ai-teacher';
+import { AITeacher, liveTeacherConfigured } from './ai-teacher';
 import { WorkshopPage } from './workshop-page';
 import { LEARNING_LESSONS } from '@/lib/learning-path.mjs';
 import { MusicStaff } from "./notation";
@@ -51,7 +47,7 @@ import {
 
 type LevelId = "temel" | "yakin" | "tam" | "genis";
 type ModeId = "porte" | "konum";
-type Stage = "landing" | "setup" | "quiz" | "done" | "pieces" | "instruments" | "guitar" | "piano" | "violin" | "rhythm" | "listening" | "lessons" | "progress" | "practice" | "score-import" | "listen-play" | "teacher" | "palettes" | "pricing" | "notfound" | InfoPage;
+type Stage = "landing" | "setup" | "quiz" | "done" | "pieces" | "instruments" | "guitar" | "piano" | "violin" | "rhythm" | "listening" | "lessons" | "progress" | "practice" | "score-import" | "listen-play" | "teacher" | "palettes" | "pricing" | "settings" | "notfound" | InfoPage;
 type Locale = "tr" | "en";
 type ReadingProfileId = "new" | "growing" | "confident";
 
@@ -63,7 +59,7 @@ const STAGE_ROUTES: Record<Stage, string> = {
   faq: pageRoute('faq'), contact: pageRoute('contact'), roadmap: pageRoute('roadmap'),
   privacy: pageRoute('privacy'), kvkk: pageRoute('kvkk'), terms: pageRoute('terms'), cookies: pageRoute('cookies'), copyright: pageRoute('copyright'),
   'score-import': pageRoute('score-import'), 'listen-play': pageRoute('listen-play'),
-  teacher: pageRoute('teacher'), palettes: pageRoute('palettes'), pricing: pageRoute('pricing'), notfound: pageRoute('landing'),
+  teacher: pageRoute('teacher'), palettes: pageRoute('palettes'), pricing: pageRoute('pricing'), settings: pageRoute('settings'), notfound: pageRoute('landing'),
 };
 
 type ShellKey = "reading" | "rhythm" | "pieces" | "ai" | "mine" | "instruments" | "mic" | "listening" | "lessons" | "allStudios" | "home" | "studios";
@@ -442,7 +438,7 @@ const INSTRUMENT_COPY = {
   tr: {
     eyebrow: "Müzik aletleri",
     title: "Bir enstrüman seç.",
-    lead: "Notaların çalgı üzerindeki yerlerini ayrı çalışma alanlarında öğren. Gitar hazır; piyano ve keman sıradaki modüller.",
+    lead: "Notaların çalgı üzerindeki yerlerini bul: piyano tuşu, gitar perdesi, keman teli. Ekranda tıklayarak çalışılır; çalgının sesi dinlenmez.",
     available: "Çalışmaya hazır",
     coming: "Hazırlanıyor",
     guitar: "Gitar",
@@ -705,14 +701,6 @@ function Staff({ note, locale, compact = false, revealAnswer = false, animated =
   );
 }
 
-function Stat({ label, value, accent }: { label: string; value: string | number; accent?: boolean }) {
-  return (
-    <div className={`stat ${accent ? "stat--accent" : ""}`}>
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
 
 export default function Home() {
   const [locale, setLocale] = useState<Locale>("tr");
@@ -1012,6 +1000,7 @@ export default function Home() {
   }, [stage]);
 
   function changeLocale(nextLocale: Locale) {
+    try { window.localStorage.setItem(LOCALE_CHOICE_KEY, nextLocale); } catch { /* The page language still changes. */ }
     setLocale(nextLocale);
     window.history.replaceState(null, '', new URL(pageRoute(stage, nextLocale), document.baseURI));
     setAnswer("");
@@ -1091,6 +1080,22 @@ export default function Home() {
     setPendingStart("focus");
   }
 
+  /** A suggestion from the live teacher opens the real practice it names: a drill on those notes or a studio. */
+  function runTeacherSuggestion(suggestion: TeacherSuggestion) {
+    if (suggestion.kind === "focus-drill") { startFocusDrill(suggestion.notes, Math.min(6, Math.max(1, suggestion.repetitions))); return; }
+    if (suggestion.kind === "lesson") { navigateTo("lessons"); return; }
+    const stages: Record<typeof suggestion.studio, Stage> = { reading: "setup", rhythm: "rhythm", score: "pieces", ear: "listening", instrument: "instruments", lessons: "lessons" };
+    navigateTo(stages[suggestion.studio]);
+  }
+
+  // The account panel opens Settings through an event (it lives outside the router).
+  useEffect(() => {
+    const open = () => navigateTo("settings");
+    window.addEventListener("notanota-open-settings", open);
+    return () => window.removeEventListener("notanota-open-settings", open);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- navigateTo is stable in behaviour
+  }, []);
+
   function handleTeacherAction(action: TeacherAction) {
     if (action.kind === "focus") { startFocusDrill(action.notes, action.repeats); return; }
     setScoreInitial({ xml: toMusicXml(), from: action.from, to: action.to });
@@ -1105,6 +1110,28 @@ export default function Home() {
   function practiseRange(xml: string, from: number, to: number) {
     setScoreInitial({ xml, from, to });
     navigateTo("score-import");
+  }
+
+  /**
+   * Meta's exercises name evidence contexts (module|task|clef|clef:note|timing). Treble note-reading
+   * contexts become a focused drill on exactly those notes, repeated as suggested; anything else falls
+   * back to the targeted review of the weakest recent notes.
+   */
+  function startAiExercises(exercises: { contextRef: string; repetitions: number }[] = []) {
+    const picked = exercises.map((exercise) => {
+      const [module, , exerciseClef, item] = exercise.contextRef.split("|");
+      const [itemClef, id] = (item ?? "").split(":");
+      return module === "reading" && exerciseClef === "treble" && itemClef === "treble" && ALL_NOTES.some((note) => note.id === id) ? { id, repetitions: exercise.repetitions } : null;
+    });
+    if (!picked.length || picked.some((entry) => !entry)) { startTargetedSession(); return; }
+    const notes = [...new Set(picked.map((entry) => entry!.id))];
+    // A single note alone would be guessed without reading; its neighbours on the staff keep it a real choice.
+    if (notes.length === 1) {
+      const at = ALL_NOTES.find((note) => note.id === notes[0])!.position;
+      for (const note of ALL_NOTES) if (Math.abs(note.position - at) === 1 && !notes.includes(note.id)) notes.push(note.id);
+    }
+    const repeats = Math.min(6, Math.max(2, ...picked.map((entry) => entry!.repetitions)));
+    startFocusDrill(notes, repeats);
   }
 
   function startTargetedSession() {
@@ -1301,31 +1328,31 @@ export default function Home() {
     practise: [
       { stage: "setup", href: STAGE_ROUTES.setup, label: "Nota okuma", hint: "Porte, anahtar ve aralık" },
       { stage: "rhythm", href: STAGE_ROUTES.rhythm, label: "Ritim", hint: "Vuruş ve ritim kalıpları" },
-      { stage: "pieces", href: STAGE_ROUTES.pieces, label: "Eser çalışma", hint: "Satır satır okuma, nota dosyası" },
-      { stage: "instruments", href: STAGE_ROUTES.instruments, label: "Enstrümanlar", hint: "Piyano, gitar, keman" },
+      { stage: "pieces", href: STAGE_ROUTES.pieces, label: "Eser çalışma", hint: "Porte satırları ve etütler" },
+      { stage: "instruments", href: STAGE_ROUTES.instruments, label: "Enstrümanlar", hint: "Piyano, gitar, kemanda yerini bul" },
       { stage: "listening", href: STAGE_ROUTES.listening, label: "İşitme", hint: "Aralık, akor, dikte" },
-      { stage: "listen-play", href: STAGE_ROUTES["listen-play"], label: "Mikrofonla çal", hint: "Perdeni tarayıcı dinler" },
+      { stage: "listen-play", href: STAGE_ROUTES["listen-play"], label: "Mikrofonla çal", hint: "Tek notanın perdesini dinler" },
     ],
     learn: [
       { stage: "lessons", href: STAGE_ROUTES.lessons, label: "Dersler", hint: "Kısa teori dersleri" },
-      { stage: "progress", href: STAGE_ROUTES.progress, label: "İlerlemem", hint: "Beceri haritası ve geçmiş" },
-      { stage: "teacher", href: STAGE_ROUTES.teacher, label: "NotaNota AI", hint: "Kişisel öğretmen" },
-      { stage: "practice", href: STAGE_ROUTES.practice, label: "Tüm çalışmalar", hint: "Hepsi tek sayfada" },
+      { stage: "progress", href: STAGE_ROUTES.progress, label: "İlerlemem", hint: "Bu cihazdaki beceri haritası" },
+      { stage: "teacher", href: STAGE_ROUTES.teacher, label: "NotaNota AI", hint: liveTeacherConfigured ? "Kişisel öğretmen" : "Örnek konuşmalar ve yorum" },
+      { stage: "practice", href: STAGE_ROUTES.practice, label: "Tüm çalışmalar", hint: "Çalışma alanları tek sayfada" },
     ],
   } : {
     practise: [
       { stage: "setup", href: STAGE_ROUTES.setup, label: "Note reading", hint: "Staff, clef and range" },
       { stage: "rhythm", href: STAGE_ROUTES.rhythm, label: "Rhythm", hint: "Pulse and rhythm patterns" },
       { stage: "pieces", href: STAGE_ROUTES.pieces, label: "Pieces", hint: "Line reading, score files" },
-      { stage: "instruments", href: STAGE_ROUTES.instruments, label: "Instruments", hint: "Piano, guitar, violin" },
+      { stage: "instruments", href: STAGE_ROUTES.instruments, label: "Instruments", hint: "Find notes on piano, guitar, violin" },
       { stage: "listening", href: STAGE_ROUTES.listening, label: "Listening", hint: "Intervals, chords, dictation" },
-      { stage: "listen-play", href: STAGE_ROUTES["listen-play"], label: "Play to the mic", hint: "The browser hears your pitch" },
+      { stage: "listen-play", href: STAGE_ROUTES["listen-play"], label: "Play to the mic", hint: "Listens to the pitch of one note" },
     ],
     learn: [
       { stage: "lessons", href: STAGE_ROUTES.lessons, label: "Lessons", hint: "Short theory lessons" },
-      { stage: "progress", href: STAGE_ROUTES.progress, label: "My progress", hint: "Skill map and history" },
-      { stage: "teacher", href: STAGE_ROUTES.teacher, label: "NotaNota AI", hint: "A personal teacher" },
-      { stage: "practice", href: STAGE_ROUTES.practice, label: "All practice", hint: "Everything on one page" },
+      { stage: "progress", href: STAGE_ROUTES.progress, label: "My progress", hint: "Skill map on this device" },
+      { stage: "teacher", href: STAGE_ROUTES.teacher, label: "NotaNota AI", hint: liveTeacherConfigured ? "A personal teacher" : "Sample conversations and feedback" },
+      { stage: "practice", href: STAGE_ROUTES.practice, label: "All practice", hint: "Practice areas on one page" },
     ],
   };
   const navGroup: Stage | "more" = stage === "quiz" || stage === "done" || stage === "setup" ? "setup"
@@ -1352,17 +1379,17 @@ export default function Home() {
     <main className={`app-shell ${immersiveSession ? "app-shell--session" : ""}`}>
       {!immersiveSession && <header className="site-header site-header--float">
         <a className="brand" href={STAGE_ROUTES.landing} onClick={(event) => { event.preventDefault(); navigateTo("landing"); }} aria-label={copy.homeLabel}>
-          <BrandLogo palette={palette} className="brand-tile" />
-          <span className="brand-name">NotaNota</span>
+          <BrandWordmark />
         </a>
         <nav className="app-navigation" aria-label={shell.navigation}>
           <StudioMenu locale={locale} practise={studioLinks.practise} learn={studioLinks.learn} active={stage !== "landing" && stage !== "pricing" && stage !== "teacher"} onGo={(target) => navigateTo(target as Stage)} />
           <a href={STAGE_ROUTES.teacher} className={stage === "teacher" ? "is-active" : ""} aria-current={stage === "teacher" ? "page" : undefined} onClick={(event) => { event.preventDefault(); navigateTo("teacher"); }}><b>NotaNota AI</b></a>
+          <CommunityNavLeaderboard />
         </nav>
         <div className="header-actions">
+          <CommunityNavLeaderboard />
           <CommunityHeader />
-          <ThemeMenu locale={locale} soundEnabled={noteSoundEnabled} onToggleSound={toggleNoteSound} onCompare={() => navigateTo("palettes")} />
-          <LanguageMenu locale={locale} onChange={changeLocale} />
+          <NavThemeMenu locale={locale} onSettings={() => navigateTo("settings")} />
         </div>
       </header>}
 
@@ -1389,11 +1416,13 @@ export default function Home() {
       </nav>}
 
       {stage === "landing" && <LandingPage locale={locale} evidence={evidence} soundEnabled={noteSoundEnabled} onNavigate={(next: LandingStage) => navigateTo(next)} onQuickStart={startSession} onStartPlan={startPlan} onPractiseXml={practiseXml} />}
+      {stage === "settings" && <SettingsPage locale={locale} soundEnabled={noteSoundEnabled} onToggleSound={toggleNoteSound} onChangeLocale={changeLocale} onNavigate={(target) => navigateTo(target as Stage)} />}
       {stage === "pricing" && <PricingPage locale={locale} onOpenChat={() => window.dispatchEvent(new Event("notanota-open-chat"))} onStudio={() => navigateTo("setup")} />}
       {stage === "notfound" && <NotFound locale={locale} onHome={() => navigateTo("landing")} onStudio={() => navigateTo("practice")} />}
-      {!immersiveSession && <ChatWidget locale={locale} />}
+      {!immersiveSession && <ChatWidget locale={locale} onAction={handleTeacherAction} onSuggestion={runTeacherSuggestion} evidence={evidence} />}
       {stage === "teacher" && <Suspense fallback={<Skeleton kind="panel" locale={locale} />}><AiWorkspace locale={locale} evidence={evidence} owner={communityUserId} onQuickStart={startSession} onStartPlan={startPlan} onPractiseRange={practiseRange} onStudio={() => navigateTo("setup")} onTeacherAction={handleTeacherAction} /></Suspense>}
       {stage === "palettes" && <Suspense fallback={<Skeleton kind="panel" locale={locale} />}><PaletteReview locale={locale} soundEnabled={noteSoundEnabled} /></Suspense>}
+      {stage === "progress" && <div className="weekly-wrap"><WeeklyReport locale={locale} evidence={evidence} onSuggestion={runTeacherSuggestion} /></div>}
       {(stage === "lessons" || stage === "progress" || stage === "practice") && <LearningStudio key={stage} view={stage} locale={locale} onNavigate={navigateTo} initialLessonId={stage === "lessons" ? requestedLessonId : null} />}
       {stage === "score-import" && <Suspense fallback={<Skeleton kind="score" locale={locale} />}><ScoreWorkspace key={`${scoreInitial?.xml.length ?? 0}-${scoreInitial?.from ?? 0}-${scoreInitial?.to ?? 0}`} locale={locale} noteSoundEnabled={noteSoundEnabled} onNavigate={navigateTo} initial={scoreInitial} /></Suspense>}
       {stage === "listen-play" && <Suspense fallback={<Skeleton kind="panel" locale={locale} />}><MicPractice locale={locale} onNavigate={navigateTo} /></Suspense>}
@@ -1430,6 +1459,7 @@ export default function Home() {
       {stage === "setup" && (
         <section className="setup-shell">
           <section className="reading-session-summary" aria-labelledby="reading-session-summary-title">
+            <h1 className="sr-only">{locale === "tr" ? "Nota okuma" : "Note reading"}</h1>
             <div>
               <p className="kicker">{readingProfileCopy.summaryEyebrow}</p>
               <h2 id="reading-session-summary-title">{readingProfileCopy.summaryTitle}</h2>
@@ -1452,6 +1482,7 @@ export default function Home() {
             evidence={evidence}
             weakCount={weakReading.length}
             summary={readingSummary}
+            presets={["beginner"]}
             onBeginner={() => {
               setLevel("temel"); setMode("porte"); setSessionType("standard"); setClef("treble"); setAccidentals("natural");
               persistReadingSettings({ level: "temel", mode: "porte", sessionType: "standard" });
@@ -1464,9 +1495,8 @@ export default function Home() {
 
           <TargetedReviewCard locale={locale} weak={weakReading} label={(item) => writtenNoteLabel(item, locale)} onStart={startTargetedSession} />
 
-          <div className="hero-copy">
-            <p className="kicker">{copy.kicker}</p>
-            <h1>{copy.heroLine1}<br /><em>{copy.heroLine2}</em></h1>
+          <div className="hero-copy hero-copy--compact">
+            <h2>{locale === "tr" ? "Ayarlar" : "Settings"}</h2>
             <p className="hero-lead">{copy.heroLead}</p>
             <div className="hero-staff" aria-hidden="true">
               <div className="hero-staff-heading">
@@ -1543,7 +1573,6 @@ export default function Home() {
             <button className="primary-button" type="button" onClick={startSession}>
               {copy.start} <span aria-hidden="true">→</span>
             </button>
-            <p className="setup-note">{sessionType === "standard" ? copy.setupNote : extra.endlessSetupNote}</p>
           </div>
         </section>
       )}
@@ -1668,107 +1697,103 @@ export default function Home() {
       )}
 
       {stage === "done" && (
-        <section className="results-shell">
+        <section className="results-shell results-v2">
           <CommunityPracticeRecorder active={completedDailyPractice} activityKey={`notes-${sessionStartedAt}`} />
-          <LocalResult id={`notes-${sessionStartedAt}`} module={locale==='tr'?'Nota okuma':'Note reading'} correct={correctCount} wrong={totalWrong} milliseconds={totalResponseTimeMs} locale={locale} />
-          <TargetedReviewResult locale={locale} session={`notes-${sessionStartedAt}`} targeted={targetedKeys} evidence={evidence} label={(item) => writtenNoteLabel(item, locale)} />
-          <div className="results-intro">
-            <span className="brand-mark result-flourish" aria-hidden="true">
-              <img src="./notanota-monogram-96.webp" alt="" />
-            </span>
+          <div className="rv-top">
             <p className="kicker">{completedStandardSession ? copy.sessionComplete : copy.sessionSummary}</p>
-            <h1 ref={resultsHeadingRef} tabIndex={-1}>{sessionType === "endless" ? extra.endlessResultTitle : sessionInsight.title}</h1>
-            <p>{sessionType === "endless" ? extra.endedSession(correctCount, totalTime) : endedEarly ? extra.stoppedSession(correctCount) : copy.completedCopy(selectedLevel.title)}</p>
+            <LocalResult id={`notes-${sessionStartedAt}`} module={locale==='tr'?'Nota okuma':'Note reading'} correct={correctCount} wrong={totalWrong} milliseconds={totalResponseTimeMs} locale={locale} />
           </div>
 
-          <dl className="result-session-meta" aria-label={copy.sessionSummary}>
-            <div><dt>{locale === "tr" ? "Seviye" : "Range"}</dt><dd>{selectedLevel.title}</dd></div>
-            <div><dt>{locale === "tr" ? "Çalışma biçimi" : "Practice mode"}</dt><dd>{copy.modes[mode].title}</dd></div>
-            <div><dt>{locale === "tr" ? "Oturum" : "Session"}</dt><dd>{sessionType === "standard" ? extra.standard.title : extra.endless.title}</dd></div>
-            <div><dt>{locale === "tr" ? "Toplam süre" : "Total time"}</dt><dd>{totalTime}</dd></div>
-          </dl>
-
-          {completedDailyPractice && <CommunityPracticeStreak compact />}
-
-          {sessionType === "standard" && <aside className={`session-insight session-insight--${sessionInsight.tone} ${totalWrong > 0 && hardestNotes[0] ? "session-insight--split" : ""}`} aria-label={copy.sessionSummary}>
-            <div className="session-insight-copy">
-              <p>{sessionInsight.body}</p>
-              {sessionInsight.pace && <strong>{sessionInsight.pace}</strong>}
-              {sessionInsight.nextStep && <span>{sessionInsight.nextStep}</span>}
-            </div>
-            {totalWrong > 0 && hardestNotes[0] && (
-              <div className="confusion-insight">
-                <p className="kicker">{copy.patternEyebrow}</p>
-                {dominantConfusion ? (
-                  <>
-                    <div className="confusion-pair" aria-label={`${noteName(dominantConfusion.expected, locale)} → ${locale === "tr" ? dominantConfusion.guessed.solfege : dominantConfusion.guessed.letter}`}>
-                      <b>{noteName(dominantConfusion.expected, locale)}</b><span aria-hidden="true">→</span><b>{locale === "tr" ? dominantConfusion.guessed.solfege : dominantConfusion.guessed.letter}</b>
+          <div className="rv-grid">
+            {/* How did I do: one result, the measure that matters most, two helpers, the next step. */}
+            <section className="rv-card rv-main" aria-labelledby="rv-title">
+              <h1 id="rv-title" ref={resultsHeadingRef} tabIndex={-1}>{sessionType === "endless" ? extra.endlessResultTitle
+                : completedStandardSession && totalWrong === 0 ? (locale === "tr" ? "Bütün notalar ilk denemede doğru" : "Every note right on the first try")
+                  : hardestNotes.length ? (locale === "tr"
+                    ? `${hardestNotes.slice(0, 2).map(({ note }) => noteName(note, locale)).join(" ve ")} biraz daha tekrar istiyor`
+                    : `${hardestNotes.slice(0, 2).map(({ note }) => noteName(note, locale)).join(" and ")} need${hardestNotes.length > 1 ? "" : "s"} a little more practice`)
+                    : sessionInsight.title.replace(/[.!]+$/, "")}</h1>
+              <p className="rv-lead">{sessionType === "endless" ? extra.endedSession(correctCount, totalTime) : endedEarly ? extra.stoppedSession(correctCount) : copy.completedCopy(selectedLevel.title)}
+                {sessionType === "standard" && endedEarly && uniqueCount > correctCount ? (locale === "tr" ? ` ${uniqueCount - correctCount} nota bu turda tamamlanmadı.` : ` ${uniqueCount - correctCount} notes were not finished this round.`) : ""}</p>
+              {sessionType === "endless" ? (
+                <div className="rv-measures endless-results-card">
+                  <div className="rv-hero-metric"><strong>{correctCount}</strong><span>{extra.correctAnswers}</span></div>
+                  <dl className="rv-helpers"><div><dt>{extra.totalTime}</dt><dd>{totalTime}</dd></div></dl>
+                </div>
+              ) : (
+                <div className="rv-measures">
+                  <div className="rv-hero-metric">
+                    <div className="score-ring">
+                      <svg viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+                        <circle className="score-ring-track" cx="60" cy="60" r="52" pathLength="100" />
+                        <circle className="score-ring-progress" cx="60" cy="60" r="52" pathLength="100" strokeDasharray="100" strokeDashoffset={100 - firstTryRate} />
+                      </svg>
+                      <div className="score-ring-copy"><strong>{firstTryCorrect}/{uniqueCount}</strong></div>
                     </div>
-                    <p>{copy.confusionCopy(
-                      noteName(dominantConfusion.expected, locale),
-                      dominantConfusion.expected.location[locale],
-                      locale === "tr" ? dominantConfusion.guessed.solfege : dominantConfusion.guessed.letter,
-                    )}</p>
-                    <small>{copy.confusionNext}</small>
-                  </>
-                ) : (
-                  <p>{copy.reviewFocus(noteName(hardestNotes[0].note, locale), hardestNotes[0].note.location[locale])}</p>
+                    <span>{locale === "tr" ? "notayı ilk denemede doğru okudun" : "notes read right on the first try"}</span>
+                  </div>
+                  <dl className="rv-helpers">
+                    <div><dt>{locale === "tr" ? "Tekrar gereken cevap" : "Answers that needed a retry"}</dt><dd>{totalWrong}</dd></div>
+                    <div><dt>{copy.averageResponse}</dt><dd>{averageTime}</dd></div>
+                  </dl>
+                </div>
+              )}
+              {completedDailyPractice && <CommunityPracticeStreakChip />}
+              <div className="rv-actions">
+                <button className="primary-button" type="button" onClick={startSession}>{locale === "tr" ? "Bir tur daha" : "One more round"}</button>
+                <button className="ghost-button" type="button" onClick={() => navigateTo("setup")}>{copy.changeLevel}</button>
+              </div>
+            </section>
+
+            {/* What should I work on: the few notes that needed most help, and a way to practise exactly those. */}
+            {sessionType === "standard" && <section className="rv-card rv-focus" aria-labelledby="rv-focus-title">
+              <h2 id="rv-focus-title">{locale === "tr" ? "Odaklan" : "Focus on"}</h2>
+              {hardestNotes.length ? <>
+                {clef === "treble" && accidentals === "natural" && (
+                  <StaffFigure className="rv-staff" space={9} width={300} label={locale === "tr" ? "Zorlanılan notalar portede" : "The hard notes on the staff"}
+                    notes={hardestNotes.slice(0, 3).map(({ note }, i, all) => ({ id: note.id, position: note.position, x: (i + 1) / (all.length + 1), tone: "focus" as const, label: noteName(note, locale) }))} />
                 )}
-              </div>
-            )}
-          </aside>}
+                <ul className="rv-notes">
+                  {hardestNotes.slice(0, 3).map(({ note, count }) => (
+                    <li key={note.id}><span className="note-pill">{noteName(note, locale)}</span><span>{note.shortLocation[locale]}</span><b>{copy.wrongCount(count)}</b></li>
+                  ))}
+                </ul>
+                {dominantConfusion
+                  ? <p className="rv-note">{copy.confusionCopy(noteName(dominantConfusion.expected, locale), dominantConfusion.expected.location[locale], namesLocale(locale) === "tr" ? dominantConfusion.guessed.solfege : dominantConfusion.guessed.letter)}</p>
+                  : <p className="rv-note">{copy.reviewFocus(noteName(hardestNotes[0].note, locale), hardestNotes[0].note.location[locale])}</p>}
+                <div className="rv-actions">
+                  <button className="primary-button" type="button" onClick={startTargetedSession}>{locale === "tr" ? "Bu notalarla çalış" : "Practise these notes"}</button>
+                  <button className="ghost-button" type="button" onClick={()=>window.dispatchEvent(new CustomEvent('notanota-open-lesson',{detail:{lessonId:accidentals!=='natural'?'accidentals':clef==='bass'?'bass-clef':'treble-anchors'}}))}>{locale==='tr'?'Kısa dersi aç':'Open the short lesson'}</button>
+                </div>
+              </> : <p className="rv-note">{answerTimes.length === 0 ? copy.noAnswers : completedStandardSession ? copy.perfect : copy.cleanSoFar}</p>}
+              <TargetedReviewResult locale={locale} session={`notes-${sessionStartedAt}`} targeted={targetedKeys} evidence={evidence} label={(item) => writtenNoteLabel(item, locale)} />
+            </section>}
 
-          {sessionType === "endless" ? (
-            <div className="endless-results-card">
-              <Stat label={extra.correctAnswers} value={correctCount} accent />
-              <Stat label={extra.totalTime} value={totalTime} />
-            </div>
-          ) : <div className="results-card">
-            <div className="score-ring">
-              <svg viewBox="0 0 120 120" aria-hidden="true" focusable="false">
-                <circle className="score-ring-track" cx="60" cy="60" r="52" pathLength="100" />
-                <circle className="score-ring-progress" cx="60" cy="60" r="52" pathLength="100" strokeDasharray="100" strokeDashoffset={100 - firstTryRate} />
-              </svg>
-              <div className="score-ring-copy"><strong>%{firstTryRate}</strong><span>{copy.firstTry}</span></div>
-            </div>
-            <div className="stats-grid">
-              <Stat label={sessionType === "standard" ? copy.uniqueQuestions : extra.correctAnswers} value={sessionType === "standard" ? uniqueCount : correctCount} />
-              <Stat label={copy.firstTryCorrect} value={firstTryCorrect} accent />
-              <Stat label={copy.totalWrong} value={totalWrong} />
-              <Stat label={copy.averageResponse} value={averageTime} />
-            </div>
-          </div>}
+            {/* What can I do now: the teacher's reading of this round, in the chat's own look. */}
+            <AITeacher key={`${sessionStartedAt}-${locale}`} compact locale={locale} session={`notes-${sessionStartedAt}`} evidence={evidence}
+              onRepeat={startSession} onProgress={() => navigateTo('progress')} onPractiseWeak={startAiExercises} />
+          </div>
 
-          <CommunityResult score={scoreSubmission} eligible={leaderboardEligible} />
+          <details className="rv-details">
+            <summary>{locale === "tr" ? "Oturum ayrıntıları" : "Session details"}</summary>
+            <dl className="result-session-meta" aria-label={copy.sessionSummary}>
+              <div><dt>{locale === "tr" ? "Seviye" : "Range"}</dt><dd>{selectedLevel.title}</dd></div>
+              <div><dt>{locale === "tr" ? "Çalışma biçimi" : "Practice mode"}</dt><dd>{copy.modes[mode].title}</dd></div>
+              <div><dt>{locale === "tr" ? "Oturum" : "Session"}</dt><dd>{sessionType === "standard" ? extra.standard.title : extra.endless.title}</dd></div>
+              <div><dt>{locale === "tr" ? "Toplam süre" : "Total time"}</dt><dd>{totalTime}</dd></div>
+              {sessionType === "standard" && <>
+                <div><dt>{copy.uniqueQuestions}</dt><dd>{uniqueCount}</dd></div>
+                <div><dt>{copy.firstTryCorrect}</dt><dd>{firstTryCorrect} (%{firstTryRate})</dd></div>
+                <div><dt>{copy.totalWrong}</dt><dd>{totalWrong}</dd></div>
+                <div><dt>{extra.correctAnswers}</dt><dd>{correctCount}</dd></div>
+              </>}
+            </dl>
+            {sessionInsight.pace && <p className="rv-note">{sessionInsight.pace}</p>}
+          </details>
 
-          <AITeacher key={`${sessionStartedAt}-${locale}`} locale={locale} session={`notes-${sessionStartedAt}`} evidence={evidence}
-            onRepeat={startSession} onProgress={() => navigateTo('progress')} onPractiseWeak={startTargetedSession} />
-          <p className="result-teacher-link"><button type="button" className="ghost-button" onClick={() => navigateTo('teacher')}>{locale==='tr'?'AI öğretmen örneğini gör':'See the AI teacher sample'}</button></p>
-
-          {answerTimes.length > 0 && <aside className="reading-lesson-guidance">
-            <div><p className="kicker">{locale==='tr'?'Bir sonraki adım':'Your next step'}</p><h2>{locale==='tr'?'Bilgiyi kısa bir dersle pekiştir.':'Reinforce your knowledge with a short lesson.'}</h2><p>{locale==='tr'?'Seçtiğin anahtar ve nota türüne uygun temel anlatıma dönüp yeni örneklerle devam edebilirsin. Bu öneri tek başına bir beceri eksikliği göstermez.':'Review the basics for your chosen clef and note type, then try new examples. This suggestion does not by itself indicate a skill gap.'}</p></div>
-            <button type="button" onClick={()=>window.dispatchEvent(new CustomEvent('notanota-open-lesson',{detail:{lessonId:accidentals!=='natural'?'accidentals':clef==='bass'?'bass-clef':'treble-anchors'}}))}>{locale==='tr'?'Kısa dersi aç':'Open short lesson'} →</button>
-          </aside>}
-
-          {sessionType === "standard" && <div className="hardest-card">
-            <div><p className="kicker">{copy.reviewList}</p><h2>{copy.hardest}</h2></div>
-            {hardestNotes.length ? (
-              <div className="hardest-list">
-                {hardestNotes.map(({ note, count }) => (
-                  <div key={note.id}><span className="note-pill">{noteName(note, locale)}</span><span>{note.shortLocation[locale]}</span><b>{copy.wrongCount(count)}</b></div>
-                ))}
-              </div>
-            ) : (
-              <p className={`perfect-copy ${answerTimes.length === 0 ? "perfect-copy--empty" : ""}`}>
-                {answerTimes.length === 0 ? copy.noAnswers : completedStandardSession ? copy.perfect : copy.cleanSoFar}
-              </p>
-            )}
-          </div>}
-
-          <div className="result-actions">
-            <button className="primary-button" type="button" onClick={startSession}>{copy.repeat} <span>↻</span></button>
-            <button className="secondary-button" type="button" onClick={() => navigateTo("setup")}>{copy.changeLevel}</button>
+          <div className="rv-leaderboard">
             <CommunityLeaderboardButton label={shell.leaderboard} />
+            <CommunityResult inline score={scoreSubmission} eligible={leaderboardEligible} />
           </div>
         </section>
       )}

@@ -1,3 +1,4 @@
+import "./locale-redirect";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import Home from "../app/page";
@@ -8,6 +9,7 @@ import "../app/notebook.css";
 import "../app/frost.css";
 import "../app/palettes.css";
 import "../app/shell.css";
+import "../app/results.css";
 
 const root = document.getElementById("root");
 

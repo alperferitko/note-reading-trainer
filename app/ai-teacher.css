@@ -16,7 +16,6 @@
 .ai-teacher-mode--mock { background: var(--accent-soft, #dcecee); color: var(--foreground); outline: 1px dashed var(--border-strong); }
 .ai-teacher-mode--deterministic { background: var(--background-deep, #ecf0f2); color: var(--foreground); }
 .ai-teacher p { margin: 0; line-height: 1.55; }
-.ai-teacher-measured { font-weight: 500; }
 .ai-teacher-reason { color: var(--foreground-muted); font-size: 15px; }
 .ai-teacher-summary { font-size: 17px; max-width: 70ch; }
 .ai-teacher-observations { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
@@ -26,3 +25,25 @@
 .ai-teacher-limits summary { cursor: pointer; color: var(--foreground-muted); font-size: 15px; }
 .ai-teacher-limits ul { margin: 8px 0 0; padding-left: 20px; color: var(--foreground-muted); font-size: 14px; line-height: 1.6; }
 .ai-teacher button { white-space: normal; }
+
+/* Measured counts read as numbers, not as a log line. */
+.ai-teacher-stats { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.ai-teacher-stats div { padding: 12px 14px; border-radius: 12px; background: var(--background-deep, #ecf0f2); }
+.ai-teacher-stats dt { color: var(--foreground-muted); font-size: 13px; }
+.ai-teacher-stats dd { margin: 2px 0 0; font: 600 clamp(22px, 2.4vw, 28px)/1.1 var(--fx-display, inherit); font-variant-numeric: tabular-nums; }
+.ai-teacher-body { display: grid; gap: 14px; }
+.ai-teacher-exercises { display: grid; gap: 8px; }
+.ai-teacher-exercises h3 { margin: 0; font-size: 15px; font-weight: 600; }
+.ai-teacher-exercises ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.ai-teacher-exercises li { display: flex; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--primary); }
+.ai-teacher-alert { padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border-strong, currentColor); background: var(--background-deep, #ecf0f2); font-size: 15px; }
+.ai-teacher-code { font-size: 12px; color: var(--foreground-muted); }
+/* The one Meta action stands apart from the practice buttons. */
+.ai-teacher-ask { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; padding: 16px; border-radius: 14px; border: 1px solid var(--primary); }
+.ai-teacher-ask > div { display: grid; gap: 4px; flex: 1 1 320px; }
+.ai-teacher-ask-title { font-weight: 600; }
+@media (max-width: 480px) {
+  .ai-teacher-stats { gap: 6px; }
+  .ai-teacher-stats div { padding: 10px; }
+  .ai-teacher-ask button { width: 100%; }
+}

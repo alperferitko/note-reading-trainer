@@ -14,13 +14,13 @@ const TEXT = {
     title: "Kâğıttaki partisyon, çalışabileceğin bir parçaya dönüşür",
     lead: "Solda gerçek bir PDF sayfası, sağda aynı ölçüler NotaNota'da: dört ses, iki porte, aynı notalar.",
     sample: "Önceden hazırlanmış sonuç",
-    sampleNote: "Dijital sonuç bu PDF'ten elle hazırlandı ve LilyPond kaynağıyla nota nota karşılaştırıldı; sayfa tanıma henüz bağlı değil.",
+    sampleNote: "Dijital sonuç bu PDF'ten elle hazırlandı ve LilyPond kaynağıyla nota nota karşılaştırıldı; sayfa tanıma henüz bağlı değil. Portelerin başındaki küme işareti yalnız çizim farkıdır, notalar aynıdır.",
     source: "Kaynak: Mutopia Project #528, kamu malı",
     slider: "Kaynak PDF ile NotaNota görünümünü karşılaştır",
     sliderValue: (v: number) => `Kaynak PDF yüzde ${v}`,
     drag: "Karşılaştırmak için kolu sürükle",
-    printed: "Kaynak PDF",
-    digital: "NotaNota",
+    printed: "Kaynak partisyon · PDF",
+    digital: "NotaNota'da dijital sonuç",
     play: "Dinle",
     stop: "Durdur",
     bar: (n: number, of: number) => `Ölçü ${n} / ${of}`,
@@ -34,13 +34,13 @@ const TEXT = {
     title: "A score on paper becomes a piece you can practise",
     lead: "A real PDF page on the left, the same bars in NotaNota on the right: four voices, two staves, the same notes.",
     sample: "Prepared result",
-    sampleNote: "The digital result was prepared by hand from this PDF and checked note by note against the LilyPond source; page recognition is not connected yet.",
+    sampleNote: "The digital result was prepared by hand from this PDF and checked note by note against the LilyPond source; page recognition is not connected yet. The brace at the start of the staves is only a drawing difference; the notes are the same.",
     source: "Source: Mutopia Project #528, public domain",
     slider: "Compare the source PDF with the NotaNota view",
     sliderValue: (v: number) => `Source PDF ${v} percent`,
     drag: "Drag the handle to compare",
-    printed: "Source PDF",
-    digital: "NotaNota",
+    printed: "Source score · PDF",
+    digital: "Digital result in NotaNota",
     play: "Listen",
     stop: "Stop",
     bar: (n: number, of: number) => `Bar ${n} / ${of}`,
@@ -120,6 +120,11 @@ export function PdfCompare({ locale, onPractise }: { locale: Locale; onPractise:
       </div>
 
       <div className="pdf-stage">
+        {/* Which side is which, outside the picture so nothing covers the music; each label follows its side. */}
+        <div className="pdf-legend" aria-hidden="true" style={{ ["--split" as string]: `${split}%` }}>
+          <span className="pdf-legend-item pdf-legend-item--print"><svg viewBox="0 0 16 16"><path d="M4 1.5h5.5L13 5v9.5H4Z M9.5 1.5V5H13" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" /></svg>{t.printed}</span>
+          <span className="pdf-legend-item pdf-legend-item--digital">{t.digital}<svg viewBox="0 0 16 16"><path d="M5.5 12.5V3.5l7-1.5v9" fill="none" stroke="currentColor" strokeWidth="1.4" /><circle cx="4" cy="12.5" r="2" fill="currentColor" /><circle cx="11" cy="11" r="2" fill="currentColor" /></svg></span>
+        </div>
         <div ref={frame} className="pdf-frame pdf-frame--source" onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} style={{ ["--split" as string]: `${split}%` }}>
           <div className="pdf-layer pdf-layer--print">
             <div className="pdf-sheet-head">
@@ -147,8 +152,6 @@ export function PdfCompare({ locale, onPractise }: { locale: Locale; onPractise:
           <div className="pdf-handle" role="slider" tabIndex={0} aria-label={t.slider} aria-valuemin={0} aria-valuemax={100} aria-valuenow={split} aria-valuetext={t.sliderValue(split)} onKeyDown={onSliderKey}>
             <span className="pdf-handle-knob" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6 3 12l6 6M15 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
           </div>
-          <span className="pdf-tag pdf-tag--left" aria-hidden="true">{t.printed}</span>
-          <span className="pdf-tag pdf-tag--right" aria-hidden="true">{t.digital}</span>
         </div>
         <div className="pdf-foot">
           <p><span className="lp-sample-chip">{t.sample}</span> {t.sampleNote} <a href={ODE_SOURCE.page} target="_blank" rel="noreferrer">{t.source}</a> <span className="pdf-drag-hint">{t.drag}</span></p>

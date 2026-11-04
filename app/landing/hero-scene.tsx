@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { GLYPHS } from "@/lib/music-glyphs.mjs";
-import { CLEF_WIDTH_SPACES } from "./music";
+import { CLEF_WIDTH_SPACES, NoteHead } from "./music";
 
 const GAP = 13; // one staff space on the ribbon, in px
 const LOOP = 46; // seconds for a note to cross the whole ribbon
@@ -34,7 +34,7 @@ const RIDERS: { kind: "quarter" | "half" | "eighth" | "pair" | "sharp"; s: numbe
 ];
 
 function Head({ x = 0, y = 0, open = false }: { x?: number; y?: number; open?: boolean }) {
-  return <ellipse cx={x} cy={y} rx={GAP * .64} ry={GAP * .46} transform={`rotate(-20 ${x} ${y})`} className={open ? "rider-open" : undefined} />;
+  return <NoteHead x={x} y={y} space={GAP} kind={open ? "half" : "black"} />;
 }
 
 function Rider({ kind }: { kind: (typeof RIDERS)[number]["kind"] }) {
@@ -118,6 +118,9 @@ export function HeroScene({ hero }: { hero: RefObject<HTMLElement | null> }) {
     let lo = 0, hi = p.getTotalLength();
     for (let i = 0; i < 24; i++) { const mid = (lo + hi) / 2; if (p.getPointAtLength(mid).x < target) lo = mid; else hi = mid; }
     const point = p.getPointAtLength(lo);
+    // The staff's direction where the clef sits, so it starts seated on the slope, not level across it.
+    const ahead = p.getPointAtLength(Math.min(p.getTotalLength(), lo + 6)), behind = p.getPointAtLength(Math.max(0, lo - 6));
+    m.dataset.clefAngle = (Math.atan2(ahead.y - behind.y, ahead.x - behind.x) * 180 / Math.PI).toFixed(2);
     Object.assign(m.style, { left: `${point.x}px`, top: `${point.y - GAP * 2}px`, height: `${GAP * 4}px` });
     m.setAttribute("data-clef-intro", "");
   }, [geo, hero]);
@@ -159,6 +162,9 @@ export function HeroScene({ hero }: { hero: RefObject<HTMLElement | null> }) {
 
   return (
     <div className="lp-hero-scene" ref={scene} aria-hidden="true">
+      {/* Day and night are two paintings of the same view, crossfaded with the theme, never blended. */}
+      <div className="scene-land scene-land--day" />
+      <div className="scene-land scene-land--night" />
       {geo && (
         <svg ref={svg} className="hero-ribbon" width={geo.w} height={geo.h} viewBox={`0 0 ${geo.w} ${geo.h}`} focusable="false">
           <defs><path id="hero-ribbon-path" ref={path} d={geo.d} /></defs>

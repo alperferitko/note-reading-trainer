@@ -10,27 +10,22 @@ const GLYPH = CLEF_HEIGHT_SPACES / 4; // clef height per staff height
 const smooth = (t: number) => t * t * (3 - 2 * t);
 type P = [number, number];
 
-/** A point on the Catmull-Rom curve through `pts`, with u running 0..1 over the whole curve. */
-function along(pts: P[], u: number): P {
-  const n = pts.length - 1, x = Math.min(n - 1e-6, Math.max(0, u * n)), i = Math.floor(x), t = x - i;
-  const p0 = pts[i - 1] ?? pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] ?? p2;
+/** One Catmull-Rom segment from p1 to p2, t running 0..1. */
+function catmull(p0: P, p1: P, p2: P, p3: P, t: number): P {
   const f = (a: number, b: number, c: number, d: number) => 0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (-a + 3 * b - 3 * c + d) * t * t * t);
   return [f(p0[0], p1[0], p2[0], p3[0]), f(p0[1], p1[1], p2[1], p3[1])];
 }
 
-/** Tilt through the flight: leans out, swings past the edge, settles back. Degrees at fractions of the flight. */
-const TURN: P[] = [[0, 0], [0.22, -15], [0.55, 25], [0.82, -8], [1, 0]];
-/** The same turn split in two: leaving ends tilted as it waits; arriving swings through and sits upright. */
-const LEAVE: P[] = [[0, 0], [0.45, -15], [1, 8]];
-const ARRIVE: P[] = [[0, 8], [0.4, 25], [0.8, -8], [1, 0]];
-function turn(keys: P[], e: number) {
-  for (let i = 0; i < keys.length - 1; i++) {
-    const [a, da] = keys[i], [b, db] = keys[i + 1];
-    if (e <= b) { const k = (e - a) / (b - a); return da + (db - da) * (0.5 - Math.cos(Math.PI * k) / 2); }
-  }
-  return keys[keys.length - 1][1];
-}
-const turnAt = (e: number) => turn(TURN, e);
+/** Where a leg starts and ends: the clef leaves a staff when it has risen to 32% of the screen and is
+ * seated on the next one when that staff reaches 64%, so a seated clef stays put over a third of a screen. */
+const LEAVE_AT = 0.32;
+const ARRIVE_AT = 0.64;
+/** Preferred stops across the page width, taken in turn, so each leg passes a different open space. */
+const STOPS = [0.5, 0.86, 0.14, 0.68, 0.32];
+type Key = { s: number; x: number; y: number };
+type Leg = { keys: Key[]; from: Anchor; to: Anchor; fly: number };
+const easeIn = (t: number) => t * t;
+const easeOut = (t: number) => 1 - (1 - t) * (1 - t) * (1 - t);
 
 /** Each host gets one clipped light layer: absolute, inset 0, rounded like the card, overflow hidden. */
 function ensureGlow(el: HTMLElement) {
@@ -77,13 +72,14 @@ export function ClefTraveler({ root }: { root: RefObject<HTMLElement | null> }) 
     if (!host || !node || !enabled) return;
     host.classList.add("clef-travel-on");
     let anchors: Anchor[] = [];
+    let legs: Leg[] = [];
     let start: Anchor | null = null;
+    let startAngle = 0;
     let lit: HTMLElement | null = null;
     let lastArrival: HTMLElement | null = null;
     let departed = true; // a light plays only after a real flight, not after a small scroll wobble
-    let gutter = 0;
     let hostTop = 0;
-    let words: [number, number, number, number][] = []; // text boxes in host coordinates
+    let hostLeft = 0;
     let frame = 0;
     // Opening move: the clef waits on the hero's ribbon (or just off the left edge on a phone)
     // and lifts onto the first staff. Skipped when the page opens scrolled.
@@ -99,6 +95,7 @@ export function ClefTraveler({ root }: { root: RefObject<HTMLElement | null> }) 
     const measure = () => {
       const hostRect = host.getBoundingClientRect();
       hostTop = hostRect.top + window.scrollY;
+      hostLeft = hostRect.left;
       anchors = [...host.querySelectorAll<HTMLElement>("[data-clef-anchor]")]
         .filter((el) => el.offsetParent !== null)
         .sort((a, b) => Number(a.dataset.clefOrder ?? 0) - Number(b.dataset.clefOrder ?? 0))
@@ -110,27 +107,106 @@ export function ClefTraveler({ root }: { root: RefObject<HTMLElement | null> }) 
       if (ribbon) {
         const rect = ribbon.getBoundingClientRect();
         start = { left: rect.left - hostRect.left, top: rect.top - hostRect.top, height: rect.height, pageTop: 0, host: null };
+        startAngle = Number(ribbon.dataset.clefAngle) || 0;
       } else if (anchors[0]) {
         start = { ...anchors[0], left: -CLEF_WIDTH_SPACES * anchors[0].height / 4 - 24, host: null };
       }
-      // The flight's outer arc runs through the page margin, outside the text column.
-      const pad = parseFloat(getComputedStyle(host).paddingLeft) || 16;
-      const clefW = CLEF_WIDTH_SPACES * ((window.innerWidth >= 720 ? 64 : 48) / GLYPH / 4);
-      gutter = Math.max(-hostRect.left + 8, pad - clefW - 16);
-      // Text, actions and the slider, so the flight can pass under them instead of over them.
+      // Words, actions, the slider and the score: the stops between staves are chosen clear of them.
       // A whole card that is a link counts by its words, not its box, so the margin of a card stays free.
       const boxes: DOMRect[] = [];
-      for (const el of host.querySelectorAll<HTMLElement>("h1, h2, h3, p, a, button, input, label, li, .pdf-handle")) {
+      for (const el of host.querySelectorAll<HTMLElement>("h1, h2, h3, p, a, button, input, label, li, .pdf-frame, .chat-msg, .ai-suggest, .chat-form")) {
         if (el.closest(".clef-traveler") || el.querySelector("[data-clef-anchor]") || el.offsetParent === null) continue;
         const r = el.getBoundingClientRect();
-        if (r.width * r.height < 12000) { boxes.push(r); continue; }
+        if (r.width * r.height < 12000 || el.matches(".pdf-frame, .chat-msg, .ai-suggest, .chat-form")) { boxes.push(r); continue; }
         const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
         for (let t = walk.nextNode(); t; t = walk.nextNode()) if (t.textContent?.trim()) { const range = document.createRange(); range.selectNodeContents(t); boxes.push(range.getBoundingClientRect()); }
       }
-      words = boxes.filter((r) => r.width > 0 && r.height > 0).map((r) => [r.left - hostRect.left, r.top - hostRect.top, r.right - hostRect.left, r.bottom - hostRect.top]);
+      const words = boxes.filter((r) => r.width > 0 && r.height > 0).map((r) => [r.left - hostRect.left, r.top - hostRect.top, r.right - hostRect.left, r.bottom - hostRect.top]);
+
+      // Each leg is a few keyframes, every one tied to a scroll position: leave the staff, pass one or two
+      // open spaces near the middle of the screen, sit on the next staff. Stops are placed in page space,
+      // so the same scroll position always gives the same place, forwards or back.
+      const vh = window.innerHeight, wide = window.innerWidth >= 720;
+      const travel = (wide ? 64 : 52) / GLYPH; // the staff height whose clef is 64px (52px on phones) tall
+      const minX = -hostRect.left + 6;
+      legs = [];
+      let previous = -Infinity;
+      for (let i = 0; i < anchors.length - 1; i++) {
+        const a = anchors[i], b = anchors[i + 1];
+        const fly = Math.max(travel, (a.height + b.height) / 2 * 0.9);
+        const flyW = CLEF_WIDTH_SPACES * fly / 4, glyphH = GLYPH * fly;
+        const maxX = window.innerWidth - hostRect.left - flyW - 6;
+        const s0 = Math.max(previous + 1, a.pageTop - vh * LEAVE_AT);
+        const s1 = Math.max(s0 + vh * 0.22, b.pageTop - vh * ARRIVE_AT);
+        const keys: Key[] = [{ s: s0, x: a.left, y: a.top }];
+        const stops = Math.max(1, Math.min(wide ? 3 : 2, Math.round((s1 - s0) / (vh * (wide ? 0.42 : 0.6)))));
+        const clear = (x: number, y: number) => {
+          const g0 = y - 0.384 * fly - 14, g1 = g0 + glyphH + 28;
+          return !words.some(([l, t, r, bt]) => x + flyW + 14 > l && x - 14 < r && g1 > t && g0 < bt);
+        };
+        const xs: number[] = [];
+        for (let x = minX; x <= maxX; x += 16) xs.push(x);
+        let prevX = a.left;
+        for (let j = 1; j <= stops; j++) {
+          const s = s0 + (s1 - s0) * j / (stops + 1);
+          const y = s - hostTop + vh * 0.5 - fly / 2; // the middle of the screen at that scroll position
+          const want = minX + (maxX - minX) * STOPS[(i * 2 + j - 1) % STOPS.length];
+          // The open spot closest to the wished one, without long sideways sweeps from the last stop and
+          // within a quarter screen of the middle (gaps between a heading and a card count too).
+          // Candidates are ranked by that cost; the first whose way in (and, for the last stop, way out to the
+          // staff) also stays clear of words wins, so the path between stops does not cross text either.
+          // A stop too far from the last one for the scroll between them would make the clef rush: on screen
+          // it may cover about the scrolled distance, anything beyond costs heavily.
+          const from = keys[keys.length - 1];
+          const budget = (s - from.s) * 0.9;
+          const ranked: [number, number, number][] = [];
+          for (let dy = -vh * 0.24; dy <= vh * 0.24; dy += 24) {
+            for (const x of xs) {
+              const onScreen = Math.hypot(x - from.x, y + dy - from.y - (s - from.s));
+              ranked.push([Math.abs(x - want) + 0.6 * Math.abs(x - prevX) + 1.2 * Math.abs(dy) + 3 * Math.max(0, onScreen - budget), x, y + dy]);
+            }
+          }
+          ranked.sort((p, q) => p[0] - q[0]);
+          const way = (x0: number, y0: number, x1: number, y1: number) => {
+            for (let k = 1; k < 8; k++) { const t = k / 8; if (!clear(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t)) return false; }
+            return true;
+          };
+          let best: [number, number] = [Math.min(maxX, Math.max(minX, want)), y], fallback: [number, number] | null = null;
+          for (const [, x, cy] of ranked) {
+            if (!clear(x, cy)) continue;
+            fallback ??= [x, cy];
+            if (way(from.x, from.y, x, cy) && (j < stops || way(x, cy, b.left, b.top))) { best = [x, cy]; fallback = null; break; }
+          }
+          if (fallback) best = fallback;
+          prevX = best[0];
+          keys.push({ s, x: best[0], y: best[1] });
+        }
+        keys.push({ s: s1, x: b.left, y: b.top });
+        legs.push({ keys, from: a, to: b, fly });
+        previous = s1;
+      }
       // A card can change height without the page doing so (the hero opening its answers).
       for (const anchor of anchors) if (anchor.host) { ensureGlow(anchor.host); resize.observe(anchor.host); }
       place();
+    };
+
+    const baseWidth = CLEF_WIDTH_SPACES * (BASE / 4);
+    const at = (left: number, top: number, height: number, deg: number) => {
+      const scale = height / BASE;
+      node.style.transform = `translate3d(${left + (baseWidth * scale - baseWidth) / 2}px, ${top + (BASE * scale - BASE) / 2}px, 0) rotate(${deg}deg) scale(${scale})`;
+    };
+    /** Position and size on a leg at scroll s: the first stretch eases out of the seat, the last slows into the next. */
+    const onLeg = (leg: Leg, s: number): [number, number, number] => {
+      const { keys } = leg, last = keys.length - 2;
+      let m = 0;
+      while (m < last && s >= keys[m + 1].s) m++;
+      const raw = Math.min(1, Math.max(0, (s - keys[m].s) / Math.max(1, keys[m + 1].s - keys[m].s)));
+      const t = m === 0 ? easeIn(raw) : m === last ? easeOut(raw) : raw;
+      const pt = (k: Key): P => [k.x, k.y];
+      const [x, y] = catmull(pt(keys[m - 1] ?? keys[m]), pt(keys[m]), pt(keys[m + 1]), pt(keys[m + 2] ?? keys[m + 1]), t);
+      const h = m === 0 ? leg.from.height + (leg.fly - leg.from.height) * smooth(Math.min(1, raw * 1.6))
+        : m === last ? leg.fly + (leg.to.height - leg.fly) * smooth(Math.max(0, raw * 1.6 - 0.6)) : leg.fly;
+      return [x, y, h];
     };
 
     const place = () => {
@@ -139,116 +215,75 @@ export function ClefTraveler({ root }: { root: RefObject<HTMLElement | null> }) 
       const vh = window.innerHeight;
       const y = window.scrollY;
       const wide = window.innerWidth >= 720;
-      const baseWidth = CLEF_WIDTH_SPACES * (BASE / 4);
-      const at = (left: number, top: number, height: number, deg: number) => {
-        const scale = height / BASE;
-        node.style.transform = `translate3d(${left + (baseWidth * scale - baseWidth) / 2}px, ${top + (BASE * scale - BASE) / 2}px, 0) rotate(${deg}deg) scale(${scale})`;
-      };
-      const opening = intro < 1 && start !== null && y < anchors[0].pageTop - vh * 0.44;
+      node.style.opacity = "1";
+      const opening = intro < 1 && start !== null && y < anchors[0].pageTop - vh * LEAVE_AT;
       if (opening) {
         // Up first, then along the staff into its seat: a quadratic curve with its corner at (start.left, seat.top).
         const seat = anchors[0], k = smooth(intro), s = start!;
-        node.style.opacity = "1";
         node.classList.toggle("is-flying", false);
         node.classList.toggle("is-intro", true);
-        at(s.left + (seat.left - s.left) * k * k, s.top + (seat.top - s.top) * (1 - (1 - k) * (1 - k)), s.height + (seat.height - s.height) * k, Math.sin(Math.PI * k) * -8);
+        at(s.left + (seat.left - s.left) * k * k, s.top + (seat.top - s.top) * (1 - (1 - k) * (1 - k)), s.height + (seat.height - s.height) * k, startAngle * (1 - k) + Math.sin(Math.PI * k) * -8);
         return;
       }
       node.classList.toggle("is-intro", false);
-      // The clef leaves a staff while that staff is still a little above the middle, waits in the page margin
-      // in the middle of the screen at a readable size, and flies to the next staff as soon as it enters
-      // the lower part of the screen (88%); it is seated when that staff reaches 60%.
       // Everything is a pure function of the scroll position, so fast or backward scrolling never jumps.
-      const travel = (wide ? 64 : 48) / GLYPH; // the staff height whose clef is 64px (48px on phones) tall
-      const dockTop = y + vh * 0.45 - hostTop - travel * GLYPH * 0.4;
-      let from = anchors[anchors.length - 1], to = from, k = 0;
-      let phase: "seat" | "leave" | "dock" | "approach" | "direct" = "seat";
-      let before = -Infinity;
-      for (let i = 0; i < anchors.length - 1; i++) {
-        const a = anchors[i], b = anchors[i + 1];
-        const l0 = a.pageTop - vh * 0.44, l1 = a.pageTop - vh * 0.14, a0 = b.pageTop - vh * 0.88, a1 = b.pageTop - vh * 0.6;
-        const docked = a0 >= l1;
-        const begin = Math.max(before, docked ? l0 : Math.min(l0, a0));
-        if (y < begin) { from = to = a; break; }
-        if (y < a1) {
-          from = a; to = b;
-          if (!docked) { phase = "direct"; k = (y - begin) / Math.max(1, a1 - begin); }
-          else if (y < l1) { phase = "leave"; k = (y - begin) / Math.max(1, l1 - begin); }
-          else if (y < a0) { phase = "dock"; k = (y - l1) / Math.max(1, a0 - l1); }
-          else { phase = "approach"; k = (y - a0) / Math.max(1, a1 - a0); }
-          break;
-        }
-        before = a1;
-        from = to = b;
+      let seat: Anchor = anchors[anchors.length - 1];
+      let leg: Leg | null = null;
+      for (const candidate of legs) {
+        if (y < candidate.keys[0].s) { seat = candidate.from; break; }
+        if (y < candidate.keys[candidate.keys.length - 1].s) { leg = candidate; break; }
+        seat = candidate.to;
       }
-      k = Math.min(1, Math.max(0, k));
-      const e = smooth(k);
-      const flyH = Math.max(travel, Math.min(from.height, to.height));
-      const grow = (h0: number, h1: number, t: number) => h0 + (h1 - h0) * smooth(Math.min(1, Math.max(0, t)));
-      const out = Math.min(wide ? 96 : 24, Math.max(0, from.left - gutter) * 0.6);
-      const lean = Math.min(wide ? 64 : 16, Math.max(0, to.left - gutter) * 0.5);
-      let left = from.left, top = from.top, height = from.height, deg = 0;
-      if (phase === "leave") {
-        // Sideways along its own staff line first, so it clears the card, then down into the margin.
-        [left, top] = along([[from.left, from.top], [from.left - out, from.top + 10], [gutter, dockTop]], e);
-        height = grow(from.height, flyH, k / 0.6);
-        deg = turn(LEAVE, e);
-      } else if (phase === "dock") {
-        // Waiting in the margin and moving with the reader: a slow sway, never a spin.
-        left = gutter + (wide ? 6 : 2) * Math.sin(Math.PI * 2 * k);
-        top = dockTop;
-        height = flyH;
-        deg = 8 + 5 * Math.sin(Math.PI * 2 * k);
-      } else if (phase === "approach") {
-        const dy = to.top - dockTop;
-        [left, top] = along([[gutter, dockTop], [gutter + (wide ? 10 : 2), dockTop + dy * 0.55], [to.left - lean, to.top - Math.min(28, Math.abs(dy) * 0.1)], [to.left, to.top]], e);
-        height = grow(flyH, to.height, (k - 0.6) / 0.4);
-        deg = turn(ARRIVE, e);
-      } else if (phase === "direct") {
-        const dy = to.top - from.top;
-        [left, top] = along([[from.left, from.top], [from.left - out, from.top + Math.sign(dy) * Math.min(20, Math.abs(dy) * 0.04)], [gutter, from.top + dy * 0.52], [to.left - lean, to.top - Math.min(28, Math.abs(dy) * 0.08)], [to.left, to.top]], e);
-        height = k < 0.5 ? grow(from.height, flyH, k / 0.3) : grow(flyH, to.height, (k - 0.65) / 0.35);
-        deg = turnAt(e);
+      let left = seat.left, top = seat.top, height = seat.height, deg = 0;
+      if (leg) {
+        [left, top, height] = onLeg(leg, y);
+        // Never off screen in flight: the curve between stops may swing wide, the clef stays in view.
+        const glyph = GLYPH * height;
+        const screenTop = top - 0.384 * height + hostTop - y;
+        top += Math.max(0, 84 - screenTop) - Math.max(0, screenTop + glyph - (vh - 12));
+        left = Math.min(Math.max(left, -hostLeft + 4), window.innerWidth - hostLeft - CLEF_WIDTH_SPACES * height / 4 - 4);
+        // Lean into the sideways motion, never more than a light tilt; upright again on arrival.
+        const [ahead] = onLeg(leg, y + 10), [behind] = onLeg(leg, y - 10);
+        deg = Math.max(-18, Math.min(18, (ahead - behind) / 2));
+        const span = leg.keys[leg.keys.length - 1].s - leg.keys[0].s;
+        if ((y - leg.keys[0].s) / span > 0.25) departed = true;
       }
-      if (!wide) deg *= 0.6;
-      const settled = phase === "seat";
-      if (!settled && (phase !== "leave" || k > 0.5)) departed = true;
-      // Fully visible all the way and in front: the path keeps to the page margin and the staff lines.
-      node.style.opacity = "1";
+      if (!wide) deg *= 0.7;
+      const settled = leg === null;
+      // Always fully visible and in front: the stops keep clear of words, so nothing has to slip under a card.
       node.classList.toggle("is-flying", !settled);
-      // Where the path would cross words it slips under that layer for those few frames only.
-      const w = CLEF_WIDTH_SPACES * height / 4, g0 = top - 0.384 * height, g1 = g0 + GLYPH * height;
-      const tilt = Math.abs(Math.sin(deg * Math.PI / 180)) * GLYPH * height * 0.5;
-      node.classList.toggle("is-under", !settled && words.some(([l, t, r, b]) => left + w + tilt > l && left - tilt < r && g1 > t - 4 && g0 < b + 4));
       at(left, top, height, deg);
-      const seat = settled ? from.host : null;
-      if (seat !== lit) {
+      const seatHost = settled ? seat.host : null;
+      if (seatHost !== lit) {
         lit?.classList.toggle("clef-lit", false);
-        if (seat) {
-          const hostBox = seat.getBoundingClientRect(), root = host.getBoundingClientRect();
-          seat.style.setProperty("--clef-x", `${from.left - (hostBox.left - root.left) + (baseWidth * from.height / BASE) / 2}px`);
-          seat.style.setProperty("--clef-y", `${from.top - (hostBox.top - root.top) + from.height / 2}px`);
-          seat.classList.toggle("clef-lit", true);
+        lit?.removeAttribute("data-clef-seated");
+        if (seatHost) {
+          const hostBox = seatHost.getBoundingClientRect(), root = host.getBoundingClientRect();
+          seatHost.style.setProperty("--clef-x", `${seat.left - (hostBox.left - root.left) + (baseWidth * seat.height / BASE) / 2}px`);
+          seatHost.style.setProperty("--clef-y", `${seat.top - (hostBox.top - root.top) + seat.height / 2}px`);
+          seatHost.classList.toggle("clef-lit", true);
+          seatHost.setAttribute("data-clef-seated", "");
           // One soft arrival light after a real flight; a small scroll back and forth does not replay it.
-          if (departed || seat !== lastArrival) {
-            seat.classList.toggle("clef-arrive", false);
-            void seat.offsetWidth;
-            seat.classList.toggle("clef-arrive", true);
-            window.setTimeout(() => seat.classList.toggle("clef-arrive", false), 700);
-            lastArrival = seat; departed = false;
+          if (departed || seatHost !== lastArrival) {
+            seatHost.classList.toggle("clef-arrive", false);
+            void seatHost.offsetWidth;
+            seatHost.classList.toggle("clef-arrive", true);
+            window.setTimeout(() => seatHost.classList.toggle("clef-arrive", false), 700);
+            lastArrival = seatHost; departed = false;
           }
+          // The card may react to its clef (the AI sample answers only once the clef is in place).
+          seatHost.dispatchEvent(new CustomEvent("clef-seated"));
         }
-        lit = seat;
+        lit = seatHost;
       }
     };
 
-    // Content above a staff can change height (a hint, a panel); re-measure once scrolling settles.
-    let settle = 0;
+    // Scrolling only places the clef; measuring reads every heading and button on the page, so it runs
+    // when the page's size changes (the ResizeObserver below catches content that grows above a staff),
+    // never in the middle of a scroll, where it cost a dropped frame each time the wheel paused.
     const onScroll = () => {
       if (intro < 1 && window.scrollY > 4) { intro = 1; if (introFrame) window.cancelAnimationFrame(introFrame); introFrame = 0; }
       if (!frame) frame = window.requestAnimationFrame(place);
-      window.clearTimeout(settle);
-      settle = window.setTimeout(measure, 160);
     };
     const resize = new ResizeObserver(() => measure());
     resize.observe(host);
@@ -261,12 +296,12 @@ export function ClefTraveler({ root }: { root: RefObject<HTMLElement | null> }) 
     return () => {
       host.classList.remove("clef-travel-on");
       lit?.classList.toggle("clef-lit", false);
+      lit?.removeAttribute("data-clef-seated");
       resize.disconnect();
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", measure);
       if (frame) window.cancelAnimationFrame(frame);
       if (introFrame) window.cancelAnimationFrame(introFrame);
-      window.clearTimeout(settle);
     };
   }, [enabled, root]);
 

@@ -2,6 +2,9 @@
 
 import type { KeyboardEvent, ReactNode } from "react";
 import { CLEF_BOX, CLEF_PATH, CLEF_SPACE } from "@/lib/clef-path.mjs";
+import { GLYPHS, NOTEHEAD_UNITS } from "@/lib/music-glyphs.mjs";
+import { CHORD_NOTE_GAIN, ensurePianoLoaded, isPianoLoaded, readNoteVoice, scheduleVoiceNote } from "@/lib/note-voices";
+import { practiceAudioContext } from "@/lib/practice-audio";
 
 /** Width of the clef in staff spaces, and where its box starts relative to the top staff line. */
 export const CLEF_WIDTH_SPACES = CLEF_BOX.width / CLEF_SPACE;
@@ -20,6 +23,48 @@ export function ClefGlyph({ className = "" }: { className?: string }) {
     >
       <path d={CLEF_PATH} fill="currentColor" />
     </svg>
+  );
+}
+
+export type NoteHeadKind = "black" | "half" | "whole";
+
+const HEAD_GLYPH = { black: GLYPHS.noteheadBlack, half: GLYPHS.noteheadHalf, whole: GLYPHS.noteheadWhole } as const;
+
+/** The head kind for a duration in beats (quarter = 1): whole from four beats, half from two. */
+export function noteHeadKind(beats = 1): NoteHeadKind {
+  return beats >= 4 ? "whole" : beats >= 2 ? "half" : "black";
+}
+
+/** Width of an engraved note head in px for a staff space of `space` px. */
+export function noteHeadWidth(kind: NoteHeadKind, space: number) {
+  return HEAD_GLYPH[kind].widthSpaces * space;
+}
+
+/**
+ * Where a stem of width `stemWidth` stands for a head centred at `x`: on the right edge going up,
+ * on the left edge going down, set inside by half its width so it touches the head's outline.
+ */
+export function stemX(x: number, up: boolean, space: number, stemWidth: number, kind: NoteHeadKind = "black") {
+  const half = noteHeadWidth(kind, space) / 2;
+  return up ? x + half - stemWidth / 2 : x - half + stemWidth / 2;
+}
+
+/**
+ * An engraved note head (VexFlow glyphs, MIT) centred on (x, y): a tilted black oval, a half head
+ * whose counter is a steep "grain of rice", or the wide whole head with its counter tilted the other way.
+ */
+export function NoteHead({ x, y, space, kind = "black", className = "" }: { x: number; y: number; space: number; kind?: NoteHeadKind; className?: string }) {
+  const glyph = HEAD_GLYPH[kind];
+  const k = space / NOTEHEAD_UNITS;
+  return (
+    <path
+      d={glyph.d}
+      transform={`translate(${x - (glyph.widthSpaces * space) / 2} ${y}) scale(${k})`}
+      fill="currentColor"
+      fillRule="evenodd"
+      stroke="none"
+      className={className || undefined}
+    />
   );
 }
 
@@ -92,8 +137,9 @@ export function Staff({ notes, space = 10, width = 360, anchor, anchorOrder, bar
         {notes.map((note) => {
           const x = xOf(note.x), y = yOf(note.position);
           const up = note.position < 4;
-          const hollow = (note.beats ?? 1) >= 2;
-          const rx = space * 0.66, ry = space * 0.46;
+          const kind = noteHeadKind(note.beats);
+          const stemWidth = Math.max(1.2, space * 0.12);
+          const sx = stemX(x, up, space, stemWidth, kind);
           return (
             <g key={note.id} className={`staff-note staff-note--${note.tone ?? "idle"}`}>
               {note.tone === "focus" && <circle cx={x} cy={y} r={space * 1.25} className="staff-note-halo" />}
@@ -101,9 +147,8 @@ export function Staff({ notes, space = 10, width = 360, anchor, anchorOrder, bar
               <g stroke={ink} strokeWidth={Math.max(1, space * 0.11)}>
                 {ledgers(note.position).map((p) => <line key={p} x1={x - space * 1.05} x2={x + space * 1.05} y1={yOf(p)} y2={yOf(p)} />)}
               </g>
-              <line x1={up ? x + rx * 0.92 : x - rx * 0.92} x2={up ? x + rx * 0.92 : x - rx * 0.92} y1={y} y2={up ? y - space * 3.4 : y + space * 3.4} stroke="currentColor" strokeWidth={Math.max(1.2, space * 0.12)} className="staff-note-ink" />
-              <ellipse cx={x} cy={y} rx={rx} ry={ry} transform={`rotate(-22 ${x} ${y})`} className="staff-note-ink"
-                fill={hollow ? "none" : "currentColor"} stroke="currentColor" strokeWidth={hollow ? space * 0.2 : 0} />
+              {kind !== "whole" && <line x1={sx} x2={sx} y1={up ? y - space * 0.15 : y + space * 0.15} y2={up ? y - space * 3.4 : y + space * 3.4} stroke="currentColor" strokeWidth={stemWidth} className="staff-note-ink" />}
+              <NoteHead x={x} y={y} space={space} kind={kind} className="staff-note-ink" />
               {note.label && <text x={x} y={note.position >= 4 ? bottom + space * 2.6 : top - space * 1.6} textAnchor="middle" className="staff-note-label" fontSize={space * 1.25}>{note.label}</text>}
             </g>
           );
@@ -140,18 +185,17 @@ export function Staff({ notes, space = 10, width = 360, anchor, anchorOrder, bar
   );
 }
 
-/* ---------- Sound: one shared context, opened only by a click, always stoppable. ---------- */
+/* ---------- Sound: the practice AudioContext, opened only by a click, always stoppable. ---------- */
 
-let sharedContext: AudioContext | null = null;
 const live = new Set<() => void>();
+const PIANO_WAIT_MS = 1500; // how long a passage waits for its piano samples before the synth plays it
 
 function context() {
-  if (typeof window === "undefined") return null;
-  const Ctor = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  if (!Ctor) return null;
-  sharedContext = sharedContext ?? new Ctor();
-  if (sharedContext.state === "suspended") void sharedContext.resume();
-  return sharedContext;
+  try {
+    return practiceAudioContext();
+  } catch {
+    return null; // No Web Audio: sound is optional.
+  }
 }
 
 function voice(ctx: AudioContext, midi: number, at: number, seconds: number) {
@@ -173,36 +217,72 @@ export function playMidi(midi: number, seconds = 0.8) {
   try { voice(ctx, midi, ctx.currentTime + 0.01, seconds); } catch { /* Sound is optional. */ }
 }
 
+/** The most notes sounding at once, so overlapping voices can be scaled down together. */
+function polyphony(notes: { start: number; beats: number }[]) {
+  return notes.reduce((max, note) => Math.max(max, notes.filter((other) => other.start <= note.start && note.start < other.start + other.beats).length), 0);
+}
+
 /**
- * Plays notes in time and reports the playing beat; returns stop(). Stopping silences every
- * scheduled oscillator at once, and stopAllSound() does the same for every sequence still running.
+ * Plays notes in time in the user's note voice (piano samples by default) and reports the playing
+ * beat; returns stop() at once. The needed piano samples load first (at most 1.5 s, then the soft
+ * synth plays instead); every note is then scheduled at its exact start and length. stop() fades
+ * every scheduled note out in 30 ms, and stopAllSound() does the same for every passage still running.
  */
 export function playSequence(notes: { midi: number; start: number; beats: number }[], tempo: number, onBeat: (beat: number | null) => void) {
   const ctx = context();
   if (!ctx) { onBeat(null); return () => {}; }
   const beat = 60 / tempo;
-  const t0 = ctx.currentTime + 0.08;
-  const oscillators = notes.map((note) => voice(ctx, note.midi, t0 + note.start * beat, note.beats * beat));
   const end = notes.reduce((max, note) => Math.max(max, note.start + note.beats), 0);
+  const midis = notes.map((note) => note.midi);
+  const chosen = readNoteVoice();
+  const gain = polyphony(notes) > 1 ? CHORD_NOTE_GAIN : undefined;
+  const silencers: (() => void)[] = [];
+  let t0 = 0;
   let frame = 0;
   let stopped = false;
+
   const tick = () => {
     if (stopped) return;
     const position = (ctx.currentTime - t0) / beat;
-    if (position >= end) { stop(); return; }
+    if (position >= end) { finish(); return; }
     onBeat(Math.max(0, position));
     frame = window.requestAnimationFrame(tick);
   };
-  function stop() {
+
+  const begin = () => {
+    if (stopped) return;
+    const ready = chosen !== "piano" || isPianoLoaded(ctx, midis);
+    const playing = ready ? chosen : "soft";
+    t0 = ctx.currentTime + 0.08;
+    try {
+      for (const note of notes) silencers.push(scheduleVoiceNote(ctx, note.midi, t0 + note.start * beat, note.beats * beat, playing, gain));
+    } catch { /* Sound is optional; the playhead still runs. */ }
+    frame = window.requestAnimationFrame(tick);
+  };
+
+  /** Ends the passage; the last notes keep their natural release. */
+  function finish() {
     if (stopped) return;
     stopped = true;
     window.cancelAnimationFrame(frame);
-    for (const osc of oscillators) { try { osc.stop(); } catch { /* already stopped */ } }
     live.delete(stop);
     onBeat(null);
   }
+
+  function stop() {
+    if (stopped) return;
+    for (const silence of silencers) silence();
+    finish();
+  }
+
   live.add(stop);
-  frame = window.requestAnimationFrame(tick);
+  onBeat(0);
+  if (chosen === "piano" && !isPianoLoaded(ctx, midis)) {
+    const timeout = new Promise<void>((resolve) => window.setTimeout(resolve, PIANO_WAIT_MS));
+    void Promise.race([ensurePianoLoaded(ctx, midis), timeout]).then(begin);
+  } else {
+    begin();
+  }
   return stop;
 }
 

@@ -6,10 +6,11 @@ import type { EvidenceRecord } from "@/lib/practice-evidence.mjs";
 import { pageRoute } from "@/lib/site-routes.mjs";
 import { ClefTraveler } from "./clef-traveler";
 import { HeroQuiz } from "./hero-quiz";
+import { GlowNotes } from "./glow-notes";
 import { HeroScene } from "./hero-scene";
 import { PdfCompare } from "./pdf-compare";
 import { AiPreview } from "./ai-preview";
-import { Staff } from "./music";
+import { NoteHead, Staff } from "./music";
 import "./landing.css";
 
 type Locale = "tr" | "en";
@@ -108,23 +109,50 @@ const TEXT = {
   },
 } as const;
 
+/**
+ * The small pictures of the studio tiles, all on one 160 x 64 grid with their content centred on it,
+ * drawn with the same engraved note heads as the staves, so the four tiles read as one family.
+ */
 function StudioVisual({ kind }: { kind: string }) {
-  if (kind === "beat") return (
-    <svg className="studio-visual" viewBox="0 0 120 40" aria-hidden="true" focusable="false">
-      {[0, 1, 2, 3].map((i) => <rect key={i} x={6 + i * 28} y={i === 0 ? 8 : 14} width="16" height={i === 0 ? 24 : 18} rx="4" className={i === 0 ? "sv-accent" : "sv-ink"} />)}
-    </svg>
-  );
-  if (kind === "score") return (
-    <svg className="studio-visual" viewBox="0 0 120 40" aria-hidden="true" focusable="false">
-      {[8, 14, 20, 26, 32].map((y) => <line key={y} x1="4" x2="116" y1={y} y2={y} className="sv-line" />)}
-      <line x1="60" x2="60" y1="8" y2="32" className="sv-line" />
-      {[[22, 26], [36, 20], [48, 23], [74, 17], [88, 20], [102, 14]].map(([x, y], i) => <ellipse key={i} cx={x} cy={y} rx="4" ry="2.8" transform={`rotate(-20 ${x} ${y})`} className={i === 3 ? "sv-accent" : "sv-ink"} />)}
-    </svg>
-  );
+  const sp = 7; // staff space of the pictures, in viewBox units
+  if (kind === "beat") {
+    // One percussion line: quarter, two beamed eighths, quarter, quarter; the pulse under it, first beat lit.
+    const line = 30, xs = [26, 56, 76, 106, 134];
+    return (
+      <svg className="studio-visual" viewBox="0 0 160 64" aria-hidden="true" focusable="false">
+        <line x1="8" x2="152" y1={line} y2={line} className="sv-line" />
+        {xs.map((x, i) => <NoteHead key={x} x={x} y={line} space={sp} className={i === 0 ? "sv-accent" : "sv-ink"} />)}
+        {xs.map((x, i) => <line key={`s${x}`} x1={x + 3.9} x2={x + 3.9} y1={line} y2={line - 22} className={i === 0 ? "sv-stem sv-stem--accent" : "sv-stem"} />)}
+        <path d={`M${xs[1] + 3.2} ${line - 22}H${xs[2] + 4.6}v3.4H${xs[1] + 3.2}Z`} className="sv-ink" />
+        {[26, 61, 106, 134].map((x, i) => <circle key={x} cx={x} cy={52} r={i === 0 ? 4 : 2.6} className={i === 0 ? "sv-accent" : "sv-dot"} />)}
+      </svg>
+    );
+  }
+  if (kind === "score") {
+    // Two bars of a melody on a full staff, the bar being practised marked by the same accent.
+    const top = 14, y = (step: number) => top + 4 * sp - step * (sp / 2);
+    const notes: [number, number][] = [[24, 2], [40, 3], [56, 4], [72, 3], [96, 2], [112, 1], [128, 0], [144, 1]];
+    return (
+      <svg className="studio-visual" viewBox="0 0 160 64" aria-hidden="true" focusable="false">
+        <rect x="84" y={top - 6} width="70" height={4 * sp + 12} rx="8" className="sv-well" />
+        {[0, 1, 2, 3, 4].map((k) => <line key={k} x1="8" x2="152" y1={top + k * sp} y2={top + k * sp} className="sv-line" />)}
+        <line x1="84" x2="84" y1={top} y2={top + 4 * sp} className="sv-line" />
+        <line x1="152" x2="152" y1={top} y2={top + 4 * sp} className="sv-line sv-line--bar" />
+        {notes.map(([x, step], i) => (
+          <g key={x} className={i >= 4 ? "sv-accent" : "sv-ink"}>
+            <NoteHead x={x} y={y(step)} space={sp} />
+            <line x1={x + 3.9} x2={x + 3.9} y1={y(step)} y2={y(step) - 20} className="sv-stem" />
+          </g>
+        ))}
+      </svg>
+    );
+  }
+  // One octave of a keyboard, the key being found lit, with the same note above it on a single line.
+  const white = 18, left = 17;
   return (
-    <svg className="studio-visual" viewBox="0 0 120 40" aria-hidden="true" focusable="false">
-      {Array.from({ length: 8 }, (_, i) => <rect key={i} x={4 + i * 14} y="4" width="13" height="32" rx="2" className={i === 4 ? "sv-accent" : "sv-key"} />)}
-      {[0, 1, 3, 4, 5].map((i) => <rect key={`b${i}`} x={13 + i * 14} y="4" width="8" height="19" rx="1.5" className="sv-ink" />)}
+    <svg className="studio-visual" viewBox="0 0 160 64" aria-hidden="true" focusable="false">
+      {Array.from({ length: 7 }, (_, i) => <rect key={i} x={left + i * white + .5} y="8" width={white - 1} height="50" rx="3" className={i === 4 ? "sv-accent" : "sv-key"} />)}
+      {[0, 1, 3, 4, 5].map((i) => <rect key={`b${i}`} x={left + (i + 1) * white - 5.5} y="8" width="11" height="30" rx="2" className="sv-ink" />)}
     </svg>
   );
 }
@@ -177,6 +205,7 @@ export function LandingPage({ locale, evidence, soundEnabled, onNavigate, onQuic
           </div>
         </div>
         <HeroQuiz locale={locale} soundEnabled={soundEnabled} onOpenStudio={() => onNavigate("setup")} />
+        <GlowNotes locale={locale} onStudio={() => onNavigate("setup")} />
       </section>
 
       <section className="lp-section lp-studios" aria-labelledby="lp-studios-h">

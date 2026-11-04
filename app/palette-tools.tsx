@@ -28,7 +28,7 @@ export function applyPalette(id: string) {
 }
 
 /** Light, dark or follow the system; independent of the palette. */
-function useMode() {
+export function useMode() {
   const [mode, setMode] = useState<Mode>("system");
   useEffect(() => { const timer = window.setTimeout(() => setMode(readMode() as Mode), 0); return () => window.clearTimeout(timer); }, []);
   useEffect(() => {
@@ -53,6 +53,11 @@ export function BrandLogo({ palette, className = "" }: { palette: string; classN
       <img className="brand-logo-dark" src={`./brand/notanota-${palette}-dark.svg`} alt="" width={40} height={40} />
     </span>
   );
+}
+
+/** The original N mark continued as "otaNota": one wordmark, coloured from CSS through a mask. */
+export function BrandWordmark({ className = "" }: { className?: string }) {
+  return <span className={`brand-wordmark ${className}`} aria-hidden="true" />;
 }
 
 /** Small original emblems for the colour themes; the Meta theme shows the Meta symbol. */
@@ -157,6 +162,107 @@ export function LanguageMenu({ locale, onChange }: { locale: Locale; onChange: (
             <button key={lang.id} type="button" className={`nav-panel-item${locale === lang.id ? " is-on" : ""}`} aria-pressed={locale === lang.id} lang={lang.id}
               onClick={() => { onChange(lang.id); close(true); }}>{lang.name}</button>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const SOUND_HINT_KEY = "notanota-sound-hint-v1";
+
+/** Top-right mute switch; on a first visit it says once, briefly, that sound can be turned off here. */
+export function SoundToggle({ locale, enabled, onToggle }: { locale: Locale; enabled: boolean; onToggle: () => void }) {
+  const tr = locale === "tr";
+  const [hint, setHint] = useState(false);
+  const hintId = useId();
+  const dismiss = useCallback(() => {
+    setHint(false);
+    try { localStorage.setItem(SOUND_HINT_KEY, "seen"); } catch { /* Shown again next time. */ }
+  }, []);
+  useEffect(() => {
+    let seen = true;
+    try { seen = localStorage.getItem(SOUND_HINT_KEY) === "seen"; } catch { seen = true; }
+    if (seen) return;
+    const show = window.setTimeout(() => setHint(true), 1200);
+    const hide = window.setTimeout(dismiss, 10000);
+    return () => { window.clearTimeout(show); window.clearTimeout(hide); };
+  }, [dismiss]);
+  const label = tr ? (enabled ? "Nota sesini kapat" : "Nota sesini aç") : (enabled ? "Turn note sound off" : "Turn note sound on");
+  return (
+    <div className="nav-menu nav-sound">
+      <button type="button" className="nav-icon-button" role="switch" aria-checked={enabled} aria-label={label} title={label}
+        aria-describedby={hint ? hintId : undefined} onClick={() => { onToggle(); dismiss(); }}>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M4.5 9.5h3l4-3.5v12l-4-3.5h-3z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+          {enabled
+            ? <path d="M15 9.2a4 4 0 0 1 0 5.6M17.6 6.8a7.4 7.4 0 0 1 0 10.4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            : <path d="m15.5 9.5 5 5m0-5-5 5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />}
+        </svg>
+      </button>
+      {hint && <div className="sound-hint" id={hintId} role="status">
+        <span>{tr ? "Doğru cevaplarda nota sesi çalar. Buradan kapatabilir, sesi Ayarlar'dan seçebilirsin." : "Correct answers play the note. Mute it here, or pick a sound in Settings."}</span>
+        <button type="button" onClick={dismiss} aria-label={tr ? "Kapat" : "Close"}>×</button>
+      </div>}
+    </div>
+  );
+}
+
+/**
+ * The navbar's theme picker: colour theme and light/dark, without leaving the page. A small menu that
+ * closes with Escape or a click outside; the choices are radio groups, so the keyboard works, and they
+ * are saved like the ones in Settings.
+ */
+export function NavThemeMenu({ locale, onSettings }: { locale: Locale; onSettings: () => void }) {
+  const tr = locale === "tr";
+  const palette = usePalette();
+  const [mode, setMode] = useMode();
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  const button = useRef<HTMLButtonElement>(null);
+  const id = useId();
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (event: PointerEvent) => { if (!box.current?.contains(event.target as Node)) setOpen(false); };
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") { setOpen(false); button.current?.focus(); } };
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("pointerdown", onDown); document.removeEventListener("keydown", onKey); };
+  }, [open]);
+  const modes: [Mode, string][] = tr ? [["light", "Açık"], ["dark", "Koyu"], ["system", "Sistem"]] : [["light", "Light"], ["dark", "Dark"], ["system", "System"]];
+  return (
+    <div className="nav-menu theme-menu" ref={box}>
+      <button ref={button} type="button" className="nav-theme-button" aria-expanded={open} aria-controls={id} onClick={() => setOpen((value) => !value)}>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.3 0 2-.9 2-1.9 0-1.2-1-1.6-1-2.6 0-1 .8-1.7 1.9-1.7h1.9a3.7 3.7 0 0 0 3.7-3.8C20.5 6.9 16.7 3.5 12 3.5Z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+          <circle cx="7.6" cy="11.2" r="1.2" fill="currentColor" /><circle cx="10.4" cy="7.4" r="1.2" fill="currentColor" /><circle cx="14.9" cy="7.6" r="1.2" fill="currentColor" />
+        </svg>
+        <span>{tr ? "Tema" : "Theme"}</span>
+      </button>
+      {open && (
+        <div id={id} className="theme-menu-panel" role="group" aria-label={tr ? "Tema" : "Theme"}>
+          <fieldset>
+            <legend>{tr ? "Renk" : "Colour"}</legend>
+            <div className="theme-menu-palettes">
+              {PALETTES.map((item) => (
+                <label key={item.id} className={palette === item.id ? "is-on" : ""}>
+                  <input type="radio" name={`${id}-palette`} value={item.id} checked={palette === item.id} onChange={() => applyPalette(item.id)} />
+                  <span className="theme-menu-swatch" aria-hidden="true" style={{ background: `linear-gradient(135deg, ${item.light.primary} 50%, ${item.dark.primary} 50%)` }} />
+                  <span>{item.name[locale]}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>{tr ? "Görünüm" : "Appearance"}</legend>
+            <div className="theme-menu-modes">
+              {modes.map(([value, label]) => (
+                <label key={value} className={mode === value ? "is-on" : ""}>
+                  <input type="radio" name={`${id}-mode`} value={value} checked={mode === value} onChange={() => setMode(value)} />{label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <button type="button" className="theme-menu-more" onClick={() => { setOpen(false); onSettings(); }}>{tr ? "Tüm ayarlar" : "All settings"}</button>
         </div>
       )}
     </div>

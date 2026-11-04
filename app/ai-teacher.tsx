@@ -6,6 +6,8 @@ import { buildFeedbackRequest, deterministicResult, describeMeasurement, gateway
 import { analyzeItems, validEvidence, type EvidenceRecord } from '@/lib/practice-evidence.mjs';
 import { pitchAt, pitchName } from '@/lib/music-pitch.mjs';
 import { supabase } from '@/lib/supabase';
+import { AiIcon } from './landing/ai-icon';
+import { ChatTyping } from './chat-ui';
 import './ai-teacher.css';
 
 type Module = 'reading' | 'score' | 'piano' | 'guitar' | 'violin';
@@ -19,6 +21,9 @@ const configured = gatewayEndpoint(import.meta.env.VITE_AI_GATEWAY_URL?.trim());
 const endpoint = configured && (configured.kind === 'local' || (() => { try { return new URL(supabaseUrl).host === new URL(configured.url).host; } catch { return false; } })()) ? configured : null;
 /** True only in a build pointed at the staging gateway of the same Supabase project. */
 export const liveTeacherConfigured = Boolean(endpoint);
+/** The checked gateway endpoint (same Supabase project as the session), or null. */
+export const teacherEndpoint = endpoint;
+export const teacherApiKey = publishableKey;
 
 const REASONS: Record<string, [string, string]> = {
   gateway_not_configured: ['Canlı AI bu sürümde bağlı değil.', 'Live AI is not connected in this build.'],
@@ -31,6 +36,17 @@ const REASONS: Record<string, [string, string]> = {
   live_calls_disabled: ['Canlı model çağrıları kapalı.', 'Live model calls are switched off.'],
   invalid_model_response: ['Model yanıtı doğrulamadan geçmedi, gösterilmedi.', 'The model answer failed validation and was not shown.'],
   evidence_mismatch: ['Yanıt bu oturumun ölçümleriyle eşleşmedi, gösterilmedi.', 'The answer did not match this session’s measurements and was not shown.'],
+  authentication_required: ['Oturum sunucuda doğrulanamadı; çıkış yapıp tekrar gir.', 'Your session could not be verified; sign out and in again.'],
+  ai_not_configured: ['AI sunucusu yapılandırılmamış.', 'The AI server is not configured.'],
+  provider_unavailable: ['Model sağlayıcısı isteği kabul etmedi.', 'The model provider did not accept the request.'],
+  provider_timeout: ['Model zamanında yanıt vermedi.', 'The model did not answer in time.'],
+  request_timeout: ['AI isteği zaman aşımına uğradı.', 'The AI request timed out.'],
+  usage_store_unavailable: ['Kullanım kaydı şu an açılamadı.', 'The usage ledger is unavailable right now.'],
+  usage_limit_exceeded: ['AI bütçe sınırına ulaşıldı.', 'The AI budget limit has been reached.'],
+  idempotency_conflict: ['Bu oturum için zaten bir istek var; yeni bir tur çalış.', 'This session already has a request; play a new round.'],
+  invalid_request: ['İstek sunucu tarafından reddedildi.', 'The server rejected the request.'],
+  invalid_model_configuration: ['Model ayarı bütçe sınırına uymuyor.', 'The model settings do not fit the budget limit.'],
+  network_error: ['AI sunucusuna bağlanılamadı.', 'Could not reach the AI server.'],
 };
 const LIMITS: Record<string, [string, string]> = {
   client_reported_not_verified: ['Ölçümler bu cihazdaki cevaplardan gelir; sunucu tarafından doğrulanmaz.', 'Measurements come from answers on this device and are not verified by a server.'],
@@ -40,14 +56,17 @@ const LIMITS: Record<string, [string, string]> = {
   mock_not_live_inference: ['Bu bir test yanıtıdır; gerçek modelden gelmedi.', 'This is a test answer; it did not come from a real model.'],
 };
 
-export function AITeacher({ locale, session, evidence, onRepeat, onProgress, onPractiseWeak, module = 'reading' }: {
+export function AITeacher({ locale, session, evidence, onRepeat, onProgress, onPractiseWeak, module = 'reading', compact = false }: {
   locale: 'tr' | 'en'; session: string; evidence: EvidenceRecord[]; onRepeat: () => void; onProgress: () => void;
-  onPractiseWeak?: () => void; module?: Module;
+  onPractiseWeak?: (exercises: Feedback['exercises']) => void; module?: Module; compact?: boolean;
 }) {
   const tr = locale === 'tr';
   const pick = (pair: [string, string] | undefined, fallback: string) => pair ? pair[tr ? 0 : 1] : fallback;
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<TeacherResult | null>(null);
+  // A retry after a failed answer goes out as a new, numbered request (the stored failure would otherwise
+  // replay for the same key). Only failures can be retried, and at most twice; an answer is never re-asked.
+  const [retries, setRetries] = useState(0);
   const [signedIn, setSignedIn] = useState(false);
   const controller = useRef<AbortController | null>(null);
   useEffect(() => () => controller.current?.abort(), []);
@@ -67,7 +86,9 @@ export function AITeacher({ locale, session, evidence, onRepeat, onProgress, onP
       : `${pitchName(pitchAt(item.position, item.clef, item.accidental ?? 0), locale, true)} (${item.clef === 'bass' ? (tr ? 'fa anahtarı' : 'bass clef') : (tr ? 'sol anahtarı' : 'treble clef')})`]));
   }, [request, tr, locale]);
 
-  async function ask() {
+  async function ask(retry = false) {
+    const attempt = retry ? retries + 1 : retries;
+    if (retry) setRetries(attempt);
     controller.current?.abort();
     const next = new AbortController();
     controller.current = next;
@@ -76,7 +97,7 @@ export function AITeacher({ locale, session, evidence, onRepeat, onProgress, onP
       const { data } = (await supabase?.auth.getSession()) ?? { data: { session: null } };
       const value = await requestTeacherFeedback({
         endpoint, accessToken: data.session?.access_token ?? null, apiKey: publishableKey, request,
-        idempotencyKey: idempotencyKeyFor(session, module), signal: next.signal,
+        idempotencyKey: attempt ? `${idempotencyKeyFor(session, module)}-r${attempt}` : idempotencyKeyFor(session, module), signal: next.signal,
       });
       if (!next.signal.aborted) setResult(value as TeacherResult);
     } finally {
@@ -85,14 +106,74 @@ export function AITeacher({ locale, session, evidence, onRepeat, onProgress, onP
   }
 
   const mode = shown.mode as 'live' | 'mock' | 'deterministic';
-  const badge = mode === 'live'
-    ? (tr ? `Canlı · Meta · ${shown.provenance.modelId}` : `Live · Meta · ${shown.provenance.modelId}`)
-    : mode === 'mock' ? (tr ? 'Test yanıtı · gerçek model değil' : 'Test answer · not a real model')
-      : (tr ? 'AI kullanılmadı · ölçümden kurallarla' : 'No AI used · rules on measurements');
-  const reason = shown.reason && shown.reason !== 'not_requested' ? pick(REASONS[shown.reason], tr ? 'AI yanıtı alınamadı.' : 'No AI answer was received.') : null;
   const summary = shown.evidenceSummary;
   const canAsk = Boolean(endpoint) && signedIn && summary.eligible && !(result && result.mode !== 'deterministic');
+  const badge = mode === 'live'
+    ? (tr ? 'Canlı · Meta' : 'Live · Meta')
+    : mode === 'mock' ? (tr ? 'Test yanıtı · gerçek model değil' : 'Test answer · not a real model')
+      : canAsk ? (tr ? 'Ölçüm hazır · Meta\'ya henüz sorulmadı' : 'Measured · not yet sent to Meta')
+        : (tr ? 'Kurallarla · AI kullanılmadı' : 'Rules only · no AI used');
+  const reason = shown.reason && shown.reason !== 'not_requested' ? pick(REASONS[shown.reason], tr ? 'AI yanıtı alınamadı.' : 'No AI answer was received.') : null;
+  const failed = Boolean(result && result.mode === 'deterministic' && reason);
   const limitations = [...new Set([...(shown.result.limitations ?? []), ...(shown.limitations ?? [])])];
+  const exercises = mode !== 'deterministic' ? shown.result.exercises : [];
+  const stats = assessment ? [
+    [tr ? 'Doğru' : 'Correct', assessment.correct],
+    [tr ? 'Yanlış' : 'Incorrect', assessment.wrong],
+    [tr ? 'Yardımsız cevap' : 'Unaided answers', assessment.unaidedAttempts],
+  ] as const : [];
+  const practise = (exercises.length > 0 || (assessment?.weaknesses.length ?? 0) > 0) && onPractiseWeak;
+
+  // The result screen's version: the chat's identity, no repeated numbers (the screen shows them), the four
+  // states (not asked, waiting, answered, failed) told apart, and anything long behind "Devamını gör".
+  if (compact) {
+    const observations = mode !== 'deterministic' ? shown.result.observations : [];
+    // What the round really was decides what the teacher is asked to do; a clean round is not "difficulty".
+    const clean = !evidence.some((row) => row.session === session && !row.correct);
+    const answered = mode !== 'deterministic';
+    const canRetry = failed && retries < 2;
+    const evidenceLine = (refs: string[]) => refs.map((ref) => {
+      const measurement = summary.measurements.find((m) => m.id === ref);
+      return `${contextLabels.get(measurement?.context ?? '') ?? ref}: ${describeMeasurement(summary, ref, locale) ?? ref}`;
+    }).join('; ');
+    return <aside className="ai-teacher ai-teacher--compact" data-mode={mode} aria-label="NotaNota AI" aria-busy={busy}>
+      <header className="chat-head ai-teacher-head">
+        <span className="chat-head-icon"><AiIcon size={24} /></span>
+        <h2>NotaNota AI</h2>
+        {mode === 'live' && <span className="chat-badge">{badge}</span>}
+      </header>
+      <div className="ai-teacher-body" aria-live="polite">
+        {mode !== 'deterministic' && <p className="ai-teacher-summary">{shown.result.summary}</p>}
+        {busy && <p className="chat-waiting"><ChatTyping />{tr ? 'Meta yanıtı bekleniyor…' : 'Waiting for Meta…'}</p>}
+        {/* Failed: the reason, the code and the retry are one group; no answer is implied. */}
+        {failed && !busy && <div className="ai-teacher-ask ai-teacher-ask--failed" role="status">
+          <p><span>{reason}</span> <code className="ai-teacher-code">{shown.reason}</code></p>
+          {canRetry ? <button type="button" className="secondary-button" onClick={() => void ask(true)}>{tr ? 'Yeniden dene' : 'Try again'}</button>
+            : <small className="ai-teacher-evidence">{tr ? 'Şimdilik yanıt alınamadı; bir sonraki turda yeniden sorabilirsin.' : 'No answer for now; you can ask again after your next round.'}</small>}
+        </div>}
+        {!failed && !busy && mode === 'deterministic' && !canAsk && <p className="ai-teacher-reason">{reason ?? (tr ? 'Bu tur için yapay zekâ yorumu yok.' : 'No AI comment for this round.')}</p>}
+        {canAsk && !busy && !failed && <div className="ai-teacher-ask">
+          <p>{clean
+            ? (tr ? 'Meta AI bu turdaki performansını değerlendirip bir sonraki adımını önersin.' : 'Let Meta AI look at this round and suggest your next step.')
+            : (tr ? 'Meta AI takıldığın notaları değerlendirip bir sonraki çalışmanı önersin.' : 'Let Meta AI look at the notes that tripped you up and suggest what to practise next.')}</p>
+          <button type="button" className="primary-button" onClick={() => void ask()}>{tr ? 'Meta AI\'ya yorumlat' : 'Ask Meta AI'}</button>
+          <small className="ai-teacher-evidence">{tr ? 'Yalnız toplu ölçümler gönderilir.' : 'Only aggregate measurements are sent.'}</small>
+        </div>}
+        {exercises.length > 0 && <div className="chat-suggest ai-teacher-suggest">
+          <div><span>{tr ? 'Önerilen alıştırma' : 'Suggested practice'}</span><b>{exercises.map((item) => contextLabels.get(item.contextRef) ?? item.contextRef).join(', ')}</b>
+            <small>{tr ? `${exercises[0].repetitions} tekrar` : `${exercises[0].repetitions} repetitions`}</small></div>
+          {onPractiseWeak && <button type="button" className="chat-suggest-go" onClick={() => onPractiseWeak(exercises)}>{tr ? 'Bu alıştırmayı başlat' : 'Start this exercise'}</button>}
+        </div>}
+        {answered && (observations.length > 0 || limitations.length > 0) && <details className="ai-teacher-more">
+          <summary>{tr ? 'Devamını gör' : 'See more'}</summary>
+          {observations.length > 0 && <ul className="ai-teacher-observations">
+            {observations.map((item, index) => <li key={index}><p>{item.text}</p><p className="ai-teacher-evidence">{tr ? 'Dayandığı ölçüm: ' : 'Based on: '}{evidenceLine(item.evidenceRefs)}</p></li>)}
+          </ul>}
+          {limitations.length > 0 && <><p className="ai-teacher-evidence">{tr ? 'Neyi ölçmedik:' : 'What was not measured:'}</p><ul className="ai-teacher-limits-list">{limitations.map((item) => <li key={item}>{pick(LIMITS[item], item)}</li>)}</ul></>}
+        </details>}
+      </div>
+    </aside>;
+  }
 
   return <aside className="ai-teacher" data-mode={mode} aria-label={tr ? 'NotaNota AI Öğretmen' : 'NotaNota AI Teacher'}>
     <div className="ai-teacher-top">
@@ -100,12 +181,11 @@ export function AITeacher({ locale, session, evidence, onRepeat, onProgress, onP
       <span className={`ai-teacher-mode ai-teacher-mode--${mode}`}>{badge}</span>
     </div>
 
-    {assessment && <p className="ai-teacher-measured">{tr
-      ? `Bu oturumda ölçülen: ${assessment.correct} doğru, ${assessment.wrong} yanlış, ${assessment.unaidedAttempts} yardımsız cevap.`
-      : `Measured this session: ${assessment.correct} correct, ${assessment.wrong} incorrect, ${assessment.unaidedAttempts} unaided answers.`}</p>}
+    {stats.length > 0 && <dl className="ai-teacher-stats">
+      {stats.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
+    </dl>}
 
-    <div aria-live="polite" aria-busy={busy}>
-      {reason && <p className="ai-teacher-reason">{reason}</p>}
+    <div className="ai-teacher-body" aria-live="polite" aria-busy={busy}>
       {mode !== 'deterministic' && <p className="ai-teacher-summary">{shown.result.summary}</p>}
       {mode === 'deterministic' && assessment && assessment.eligible && <p className="ai-teacher-summary">{assessment.explanation}</p>}
       {mode === 'deterministic' && assessment && !assessment.eligible && <p className="ai-teacher-summary">{tr ? 'Kişisel değerlendirme için yeterli yardımsız cevap yok. Bir tur daha çalışınca ölçüm netleşir.' : 'Not enough unaided answers for a personal assessment. Another round will make the measurement clearer.'}</p>}
@@ -124,12 +204,32 @@ export function AITeacher({ locale, session, evidence, onRepeat, onProgress, onP
         {assessment.weaknesses.map((item) => <li key={item.id}><p>{item.label}</p><p className="ai-teacher-evidence">{tr ? `${item.attempts} yardımsız denemede ${item.errors} hata` : `${item.errors} errors in ${item.attempts} unaided attempts`}</p></li>)}
       </ul>}
 
+      {exercises.length > 0 && <div className="ai-teacher-exercises">
+        <h3>{tr ? 'Meta\'nın sana özel alıştırması' : 'Your exercise from Meta'}</h3>
+        <ol>{exercises.map((item) => <li key={item.contextRef}>
+          <span>{contextLabels.get(item.contextRef) ?? item.contextRef}</span>
+          <span className="ai-teacher-evidence">{tr ? `${item.repetitions} tekrar` : `${item.repetitions} repetitions`}</span>
+        </li>)}</ol>
+      </div>}
+
+      {failed && <p className="ai-teacher-alert" role="status">
+        <span>{reason}</span> <code className="ai-teacher-code">{shown.reason}</code>
+      </p>}
+      {!failed && reason && <p className="ai-teacher-reason">{reason}</p>}
+
+      {canAsk && <div className="ai-teacher-ask">
+        <div>
+          <p className="ai-teacher-ask-title">{tr ? 'Meta AI bu ölçümleri yorumlasın' : 'Let Meta AI explain these measurements'}</p>
+          <p className="ai-teacher-evidence">{tr ? 'Yalnız toplu ölçümler gönderilir; cevapların ve hesabın gönderilmez. Yanıt ölçümlerle doğrulanmadan gösterilmez.' : 'Only aggregate measurements are sent, never your answers or account. The answer is checked against them before it is shown.'}</p>
+        </div>
+        <button type="button" className="primary-button" disabled={busy} onClick={() => void ask(failed)}>{busy ? (tr ? 'Meta yanıtı bekleniyor…' : 'Waiting for Meta…') : failed ? (tr ? 'Yeniden dene' : 'Try again') : (tr ? 'Meta AI\'ya yorumlat' : 'Ask Meta AI')}</button>
+      </div>}
+
       <div className="ai-teacher-actions">
-        {((mode !== 'deterministic' && shown.result.exercises.length > 0) || (assessment?.weaknesses.length ?? 0) > 0) && onPractiseWeak
-          ? <button type="button" className="primary-button" onClick={onPractiseWeak}>{tr ? 'Önerilen tekrarı başlat' : 'Start the suggested review'}</button>
-          : <button type="button" className="primary-button" onClick={onRepeat}>{tr ? 'Bir tur daha çalış' : 'Practise another round'}</button>}
+        {practise
+          ? <button type="button" className={canAsk ? 'secondary-button' : 'primary-button'} onClick={() => onPractiseWeak(exercises)}>{exercises.length > 0 ? (tr ? 'Bu alıştırmayı başlat' : 'Start this exercise') : (tr ? 'Önerilen tekrarı başlat' : 'Start the suggested review')}</button>
+          : <button type="button" className={canAsk ? 'secondary-button' : 'primary-button'} onClick={onRepeat}>{tr ? 'Bir tur daha çalış' : 'Practise another round'}</button>}
         <button type="button" className="secondary-button" onClick={onProgress}>{tr ? 'Beceri haritası' : 'Skill map'}</button>
-        {canAsk && <button type="button" className="secondary-button" disabled={busy} onClick={ask}>{busy ? (tr ? 'AI yanıtı bekleniyor…' : 'Waiting for the AI…') : (tr ? 'AI Öğretmen\'e yorumlat' : 'Ask the AI Teacher')}</button>}
       </div>
 
       {limitations.length > 0 && <details className="ai-teacher-limits">

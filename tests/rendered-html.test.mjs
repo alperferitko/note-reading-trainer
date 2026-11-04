@@ -39,7 +39,7 @@ test("NotaNota çalışma ekranını sunar", async () => {
   assert.match(html, /30 saniyede dene/);
   assert.match(html, /Tahmin et/);
   assert.match(html, /Ne çalışmak istersin\?/);
-  for (const area of ["Nota okuma", "Ritim", "Eser çalışma", "Enstrüman ve kulak", "Önceden hazırlanmış sonuç", "Örnek önizleme", "Soprano partisini çalış"]) assert.match(html, new RegExp(area));
+  for (const area of ["Nota okuma", "Ritim", "Eser çalışma", "Enstrüman ve kulak", "Önceden hazırlanmış sonuç", "Örnek konuşma", "Soprano partisini çalış"]) assert.match(html, new RegExp(area));
   // The staves and the clef anchors are in the first HTML, so the page reads without its script.
   // Four seats: the hero, the reading tile, the AI preview and the closing call (the PDF comparison is engraved by OSMD).
   assert.equal((html.match(/data-clef-anchor="/g) ?? []).length, 4);
@@ -127,7 +127,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /ledgerPositionsFor/);
   assert.match(page, /\[-10, -8, -6, -4, -2, 10, 12, 14, 16, 18\]/);
   assert.match(page, /if \(sessionType === "endless"\) \{[\s\S]*setFeedback\(null\);[\s\S]*navigateTo\("done"\);[\s\S]*return;/);
-  assert.match(page, /sessionType === "endless" \? \([\s\S]*className="endless-results-card"/);
+  assert.match(page, /sessionType === "endless" \? \([\s\S]*className="[^"]*endless-results-card/);
   assert.match(page, /extra\.endedSession\(correctCount, totalTime\)/);
   assert.match(styles, /\.endless-results-card/);
   assert.match(page, /questionKey\.current\+\+/);
@@ -376,9 +376,11 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /!audioSettingsRef\.current\?\.contains\(event\.target\)/);
   assert.doesNotMatch(page, /listen-note-button|playNotaNotaEffect|setAmbientMusicActive|unlockNotaNotaAudio/);
   assert.match(styles, /\.mobile-module-navigation/);
-  // The header shows the original logo in the chosen colour model.
-  assert.match(page, /<BrandLogo palette=\{palette\} className="brand-tile" \/>/);
-  assert.match(page, /className="brand-mark result-flourish" aria-hidden="true">[\s\S]*notanota-monogram-96\.webp/);
+  // The header shows the N + otaNota wordmark, coloured by the theme through a CSS mask.
+  assert.match(page, /<BrandWordmark \/>/);
+  // Results: how did I do, what to work on, the teacher; secondary details behind one disclosure.
+  assert.match(page, /className="rv-card rv-main"[\s\S]*className="rv-card rv-focus"[\s\S]*<AITeacher[^>]*compact/);
+  assert.match(page, /<details className="rv-details">/);
   assert.doesNotMatch(page, /className="brand-mark" aria-hidden="true">♪/);
   assert.doesNotMatch(page, /name="note"/);
   assert.match(styles, /font-family: "Bodoni MT", Didot/);
@@ -527,7 +529,7 @@ test("günlük çalışma serisi gerçek tamamlamaları hesapta güvenle ve dür
     page,
     /<CommunityPracticeRecorder active=\{completedDailyPractice\} activityKey=\{`notes-\$\{sessionStartedAt\}`\} \/>/,
   );
-  assert.match(page, /\{completedDailyPractice && <CommunityPracticeStreak compact \/>\}/);
+  assert.match(page, /\{completedDailyPractice && <CommunityPracticeStreakChip \/>\}/);
 
   // The live quiz answer streak is explicitly named so it cannot be confused
   // with the account's day streak.

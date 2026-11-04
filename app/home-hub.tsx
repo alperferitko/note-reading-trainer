@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { goalProgress, lastSession, planNext, readGoal, writeGoal, DEFAULT_GOAL, DAILY_TARGETS, WEEKLY_TARGETS, GOAL_FOCI } from "@/lib/practice-plan.mjs";
 import type { EvidenceRecord } from "@/lib/practice-evidence.mjs";
+import { playPracticeNote } from "@/lib/practice-audio";
+import { NoteHead, stemX } from "./landing/music";
 import "./home-hub.css";
 
 type Locale = "tr" | "en";
@@ -124,29 +126,13 @@ function LiveStaff({ step, state, label }: { step: number; state: "idle" | "ok" 
         </g>
         <text className="hub-clef" x="8" y="66" fontSize="56">𝄞</text>
         <g key={step} className="hub-note">
-          <line x1={up ? x + 6.1 : x - 6.1} x2={up ? x + 6.1 : x - 6.1} y1={y} y2={up ? y - 34 : y + 34} stroke={ink} strokeWidth="1.6" />
-          <ellipse cx={x} cy={y} rx="6.8" ry="4.7" transform={`rotate(-20 ${x} ${y})`} fill={ink} />
+          <line x1={stemX(x, up, 10, 1.6)} x2={stemX(x, up, 10, 1.6)} y1={up ? y - 1.5 : y + 1.5} y2={up ? y - 34 : y + 34} stroke={ink} strokeWidth="1.6" />
+          <g style={{ color: ink }}><NoteHead x={x} y={y} space={10} /></g>
           {label && <text x={x + 14} y={y + 4.5} className="hub-note-label">{label}</text>}
         </g>
       </svg>
     </span>
   );
-}
-
-function tone(context: { current: AudioContext | null }, midi: number) {
-  try {
-    const Ctor = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    context.current = context.current ?? new Ctor();
-    const ctx = context.current;
-    const osc = ctx.createOscillator(), gain = ctx.createGain(), t = ctx.currentTime;
-    osc.type = "triangle";
-    osc.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
-    gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.exponentialRampToValueAtTime(0.2, t + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.8);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start(t); osc.stop(t + 0.85);
-  } catch { /* Sound is optional. */ }
 }
 
 export function HomeHub({ locale, evidence, settingsLabel, clefLabelKey, soundEnabled, onNavigate, onQuickStart, onStartPlan }: {
@@ -167,7 +153,6 @@ export function HomeHub({ locale, evidence, settingsLabel, clefLabelKey, soundEn
   const [mark, setMark] = useState<"idle" | "ok" | "no">("idle");
   const [status, setStatus] = useState<string>(t.warmIdle);
   const [busy, setBusy] = useState(false);
-  const audio = useRef<AudioContext | null>(null);
   const [goal, setGoal] = useState<Goal | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Goal>(DEFAULT_GOAL as Goal);
@@ -189,7 +174,7 @@ export function HomeHub({ locale, evidence, settingsLabel, clefLabelKey, soundEn
     const ok = index === correct;
     const nextAsked = asked + 1, nextRight = right + (ok ? 1 : 0);
     setAsked(nextAsked); setRight(nextRight); setMark(ok ? "ok" : "no"); setBusy(true);
-    if (soundEnabled) tone(audio, 60 + 12 * Math.floor(step / 7) + SEMI[correct]);
+    playPracticeNote(60 + 12 * Math.floor(step / 7) + SEMI[correct], soundEnabled);
     setStatus(ok ? t.warmRight(names[correct]) : t.warmWrong(names[correct]));
     window.setTimeout(() => {
       setMark("idle");

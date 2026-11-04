@@ -1,0 +1,97 @@
+/* Note-reading results: how did I do, what should I work on, what can I do now. Few cards, sized by weight. */
+.results-shell.results-v2 { width: min(1080px, calc(100% - 32px)); padding: 32px 0 56px; display: grid; gap: 16px; }
+.rv-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.rv-top .kicker { margin: 0; }
+.rv-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.rv-card { display: grid; gap: 16px; align-content: start; padding: 28px; border-radius: 24px; background: var(--surface); box-shadow: var(--shadow-1); color: var(--foreground); }
+.rv-main { grid-column: span 7; }
+.rv-focus { grid-column: span 5; }
+.rv-grid:not(:has(.rv-focus)) .rv-main { grid-column: 1 / -1; }
+.rv-grid > .ai-teacher--compact { grid-column: 1 / -1; }
+.rv-main h1 { margin: 0; font-family: var(--fx-display); font-size: clamp(28px, 3.1vw, 40px); line-height: 1.08; font-weight: 600; letter-spacing: -.02em; }
+.rv-main h1:focus { outline: none; }
+.rv-lead { margin: 0; color: var(--foreground-muted); font-size: 16px; line-height: 1.5; }
+.rv-measures { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 32px; }
+.rv-hero-metric { display: flex; align-items: center; gap: 16px; }
+.rv-hero-metric > strong { font: 600 48px/1 var(--fx-display); }
+.rv-hero-metric > span { max-width: 11em; color: var(--foreground-muted); font-size: 15px; line-height: 1.35; }
+.rv-hero-metric .score-ring { width: 108px; height: 108px; margin: 0; flex: none; }
+.rv-hero-metric .score-ring-copy { width: 86px; height: 86px; background: var(--surface); }
+.rv-hero-metric .score-ring strong { font: 600 26px/1 var(--fx-display); color: var(--foreground); }
+.rv-hero-metric .score-ring-track { stroke: var(--background-deep); }
+.rv-hero-metric .score-ring-progress { stroke: var(--primary); }
+.rv-helpers { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, auto)); gap: 8px 32px; }
+.rv-helpers dt { color: var(--foreground-muted); font-size: 13px; }
+.rv-helpers dd { margin: 2px 0 0; font: 600 22px/1.1 var(--fx-display); font-variant-numeric: tabular-nums; }
+.rv-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 4px; }
+.app-shell .rv-actions > .ghost-button { min-height: 44px; padding: 0 16px; display: inline-flex; align-items: center; }
+.app-shell .rv-actions > button { width: auto; }
+.rv-focus h2 { margin: 0; font-family: var(--fx-display); font-size: 20px; font-weight: 600; }
+.rv-notes { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.rv-notes li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 12px; background: var(--background-deep); font-size: 15px; }
+.rv-notes li span:not(.note-pill) { color: var(--foreground-muted); }
+.rv-notes li b { color: var(--primary); font-weight: 600; font-size: 14px; }
+.rv-note { margin: 0; color: var(--foreground-muted); font-size: 15px; line-height: 1.5; }
+.rv-focus .targeted-review { margin: 0; padding: 0; background: none; box-shadow: none; }
+.practice-streak-chip { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 14px; color: var(--foreground-muted); }
+.practice-streak-chip b { color: var(--foreground); font-weight: 600; }
+
+/* The teacher card: the chat's identity, no number boxes. */
+.ai-teacher.ai-teacher--compact { margin: 0; padding: 28px; border: 0; border-radius: 24px; background: var(--surface); box-shadow: var(--shadow-1); gap: 12px; }
+.ai-teacher--compact .ai-teacher-head { padding: 0; }
+.ai-teacher--compact .ai-teacher-head h2 { font-size: 18px; }
+.ai-teacher--compact .ai-teacher-body { gap: 12px; }
+.ai-teacher--compact .ai-teacher-ask { display: grid; gap: 8px; justify-items: start; padding: 14px 16px; border: 0; border-radius: 16px; background: var(--background-deep); }
+.ai-teacher--compact .ai-teacher-ask p { margin: 0; }
+.ai-teacher--compact .ai-teacher-suggest { max-width: 640px; }
+.ai-teacher-more summary { cursor: pointer; color: var(--primary); font: 600 14px var(--fx-ui); }
+.ai-teacher-more[open] summary { margin-bottom: 10px; }
+.ai-teacher-limits-list { margin: 4px 0 0; padding-left: 20px; color: var(--foreground-muted); font-size: 14px; line-height: 1.6; }
+
+/* Secondary: settings and every measure behind one disclosure; share in a small menu; the leaderboard rule in a line. */
+.rv-details { padding: 16px 20px; border-radius: 18px; background: var(--surface); box-shadow: var(--shadow-1); }
+.rv-details summary { cursor: pointer; font: 600 15px var(--fx-ui); }
+.rv-details[open] summary { margin-bottom: 12px; }
+.rv-details .result-session-meta { margin: 0 0 8px; }
+.rv-leaderboard { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.app-shell .rv-leaderboard button { width: auto; min-height: 44px; padding: 0 20px; white-space: nowrap; }
+.community-result-inline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.community-result-inline small { color: var(--foreground-muted); font-size: 13px; }
+.result-share-menu { position: relative; }
+.result-share-menu summary { list-style: none; cursor: pointer; padding: 6px 12px; border-radius: 10px; background: var(--background-deep); font: 600 13px var(--fx-ui); color: var(--foreground-muted); }
+.result-share-menu summary::-webkit-details-marker { display: none; }
+.result-share-menu > div { position: absolute; right: 0; top: calc(100% + 6px); z-index: 5; display: grid; min-width: 200px; padding: 6px; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-2); }
+.result-share-menu > div button { padding: 10px 12px; border: 0; border-radius: 10px; background: none; color: var(--foreground); text-align: left; font: 500 14px var(--fx-ui); cursor: pointer; }
+.result-share-menu > div button:hover { background: var(--background-deep); }
+.result-share-menu > p { margin: 4px 0 0; font-size: 13px; color: var(--foreground-muted); }
+.result-share-menu > p:empty { display: none; }
+@media (max-width: 760px) {
+  .results-shell.results-v2 { padding-top: 20px; }
+  .rv-grid { grid-template-columns: minmax(0, 1fr); }
+  .rv-main, .rv-focus, .rv-grid > .ai-teacher--compact { grid-column: 1 / -1; }
+  .rv-measures { gap: 14px; }
+}
+.rv-staff { max-width: 300px; margin: -8px 0 -12px; }
+.rv-staff svg { pointer-events: none; }
+@media (max-width: 760px) { .rv-card, .ai-teacher.ai-teacher--compact { padding: 20px; } }
+/* Global buttons carry a top margin; inside these rows the row gap is the only spacing, so they line up. */
+html body .app-shell :is(.rv-actions, .rv-leaderboard, .community-result-inline) > button, html body .app-shell .ai-teacher--compact button { margin: 0; }
+
+/* Note-reading setup: one start (the saved settings), a compact targeted review, the settings below. */
+.targeted-review.targeted-review--compact { display: grid; gap: 12px; padding: 20px 24px; }
+.targeted-review-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
+.targeted-review--compact h2 { margin: 0 0 8px; font-family: var(--fx-display); font-size: 20px; font-weight: 600; }
+.targeted-review-chips { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px; }
+.targeted-review-chips li { padding: 4px 12px; border-radius: 999px; background: var(--background-deep); font-size: 14px; }
+.targeted-review-chips li.is-more { color: var(--foreground-muted); }
+.app-shell .targeted-review--compact .secondary-button { width: auto; margin: 0; }
+.targeted-review-why summary { cursor: pointer; color: var(--primary); font: 600 14px var(--fx-ui); }
+.targeted-review-why[open] summary { margin-bottom: 12px; }
+.targeted-review-why small { display: block; margin-top: 8px; color: var(--foreground-muted); }
+.hero-copy.hero-copy--compact { display: block; min-height: 0; padding: 0; margin: 32px 0 8px; }
+.hero-copy--compact h2 { margin: 0; font-family: var(--fx-display); font-size: clamp(24px, 2.4vw, 30px); font-weight: 600; }
+.hero-copy--compact .hero-lead, .hero-copy--compact .hero-staff { display: none; }
+.targeted-review-row > div { flex: 1 1 420px; min-width: 0; }
+.app-shell .ai-teacher--compact .ai-teacher-ask :is(.primary-button, .secondary-button) { width: auto; min-width: 0; padding: 0 20px; min-height: 44px; }
+.ai-teacher--compact .ai-teacher-ask--failed { border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent); }
+.ai-teacher--compact .ai-teacher-ask--failed p { margin: 0; }

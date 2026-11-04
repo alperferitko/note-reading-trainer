@@ -19,7 +19,7 @@ function placeText(position: number, locale: Locale) {
 }
 
 function landmark(position: number, locale: Locale) {
-  const tr: Record<number, string> = { 0: "En alt çizgi mi.", 2: "Anahtarın kıvrımı bu çizgiyi sarar: sol.", 4: "Ortadaki çizgi si.", 8: "En üst çizgi fa." };
+  const tr: Record<number, string> = { 0: "En alt çizgi Mi.", 2: "Anahtarın kıvrımı bu çizgiyi sarar: Sol.", 4: "Ortadaki çizgi Si.", 8: "En üst çizgi Fa." };
   const en: Record<number, string> = { 0: "The bottom line is E.", 2: "The clef's curl wraps this line: G.", 4: "The middle line is B.", 8: "The top line is F." };
   const near = [0, 2, 4, 8].reduce((best, p) => (Math.abs(p - position) < Math.abs(best - position) ? p : best), 2);
   const base = (locale === "tr" ? tr : en)[near];
@@ -28,22 +28,27 @@ function landmark(position: number, locale: Locale) {
   return locale === "tr" ? `${base} Bu nota ondan ${Math.abs(steps)} adım ${steps > 0 ? "yukarıda" : "aşağıda"}.` : `${base} This note is ${Math.abs(steps)} step${Math.abs(steps) > 1 ? "s" : ""} ${steps > 0 ? "higher" : "lower"}.`;
 }
 
+// Turkish locative: "alttan 2. çizgi" → "çizgide", "alttan 1. aralık" → "aralıkta".
+const at = (place: string) => (place.endsWith("aralık") ? `${place}ta` : `${place}de`);
+
 const TEXT = {
   tr: {
-    guess: "Tahmin et", question: "Bu nota hangisi?", back: "Önizlemeye dön", next: "Bir tane daha", studio: "Stüdyoya geç",
-    right: (n: string) => `Doğru, bu ${n}.`, hint: (place: string, mark: string) => `Tekrar dene: nota ${place}da. ${mark}`, reveal: (n: string, place: string) => `Bu ${n}, ${place}da.`,
+    learn: "Öğren", guess: "Tahmin et", mode: "Kart modu", learnNote: "Notalar adlarıyla geçiyor.", guessNote: "Adı gizli, sen bul.", question: "Bu nota hangisi?", next: "Bir tane daha", studio: "Stüdyoya geç",
+    right: (n: string, place: string, mark: string) => `Doğru, bu ${n}: ${place}. ${mark}`, hint: (place: string, mark: string) => `Tekrar dene: nota ${at(place)}. ${mark}`, reveal: (n: string, place: string, mark: string) => `Bu ${n}, ${at(place)}. ${mark}`,
     listen: "Dinle", staff: "Sol anahtarlı porte üzerinde değişen tek bir nota", keys: "1–7 tuşları da çalışır. Bu deneme kaydedilmez.",
   },
   en: {
-    guess: "Guess it", question: "Which note is this?", back: "Back to the preview", next: "One more", studio: "Go to the studio",
-    right: (n: string) => `Right, this is ${n}.`, hint: (place: string, mark: string) => `Try again: the note is on ${place}. ${mark}`, reveal: (n: string, place: string) => `This is ${n}, on ${place}.`,
+    learn: "Learn", guess: "Guess", mode: "Card mode", learnNote: "The notes pass with their names.", guessNote: "The name is hidden: find it.", question: "Which note is this?", next: "One more", studio: "Go to the studio",
+    right: (n: string, place: string, mark: string) => `Right, this is ${n}: ${place}. ${mark}`, hint: (place: string, mark: string) => `Try again: the note is on ${place}. ${mark}`, reveal: (n: string, place: string, mark: string) => `This is ${n}, on ${place}. ${mark}`,
     listen: "Listen", staff: "A single changing note on a treble staff", keys: "Keys 1–7 work too. This try is not saved.",
   },
 } as const;
 
 /**
- * The first screen shows notes changing on a real staff, named as they pass. "Guess it" freezes the
- * current note and opens the answers; while answering the note never changes on its own.
+ * Two clearly separate modes on one card. "Learn" shows notes changing on a real staff, named as they pass.
+ * "Guess" brings a new note whose name is hidden, never the one just shown, and nothing on the card gives
+ * it away until it is answered; then the name, its place on the staff and a short landmark are shown.
+ * While answering the note never changes on its own.
  */
 export function HeroQuiz({ locale, soundEnabled, onOpenStudio, compact = false }: { locale: Locale; soundEnabled: boolean; onOpenStudio: () => void; compact?: boolean }) {
   const t = TEXT[locale];
@@ -77,22 +82,30 @@ export function HeroQuiz({ locale, soundEnabled, onOpenStudio, compact = false }
     if (phase !== "show" && digit >= 1 && digit <= 7 && !event.altKey && !event.ctrlKey && !event.metaKey) { event.preventDefault(); choose(digit - 1); }
   }
 
-  const status = phase === "right" ? t.right(names[answer]) : phase === "hint" ? t.hint(placeText(position, locale), landmark(position, locale)) : phase === "reveal" ? t.reveal(names[answer], placeText(position, locale)) : t.keys;
+  const place = placeText(position, locale), mark = landmark(position, locale);
+  const status = phase === "right" ? t.right(names[answer], place, mark) : phase === "hint" ? t.hint(place, mark) : phase === "reveal" ? t.reveal(names[answer], place, mark) : t.keys;
+  const learning = phase === "show";
+  // A new, hidden note: the next one in the round, so it is never the note whose name was just on screen.
+  const startGuess = () => { setIndex((i) => i + 1); setMisses(0); setPhase("ask"); };
   const tone = phase === "right" ? "ok" : phase === "reveal" ? "no" : phase === "hint" ? "focus" : "idle";
 
   return (
     <div className="hero-quiz" role="group" aria-label={phase === "show" ? t.staff : t.question} onKeyDown={onKey} data-state={phase} data-clef-host="">
+      <div className="hero-quiz-mode" role="group" aria-label={t.mode}>
+        <button type="button" aria-pressed={learning} onClick={() => setPhase("show")}>{t.learn}</button>
+        <button type="button" aria-pressed={!learning} onClick={() => { if (learning) startGuess(); }}>{t.guess}</button>
+        <span className="hero-quiz-note" aria-live="off">{learning ? t.learnNote : t.guessNote}</span>
+      </div>
       <div className="hero-quiz-stage">
         <Staff className="hero-quiz-staff" space={16} width={520} anchor={compact ? undefined : "hero"} anchorOrder={0}
           label={phase === "show" ? `${t.staff}: ${names[answer]}` : t.question}
-          notes={[{ id: `q${index}`, position, x: 0.46, tone, label: phase === "show" || settled ? names[answer] : undefined }]} />
+          notes={[{ id: `q${index}`, position, x: 0.46, tone }]} />
         {phase === "show" && <p className="hero-quiz-caption" aria-live="off"><b>{names[answer]}</b> · {placeText(position, locale)}</p>}
       </div>
 
       {phase === "show" ? (
         <div className="hero-quiz-actions">
-          <button type="button" className="primary-button" onClick={() => { setMisses(0); setPhase("ask"); }}>{t.guess}</button>
-          <button type="button" className="ghost-button" onClick={() => playMidi(midiOf(position))}>{t.listen}</button>
+          <button type="button" className="secondary-button" onClick={() => playMidi(midiOf(position))}>{t.listen}</button>
         </div>
       ) : (
         <div className="hero-quiz-answer">
@@ -110,9 +123,9 @@ export function HeroQuiz({ locale, soundEnabled, onOpenStudio, compact = false }
             {status}
           </p>
           <div className="hero-quiz-actions">
-            {settled && <button ref={nextButton} type="button" className="primary-button" onClick={() => { setIndex((i) => i + 1); setMisses(0); setPhase("ask"); }}>{t.next}</button>}
+            {settled && <button ref={nextButton} type="button" className="primary-button" onClick={startGuess}>{t.next}</button>}
+            {settled && <button type="button" className="ghost-button" onClick={() => playMidi(midiOf(position))}>{t.listen}</button>}
             {settled && <button type="button" className="ghost-button" onClick={onOpenStudio}>{t.studio}</button>}
-            <button type="button" className="ghost-button" onClick={() => setPhase("show")}>{t.back}</button>
           </div>
         </div>
       )}

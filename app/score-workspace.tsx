@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } f
 import { MusicStaff } from "./notation";
 import { AITeacher } from "./ai-teacher";
 import { useEvidence } from "./targeted-review";
+import { ScoreShelf } from "./score-library";
 import { useMicPitch } from "./use-mic-pitch";
 import { checkFile, practiceEvents, practiceQueue, readMusicXml, supportSummary, MusicXmlError } from "@/lib/musicxml.mjs";
 import { judgePitch, midiLabel } from "@/lib/pitch-detect.mjs";
@@ -265,6 +266,7 @@ export function ScoreWorkspace({ locale, onNavigate, initial = null }: { locale:
           {error && <p className="lab-feedback lab-feedback--no" role="alert">{error}</p>}
         </div>
       )}
+      {phase === "pick" && <ScoreShelf locale={locale} onOpen={({ xml: text }) => open(text)} />}
 
       {phase === "ready" && score && part && (
         <div className="lab-panel">

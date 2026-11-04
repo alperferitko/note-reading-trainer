@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { GLYPHS } from "@/lib/music-glyphs.mjs";
-import { ClefGlyph, CLEF_WIDTH_SPACES } from "./music";
+import { ClefGlyph, CLEF_WIDTH_SPACES, NoteHead, noteHeadKind, stemX } from "./music";
 
 /** Font units per staff space for the VexFlow notation glyphs, and for time-signature digits. */
 const U = 365;
@@ -34,7 +34,6 @@ export function ScoreStaff({ events, measures, space = 10, width = 640, anchor, 
   const pct = (v: number, of: number) => `${(v / of) * 100}%`;
   const line = Math.max(1, space * 0.1);
   const stem = Math.max(1.2, space * 0.12);
-  const rx = space * 0.66, ry = space * 0.46;
 
   // Beamed eighth pairs inside a beat.
   const beams: [ScoreEvent, ScoreEvent][] = [];
@@ -70,8 +69,8 @@ export function ScoreStaff({ events, measures, space = 10, width = 640, anchor, 
           const p = e.position ?? 4;
           const y = yOf(p);
           const up = beamed.has(e.id) ? beamed.get(e.id)! : p < 4;
-          const sx = up ? x + rx * 0.92 : x - rx * 0.92;
-          const hollow = e.beats >= 2;
+          const kind = noteHeadKind(e.beats);
+          const sx = stemX(x, up, space, stem, kind);
           const ledgers: number[] = [];
           for (let q = -2; q >= p; q -= 2) ledgers.push(q);
           for (let q = 10; q <= p; q += 2) ledgers.push(q);
@@ -83,8 +82,8 @@ export function ScoreStaff({ events, measures, space = 10, width = 640, anchor, 
               {ledgers.map((q) => <line key={q} x1={x - space * 1.05} x2={x + space * 1.05} y1={yOf(q)} y2={yOf(q)} stroke="currentColor" strokeWidth={line} />)}
               {e.alter === 1 && <Glyph d={GLYPHS.sharp.d} x={x - space * 2.1} y={y} space={space} />}
               {e.alter === -1 && <Glyph d={GLYPHS.flat.d} x={x - space * 1.9} y={y} space={space} />}
-              <line x1={sx} x2={sx} y1={y} y2={up ? y - space * 3.4 : y + space * 3.4} stroke="currentColor" strokeWidth={stem} />
-              <ellipse cx={x} cy={y} rx={rx} ry={ry} transform={`rotate(-22 ${x} ${y})`} fill={hollow ? "none" : "currentColor"} stroke="currentColor" strokeWidth={hollow ? space * 0.2 : 0} />
+              {kind !== "whole" && <line x1={sx} x2={sx} y1={up ? y - space * 0.15 : y + space * 0.15} y2={up ? y - space * 3.4 : y + space * 3.4} stroke="currentColor" strokeWidth={stem} />}
+              <NoteHead x={x} y={y} space={space} kind={kind} />
               {e.dots > 0 && <circle cx={x + space * 1.25} cy={dotY} r={space * 0.2} fill="currentColor" />}
               {flagged && <Glyph d={GLYPHS.flagUp.d} x={sx - space * 0.06} y={y - space * 3.4} space={space} />}
             </g>
@@ -92,7 +91,7 @@ export function ScoreStaff({ events, measures, space = 10, width = 640, anchor, 
         })}
         {beams.map(([a, b]) => {
           const up = beamed.get(a.id)!;
-          const ax = (up ? xOf(a.x) + rx * 0.92 : xOf(a.x) - rx * 0.92), bx = (up ? xOf(b.x) + rx * 0.92 : xOf(b.x) - rx * 0.92);
+          const ax = stemX(xOf(a.x), up, space, stem), bx = stemX(xOf(b.x), up, space, stem);
           const ay = yOf(a.position ?? 4) + (up ? -space * 3.4 : space * 3.4), by = yOf(b.position ?? 4) + (up ? -space * 3.4 : space * 3.4);
           const end = up ? Math.min(ay, by) : Math.max(ay, by);
           const t = space * 0.5 * (up ? 1 : -1);
@@ -102,7 +101,7 @@ export function ScoreStaff({ events, measures, space = 10, width = 640, anchor, 
           // Stems reach the beam.
           const up = beamed.get(a.id)!;
           const end = up ? Math.min(yOf(a.position ?? 4), yOf(b.position ?? 4)) - space * 3.4 : Math.max(yOf(a.position ?? 4), yOf(b.position ?? 4)) + space * 3.4;
-          return [a, b].map((e) => { const x = up ? xOf(e.x) + rx * 0.92 : xOf(e.x) - rx * 0.92; return <line key={`s${e.id}`} x1={x} x2={x} y1={yOf(e.position ?? 4)} y2={end} stroke="currentColor" strokeWidth={stem} />; });
+          return [a, b].map((e) => { const x = stemX(xOf(e.x), up, space, stem); return <line key={`s${e.id}`} x1={x} x2={x} y1={yOf(e.position ?? 4)} y2={end} stroke="currentColor" strokeWidth={stem} />; });
         })}
       </svg>
       <span className="clef-anchor" data-clef-anchor={anchor} data-clef-order={anchorOrder}

@@ -451,6 +451,7 @@ export function CommunityProvider({
       {panel && (
         <Modal title={panel === "account" && profile ? text.account : panelTitle(panel, text)} closeLabel={text.close} onClose={closePanel} wide={panel === "leaderboard"} dismissible={!deletionBusy}>
           {panel === "auth" && <AuthPanel locale={locale} notice={panelNotice} />}
+          {(panel === "auth" || panel === "account") && <p className="panel-settings-link"><button type="button" className="ghost-button" onClick={() => { closePanel(); window.dispatchEvent(new Event("notanota-open-settings")); }}>{locale === "tr" ? "Ayarlar" : "Settings"}</button></p>}
           {panel === "account" && (
             <AccountPanel
               locale={locale}
@@ -968,10 +969,15 @@ export function CommunityHeader() {
   const text = TEXT[locale];
   return (
     <div className="community-header-actions">
-      <button type="button" aria-haspopup="dialog" onClick={() => openPanel("leaderboard")}>{text.leaderboard}</button>
       <button type="button" aria-haspopup="dialog" onClick={() => openPanel(user ? "account" : "auth")}>{profile ? `@${profile.username}` : user ? text.account : text.signIn}</button>
     </div>
   );
+}
+
+/** "Sıralama" in the navigation group, next to Studio and NotaNota AI, in their link style. */
+export function CommunityNavLeaderboard() {
+  const { locale, openPanel } = useCommunity();
+  return <button type="button" className="nav-link-button" aria-haspopup="dialog" onClick={() => openPanel("leaderboard")}><b>{TEXT[locale].leaderboard}</b></button>;
 }
 
 export function CommunityLeaderboardButton({ label }: { label: string }) {
@@ -1058,6 +1064,14 @@ export function CommunityPracticeRecorder({ active, activityKey }: { active: boo
   return null;
 }
 
+/** One quiet line for result screens: only a loaded streak is shown; loading, guest and errors show nothing. */
+export function CommunityPracticeStreakChip() {
+  const { locale, user, streak } = useCommunity();
+  if (!user || !streak) return null;
+  const copy = STREAK_COPY[locale];
+  return <p className="practice-streak-chip"><b>{copy.title(streak.currentStreak)}</b>{streak.todayCompleted ? <span>{copy.todayComplete}</span> : null}</p>;
+}
+
 export function CommunityPracticeStreak({ compact = false }: { compact?: boolean }) {
   const {
     locale,
@@ -1137,7 +1151,7 @@ export function CommunityPracticeStreak({ compact = false }: { compact?: boolean
   );
 }
 
-export function CommunityResult({ score, eligible }: { score: ScoreSubmission; eligible: boolean }) {
+export function CommunityResult({ score, eligible, inline = false }: { score: ScoreSubmission; eligible: boolean; inline?: boolean }) {
   const { locale, user, profile, openPanel } = useCommunity();
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
@@ -1165,6 +1179,16 @@ export function CommunityResult({ score, eligible }: { score: ScoreSubmission; e
     }
   }
 
+  if (inline) {
+    return (
+      <div className="community-result-inline">
+        {eligible
+          ? <button type="button" className="secondary-button" onClick={save} disabled={busy || !communityConfigured}>{!communityConfigured ? text.backendPending : !user ? text.saveScore : !profile ? text.chooseUsername : text.saveScore}</button>
+          : <small>{eligibilityCopy}</small>}
+        {status && <small className="community-message" aria-live="polite">{status}</small>}
+      </div>
+    );
+  }
   return (
     <div className={`community-result-card ${eligible ? "" : "community-result-card--ineligible"}`}>
       <div>
@@ -1211,5 +1235,27 @@ function LegalNotice({ locale }: { locale: Locale }) {
       <h3>{isTurkish ? "Haklar ve başvuru" : "Rights and requests"}</h3>
       <p>{isTurkish ? "Hesabını ve ilişkili kayıtlarını Hesabım panelinden kendin silebilirsin. Ayrıca KVKK madde 11 kapsamındaki erişim, düzeltme, silme, işleme ve aktarıma ilişkin bilgi alma ile itiraz hakların için hesabında kayıtlı e-posta adresinden kvkk@notanota.online adresine başvurabilirsin. Başvurular talebin niteliğine göre en kısa sürede ve en geç 30 gün içinde sonuçlandırılır." : "You can delete your account and related records yourself from the Account panel. You may also contact kvkk@notanota.online from the email address registered to your account regarding access, correction, deletion, processing and transfer information, and objection rights under KVKK Article 11. Requests are answered as soon as possible and no later than 30 days, depending on their nature."}</p>
     </article>
+  );
+}
+
+/** The account block of the Settings page: sign in, manage the account, or delete it. */
+export function CommunitySettingsActions() {
+  const { locale, user, profile, openPanel } = useCommunity();
+  const text = TEXT[locale];
+  const tr = locale === "tr";
+  if (!user) return (
+    <div className="settings-account">
+      <p>{tr ? "Giriş yapmadın. Çalışmaların yalnız bu cihazda tutuluyor." : "You are not signed in. Your practice is kept on this device only."}</p>
+      <button className="primary-button" type="button" aria-haspopup="dialog" onClick={() => openPanel("auth")}>{text.signIn}</button>
+    </div>
+  );
+  return (
+    <div className="settings-account">
+      <p>{profile ? `@${profile.username}` : user.email}</p>
+      <div className="settings-row-actions">
+        <button className="secondary-button" type="button" aria-haspopup="dialog" onClick={() => openPanel("account")}>{tr ? "Hesap bilgilerim" : "My account details"}</button>
+        <button className="danger-button" type="button" aria-haspopup="dialog" onClick={() => openPanel("delete")}>{text.deleteTitle}</button>
+      </div>
+    </div>
   );
 }

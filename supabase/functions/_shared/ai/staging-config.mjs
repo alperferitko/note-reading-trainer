@@ -1,3 +1,5 @@
+import { DEFAULT_TASKS, SUPPORTED_TASKS } from './contracts.mjs';
+
 const approved = new WeakSet();
 const ref = value => typeof value === 'string' && /^[a-z]{20}$/.test(value);
 
@@ -38,6 +40,10 @@ export function stagingConfig(get, pins, now = Date.now()) {
     const maxOutputTokens = 800;
     const reservedUsd = Math.ceil((maxInputTokens * inputRate + maxOutputTokens * outputRate)) / 1000000;
     if (reservedUsd <= 0 || reservedUsd > 0.02) return null;
+    // Tasks served live. Unset keeps the reviewed B4 pair; the chat and weekly report must be listed
+    // explicitly. An unknown or repeated name disables the whole configuration (fail closed).
+    const tasks = get('AI_STAGING_TASKS') ? get('AI_STAGING_TASKS').split(',').map(value => value.trim()) : [...DEFAULT_TASKS];
+    if (!tasks.length || !tasks.every(task => SUPPORTED_TASKS.includes(task)) || new Set(tasks).size !== tasks.length) return null;
     const allowedOrigins = (get('AI_ALLOWED_ORIGINS') || '').split(',').map(value => value.trim()).filter(Boolean);
     if (!allowedOrigins.length || !Array.isArray(pins.stagingOrigins) || !pins.stagingOrigins.length
       || !Array.isArray(pins.productionOrigins) || !pins.productionOrigins.length
@@ -49,7 +55,7 @@ export function stagingConfig(get, pins, now = Date.now()) {
     const config = Object.freeze({ projectRef: pins.stagingProjectRef, url: get('SUPABASE_URL'),
       publishableKey, serviceKey, apiKey, modelId, responseFormat, inputRate, outputRate,
       verifiedAt: new Date(verified).toISOString(), expiresAt: expiry,
-      maxInputChars, maxInputTokens, maxOutputTokens, reservedUsd,
+      maxInputChars, maxInputTokens, maxOutputTokens, reservedUsd, tasks: Object.freeze(tasks),
       allowedOrigins: Object.freeze(allowedOrigins) });
     approved.add(config);
     return config;

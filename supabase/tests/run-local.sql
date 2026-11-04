@@ -13,4 +13,5 @@
 \ir ../migrations/202611020001_ai_usage_settlement_reconcile.sql
 \ir ../migrations/202611030001_ai_usage_in_flight_concurrency.sql
 \ir ../migrations/202611040001_score_library.sql
+\ir ../migrations/202611040002_learning_profile_reports.sql
 \ir weekly_leaderboards.test.sql

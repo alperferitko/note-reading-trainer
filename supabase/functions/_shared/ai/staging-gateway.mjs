@@ -12,7 +12,7 @@ export function createStagingGateway({ config, createClient, transport }) {
   const store = createPostgresUsageStore({ client, projectRef: config.projectRef, modelId: config.modelId });
   const registry = createModelRegistry([{ provider: 'meta', modelId: config.modelId, mode: 'live',
     verifiedAt: config.verifiedAt, verificationSource: 'https://api.meta.ai/v1/models',
-    tasks: ['practice-feedback', 'adaptive-exercises'], maxInputChars: config.maxInputChars,
+    tasks: [...config.tasks], maxInputChars: config.maxInputChars,
     maxOutputTokens: config.maxOutputTokens, inputUsdPerMillion: config.inputRate, outputUsdPerMillion: config.outputRate }]);
   const adapter = createMetaAdapter({ modelId: config.modelId, apiKey: config.apiKey, transport, responseFormat: config.responseFormat,
     maxInputChars: config.maxInputChars, maxOutputTokens: config.maxOutputTokens });

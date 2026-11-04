@@ -11,8 +11,10 @@ test('request rejects client routing, unsupported tasks, invalid scope and malfo
     request({ evidence: { records: [null] } }), request({ evidence: { records: Array(801).fill({}) } })]) {
     assert.throws(() => validateRequest(input, NOW, 262144));
   }
-  for (const task of ['weekly-report', 'quality-evaluation']) {
-    assert.throws(() => validateRequest(request({ task }), NOW, 262144), { code: 'task_not_enabled' });
+  assert.throws(() => validateRequest(request({ task: 'quality-evaluation' }), NOW, 262144), { code: 'task_not_enabled' });
+  // weekly-report and teacher-chat exist, with their own shapes: a feedback-shaped body is invalid for them.
+  for (const task of ['weekly-report', 'teacher-chat']) {
+    assert.throws(() => validateRequest(request({ task }), NOW, 262144), { code: 'invalid_request' });
   }
   const duplicate = request();
   duplicate.evidence.records.push(duplicate.evidence.records[0]);

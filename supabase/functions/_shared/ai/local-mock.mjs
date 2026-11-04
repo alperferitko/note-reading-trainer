@@ -56,9 +56,21 @@ export function createLocalMockStore({ maxEntries = 1000 } = {}) {
 
 export function createLocalMockGateway() {
   const registry = createModelRegistry([{ provider: 'meta', modelId: 'local-meta-mock-v1', mode: 'mock', verifiedAt: null,
-    verificationSource: null, tasks: ['practice-feedback', 'adaptive-exercises'], maxInputChars: 262144,
+    verificationSource: null, tasks: ['practice-feedback', 'adaptive-exercises', 'teacher-chat', 'weekly-report'], maxInputChars: 262144,
     maxOutputTokens: 800, inputUsdPerMillion: 0, outputUsdPerMillion: 0 }]);
-  const adapter = { provider: 'meta', mode: 'mock', async generate({ locale, evidenceSummary }) {
+  const adapter = { provider: 'meta', mode: 'mock', async generate({ task, locale, evidenceSummary, conversation }) {
+    const tr = locale === 'tr';
+    const usage = { inputTokens: 0, outputTokens: 0 };
+    if (task === 'teacher-chat') {
+      const ask = ['purpose', 'instrument', 'level', 'weeklyMinutes', 'interests'].find(field => conversation.profile?.[field] === undefined) ?? null;
+      return { output: { reply: tr ? 'Bu bir mock yanıttır; gerçek AI kullanılmadı.' : 'This is a mock reply; no live AI was used.',
+        ask, profileUpdates: null, suggestions: [{ kind: 'studio', studio: 'reading', label: tr ? 'Nota okumaya başla' : 'Start note reading' }] }, usage, finishReason: 'stop' };
+    }
+    if (task === 'weekly-report') {
+      return { output: { headline: tr ? 'Mock haftalık rapor' : 'Mock weekly report',
+        narrative: tr ? 'Bu bir mock yanıttır; sayılar uygulamanın kendi ölçümleridir.' : 'This is a mock response; the numbers are the app\'s own measurements.',
+        highlights: [], nextWeek: [{ kind: 'focus-drill', notes: ['g4', 'a4'], repetitions: 3, label: tr ? 'Sol ve La' : 'G and A' }] }, usage, finishReason: 'stop' };
+    }
     const context = evidenceSummary.contexts.find(item => item.recentAttempts >= 3);
     return { output: {
       summary: locale === 'tr' ? 'Bu bir mock yanıttır; gerçek AI analizi yapılmadı.' : 'This is a mock response; no live AI analysis was performed.',

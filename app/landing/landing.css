@@ -545,3 +545,16 @@
 .osmd-view { position: relative; }
 .osmd-note { margin: 0; padding: 12px; color: #5b5650; font-size: 14px; }
 .osmd-box svg { display: block; max-width: 100%; height: auto; }
+/* A compact card: same type, staff, notes and buttons, less air. The staff drawing keeps room for ledger
+   lines the hero never uses (its notes stay between E4 and F5), so that empty band is taken back. */
+.hero-quiz { padding: clamp(20px, 2.3vw, 30px) clamp(20px, 2.6vw, 32px); }
+.hero-quiz-mode { margin-bottom: 0; }
+.hero-quiz-stage .hero-quiz-staff { margin: -22px 0 -30px; }
+.hero-quiz-caption { margin-top: 0 !important; }
+.hero-quiz-actions { margin-top: 12px; }
+.hero-quiz-q { margin: 4px 0 10px !important; }
+.hero-quiz-status { margin-top: 10px !important; min-height: 2.6em; }
+@media (max-width: 560px) { .hero-quiz { padding: 16px; } .hero-quiz-stage .hero-quiz-staff { margin: -16px 0 -22px; } }
+/* The staff drawing overlaps the rows around it by the band it gives back; it never takes their clicks. */
+.hero-quiz-mode, .hero-quiz-caption, .hero-quiz-answer, .hero-quiz-actions { position: relative; z-index: 1; }
+.hero-quiz-stage .hero-quiz-staff svg { pointer-events: none; }

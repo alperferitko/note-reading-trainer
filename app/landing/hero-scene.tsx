@@ -118,6 +118,9 @@ export function HeroScene({ hero }: { hero: RefObject<HTMLElement | null> }) {
     let lo = 0, hi = p.getTotalLength();
     for (let i = 0; i < 24; i++) { const mid = (lo + hi) / 2; if (p.getPointAtLength(mid).x < target) lo = mid; else hi = mid; }
     const point = p.getPointAtLength(lo);
+    // The staff's direction where the clef sits, so it starts seated on the slope, not level across it.
+    const ahead = p.getPointAtLength(Math.min(p.getTotalLength(), lo + 6)), behind = p.getPointAtLength(Math.max(0, lo - 6));
+    m.dataset.clefAngle = (Math.atan2(ahead.y - behind.y, ahead.x - behind.x) * 180 / Math.PI).toFixed(2);
     Object.assign(m.style, { left: `${point.x}px`, top: `${point.y - GAP * 2}px`, height: `${GAP * 4}px` });
     m.setAttribute("data-clef-intro", "");
   }, [geo, hero]);

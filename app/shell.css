@@ -372,21 +372,23 @@ html:not([data-theme=dark]) .lp .lp-hero-scene .ribbon-lines { opacity: .22; }
   background: radial-gradient(closest-side, rgba(255, 222, 130, .95), rgba(255, 200, 90, .45) 42%, rgba(255, 190, 80, .12) 70%, transparent 100%);
   animation: glow-breathe 4.2s ease-in-out infinite;
 }
-.glow-note::before, .glow-mark {
+.glow-note-glyph, .glow-mark {
   content: ""; display: block; background: currentColor; -webkit-mask: url('./scene/quarter-note.svg') center / contain no-repeat; mask: url('./scene/quarter-note.svg') center / contain no-repeat;
   filter: drop-shadow(0 0 2px rgba(255, 236, 170, 1)) drop-shadow(0 0 6px rgba(255, 210, 110, .8)) drop-shadow(0 1px 1px rgba(60, 38, 0, .45));
 }
-.glow-note::before { position: absolute; inset: 6px 9px; }
-.glow-note--eighth::before, .glow-mark--eighth { -webkit-mask-image: url('./scene/eighth-note.svg'); mask-image: url('./scene/eighth-note.svg'); }
-.glow-note:hover, .glow-note:focus-visible { color: #ffe7a6; }
-.glow-note:hover::after, .glow-note:focus-visible::after { animation: none; opacity: 1; transform: scale(1.15); }
+/* The glyph turns with the staff around its head (22, 50 in the button); the button itself stays upright. */
+.glow-note-glyph { position: absolute; inset: 6px 9px; transform-origin: 13px 44px; pointer-events: none; }
+.glow-note--eighth .glow-note-glyph, .glow-mark--eighth { -webkit-mask-image: url('./scene/eighth-note.svg'); mask-image: url('./scene/eighth-note.svg'); }
+.glow-note[data-tip-open] { color: #ffe7a6; }
+.glow-note[data-tip-open]::after { animation: none; opacity: 1; transform: scale(1.15); }
 .glow-note:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .glow-note-tip {
   position: absolute; top: calc(100% + 2px); left: 22px; width: max-content; max-width: 210px; padding: 8px 12px; border-radius: 12px; transform: translateX(-50%);
   background: var(--surface); color: var(--foreground); box-shadow: var(--shadow-2); font: 500 13px/1.4 var(--fx-text); text-align: left;
-  opacity: 0; pointer-events: none; transition: opacity 200ms ease;
+  opacity: 0; pointer-events: none;
 }
-.glow-note:hover .glow-note-tip, .glow-note:focus-visible .glow-note-tip, .glow-note.is-inviting .glow-note-tip { opacity: 1; }
+/* Shown only while the script says so (pointer on the note, or keyboard focus); gone at once when it leaves. */
+.glow-note[data-tip-open] .glow-note-tip { opacity: 1; transition: opacity 120ms ease; }
 .glow-note[data-tip=start] .glow-note-tip { left: 6px; transform: none; }
 .glow-note[data-tip=end] .glow-note-tip { left: auto; right: 6px; transform: none; }
 .glow-note[data-tip-side=above] .glow-note-tip { top: auto; bottom: calc(100% + 2px); }

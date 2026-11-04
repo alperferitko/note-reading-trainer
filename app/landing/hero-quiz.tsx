@@ -19,7 +19,7 @@ function placeText(position: number, locale: Locale) {
 }
 
 function landmark(position: number, locale: Locale) {
-  const tr: Record<number, string> = { 0: "En alt çizgi mi.", 2: "Anahtarın kıvrımı bu çizgiyi sarar: sol.", 4: "Ortadaki çizgi si.", 8: "En üst çizgi fa." };
+  const tr: Record<number, string> = { 0: "En alt çizgi Mi.", 2: "Anahtarın kıvrımı bu çizgiyi sarar: Sol.", 4: "Ortadaki çizgi Si.", 8: "En üst çizgi Fa." };
   const en: Record<number, string> = { 0: "The bottom line is E.", 2: "The clef's curl wraps this line: G.", 4: "The middle line is B.", 8: "The top line is F." };
   const near = [0, 2, 4, 8].reduce((best, p) => (Math.abs(p - position) < Math.abs(best - position) ? p : best), 2);
   const base = (locale === "tr" ? tr : en)[near];
@@ -99,7 +99,7 @@ export function HeroQuiz({ locale, soundEnabled, onOpenStudio, compact = false }
       <div className="hero-quiz-stage">
         <Staff className="hero-quiz-staff" space={16} width={520} anchor={compact ? undefined : "hero"} anchorOrder={0}
           label={phase === "show" ? `${t.staff}: ${names[answer]}` : t.question}
-          notes={[{ id: `q${index}`, position, x: 0.46, tone, label: phase === "show" || settled ? names[answer] : undefined }]} />
+          notes={[{ id: `q${index}`, position, x: 0.46, tone }]} />
         {phase === "show" && <p className="hero-quiz-caption" aria-live="off"><b>{names[answer]}</b> · {placeText(position, locale)}</p>}
       </div>
 

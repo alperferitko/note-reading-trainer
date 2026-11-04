@@ -57,10 +57,22 @@ export function GlowNotes({ locale, onStudio }: { locale: Locale; onStudio: () =
     if (!box || !hero) return;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
     const buttons = [...box.querySelectorAll<HTMLButtonElement>(".glow-note")];
+    const glyphs = buttons.map((b) => b.querySelector<HTMLElement>(".glow-note-glyph"));
+    const tips = buttons.map((b) => b.querySelector<HTMLElement>(".glow-note-tip"));
     const progress = RIDERS.map(([start]) => start);
+    const angle = RIDERS.map(() => Number.NaN);
     const held = RIDERS.map(() => false);
     const linger = RIDERS.map(() => 0);
+    const edges = RIDERS.map(() => 1);
+    // Each note's clickable box, in the layer's coordinates; the cards above them, likewise.
+    const spots: Box[] = RIDERS.map(() => ({ left: 0, top: 0, right: 0, bottom: 0 }));
+    let covers: Box[] = [];
+    let tipSizes: [number, number][] = RIDERS.map(() => [210, 44]);
+    let pointer: { x: number; y: number } | null = null;
+    let keyboard = false;
+    let hot = -1;
     let visible = true, frame = 0, last = 0, path: SVGPathElement | null = null, length = 0, dx = 0, dy = 0;
+    // Geometry is read here, on resize and when the ribbon changes, never between style writes in a frame.
     const measure = () => {
       path = hero.querySelector<SVGPathElement>("#hero-ribbon-path");
       const svg = path?.ownerSVGElement;
@@ -68,51 +80,88 @@ export function GlowNotes({ locale, onStudio }: { locale: Locale; onStudio: () =
       length = path.getTotalLength();
       const a = svg.getBoundingClientRect(), b = box.getBoundingClientRect();
       dx = a.left - b.left; dy = a.top - b.top;
+      covers = [...hero.querySelectorAll<HTMLElement>(".hero-quiz, .lp-hero-copy")].map((el) => {
+        const r = el.getBoundingClientRect();
+        return { left: r.left - b.left, top: r.top - b.top, right: r.right - b.left, bottom: r.bottom - b.top };
+      });
+      tipSizes = tips.map((tip) => [tip?.offsetWidth || 210, tip?.offsetHeight || 44]);
     };
-    const draw = () => {
+    const setHot = (next: number) => {
+      if (next === hot) return;
+      if (hot >= 0) buttons[hot].removeAttribute("data-tip-open");
+      hot = next;
+      if (hot >= 0) buttons[hot].setAttribute("data-tip-open", "");
+    };
+    /**
+     * Which invitation is open: the note really under a mouse pointer, or the note focused from the keyboard.
+     * Nothing opens on its own, nothing stays after the pointer leaves, and a panel, a hidden section or a
+     * note fading out at the end of the staff closes it. Motion is separate: a note waits a moment after the
+     * pointer leaves, but its invitation is already gone.
+     */
+    const decide = (origin: DOMRect) => {
+      let next = -1;
+      const focused = buttons.indexOf(document.activeElement as HTMLButtonElement);
+      const blocked = !visible || Boolean(document.querySelector("dialog[open], .chat-panel"));
+      if (!blocked && keyboard && focused >= 0 && buttons[focused].matches(":focus-visible")) next = focused;
+      else if (!blocked && pointer) {
+        const px = pointer.x - origin.left, py = pointer.y - origin.top;
+        next = spots.findIndex((r) => px >= r.left && px <= r.right && py >= r.top && py <= r.bottom);
+        if (next >= 0 && document.elementFromPoint(pointer.x, pointer.y)?.closest(".glow-note") !== buttons[next]) next = -1;
+      }
+      if (next >= 0 && (edges[next] < 0.6 || buttons[next].dataset.tipSide === "off")) next = -1;
+      setHot(next);
+      buttons.forEach((_, i) => {
+        if (i === next) { window.clearTimeout(linger[i]); linger[i] = 0; held[i] = true; return; }
+        if (held[i] && !linger[i]) linger[i] = window.setTimeout(() => { held[i] = false; linger[i] = 0; }, LINGER);
+      });
+    };
+    const draw = (dt = 0) => {
       if (!path || !length) measure();
-      // The card and the copy sit above the notes. A note passing behind them offers nothing; an invitation
-      // opens below its note, or above it when below would run under the card or off the screen, or not at all.
-      const covers: Box[] = [...hero.querySelectorAll<HTMLElement>(".hero-quiz, .lp-hero-copy")].map((el) => el.getBoundingClientRect());
       const origin = box.getBoundingClientRect();
-      const screen: Box = { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
-      let invited = buttons.some((b, j) => held[j]);
       buttons.forEach((button, i) => {
         if (!path || !length) { button.style.visibility = "hidden"; return; }
-        const u = progress[i];
-        const point = path.getPointAtLength(u * length);
+        const u = progress[i], at = u * length;
+        const point = path.getPointAtLength(at);
+        // The note leans with the staff where it is: head, stem and flag turn together around the head.
+        const ahead = path.getPointAtLength(Math.min(length, at + 5)), behind = path.getPointAtLength(Math.max(0, at - 5));
+        const target = Math.atan2(ahead.y - behind.y, ahead.x - behind.x) * 180 / Math.PI;
+        angle[i] = Number.isNaN(angle[i]) || !dt ? target : angle[i] + (target - angle[i]) * Math.min(1, dt * 6);
         const x = point.x + dx - HEAD[0], y = point.y + dy - RIDERS[i][1] * STEP - HEAD[1];
         button.style.visibility = "";
         button.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
-        const left = origin.left + x, top = origin.top + y;
-        const note: Box = { left, top, right: left + 48, bottom: top + 64 };
-        const covered = covers.some((c) => overlaps(note, c, -8));
-        button.toggleAttribute("data-covered", covered);
-        // The invitation opens toward the middle near either edge of the screen, never off it.
-        const tip = button.firstElementChild as HTMLElement | null;
-        const w = tip?.offsetWidth ?? 210, h = tip?.offsetHeight ?? 44;
-        const align = left < 130 ? "start" : left > window.innerWidth - 150 ? "end" : "";
+        const glyph = glyphs[i];
+        if (glyph) glyph.style.transform = `rotate(${angle[i].toFixed(2)}deg)`;
+        spots[i] = { left: x, top: y, right: x + 48, bottom: y + 64 };
+        // The invitation opens below its note, above it when below would run under the card or off the
+        // screen, or not at all; toward the middle near either edge of the screen.
+        const [w, h] = tipSizes[i];
+        const screenLeft = origin.left + x;
+        const align = screenLeft < 130 ? "start" : screenLeft > window.innerWidth - 150 ? "end" : "";
         button.dataset.tip = align;
-        const tipLeft = align === "start" ? left + 6 : align === "end" ? note.right - 6 - w : left + HEAD[0] - w / 2;
+        const tipLeft = align === "start" ? x + 6 : align === "end" ? x + 42 - w : x + HEAD[0] - w / 2;
         const fits = (tipTop: number) => {
           const r: Box = { left: tipLeft, top: tipTop, right: tipLeft + w, bottom: tipTop + h };
-          return !covers.some((c) => overlaps(r, c)) && r.top >= screen.top + 8 && r.bottom <= screen.bottom - 8 && r.left >= 4 && r.right <= screen.right - 4;
+          return !covers.some((c) => overlaps(r, c)) && origin.top + r.top >= 8 && origin.top + r.bottom <= window.innerHeight - 8
+            && origin.left + r.left >= 4 && origin.left + r.right <= window.innerWidth - 4;
         };
-        const side = covered ? "off" : fits(note.bottom + 2) ? "" : fits(top - 2 - h) ? "above" : "off";
-        button.dataset.tipSide = side;
+        const covered = covers.some((c) => overlaps(spots[i], c, -8));
+        button.dataset.tipSide = covered ? "off" : fits(y + 66) ? "" : fits(y - 2 - h) ? "above" : "off";
         // Soft in and out at the ends of the staff, where the painting's edge takes it; a held note stays lit.
-        const edge = Math.min(1, u / 0.05, (1 - u) / 0.07);
-        button.style.opacity = held[i] ? "1" : Math.max(0, edge).toFixed(2);
-        const invite = !invited && side !== "off" && u > 0.18 && u < 0.7 && i === buttons.findIndex((b, j) => !b.hasAttribute("data-covered") && b.dataset.tipSide !== "off" && progress[j] > 0.18 && progress[j] < 0.7);
-        if (invite) invited = true;
-        button.classList.toggle("is-inviting", invite);
+        edges[i] = Math.max(0, Math.min(1, u / 0.05, (1 - u) / 0.07));
+        button.style.opacity = held[i] ? "1" : edges[i].toFixed(2);
       });
+      decide(origin);
     };
     const tick = (now: number) => {
       const dt = last ? Math.min(0.1, (now - last) / 1000) : 0;
       last = now;
-      progress.forEach((u, i) => { if (!held[i]) progress[i] = (u + dt / LOOP) % 1; });
-      draw();
+      progress.forEach((u, i) => {
+        if (held[i]) return;
+        const next = u + dt / LOOP;
+        if (next >= 1) angle[i] = Number.NaN; // a fresh lap starts level with the staff, not swinging round
+        progress[i] = next % 1;
+      });
+      draw(dt);
       frame = window.requestAnimationFrame(tick);
     };
     const sync = () => {
@@ -122,17 +171,23 @@ export function GlowNotes({ locale, onStudio }: { locale: Locale; onStudio: () =
       if (!run && frame) { window.cancelAnimationFrame(frame); frame = 0; }
       if (!run) draw();
     };
-    const hold = (i: number, on: boolean, wait = 0) => () => {
-      window.clearTimeout(linger[i]);
-      const settle = () => { held[i] = on || buttons[i] === document.activeElement || buttons[i].matches(":hover"); if (!frame) draw(); };
-      if (on || !wait) settle(); else linger[i] = window.setTimeout(settle, wait);
+    // Between frames (and with motion stopped) the pointer decides at once.
+    const decideNow = () => decide(box.getBoundingClientRect());
+    const onMove = (event: PointerEvent) => {
+      pointer = event.pointerType === "touch" ? null : { x: event.clientX, y: event.clientY };
+      decideNow();
     };
-    const listeners = buttons.flatMap((button, i) => {
-      const pairs: [string, () => void][] = [["pointerenter", hold(i, true)], ["pointerleave", hold(i, false, LINGER)], ["focus", hold(i, true)], ["blur", hold(i, false, LINGER)]];
-      pairs.forEach(([type, fn]) => button.addEventListener(type, fn));
-      return pairs.map(([type, fn]) => () => button.removeEventListener(type, fn));
-    });
-    const seen = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; sync(); });
+    const onOut = (event: PointerEvent) => { if (!event.relatedTarget) { pointer = null; decideNow(); } };
+    const onDown = () => { keyboard = false; decideNow(); };
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Tab") keyboard = true; };
+    const onFocus = () => window.requestAnimationFrame(decideNow);
+    window.addEventListener("pointermove", onMove, { passive: true });
+    document.addEventListener("pointerout", onOut);
+    window.addEventListener("pointerdown", onDown, { passive: true });
+    window.addEventListener("keydown", onKey);
+    box.addEventListener("focusin", onFocus);
+    box.addEventListener("focusout", onFocus);
+    const seen = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; if (!visible) setHot(-1); sync(); });
     seen.observe(box);
     const resize = new ResizeObserver(() => { measure(); draw(); });
     resize.observe(hero);
@@ -147,7 +202,12 @@ export function GlowNotes({ locale, onStudio }: { locale: Locale; onStudio: () =
       if (frame) window.cancelAnimationFrame(frame);
       linger.forEach((id) => window.clearTimeout(id));
       seen.disconnect(); resize.disconnect(); ribbon.disconnect();
-      listeners.forEach((off) => off());
+      window.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerout", onOut);
+      window.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("keydown", onKey);
+      box.removeEventListener("focusin", onFocus);
+      box.removeEventListener("focusout", onFocus);
       document.removeEventListener("visibilitychange", sync);
       reduced.removeEventListener("change", sync);
     };
@@ -166,6 +226,7 @@ export function GlowNotes({ locale, onStudio }: { locale: Locale; onStudio: () =
         {RIDERS.map((_, i) => (
           <button key={i} type="button" className={`glow-note glow-note--${i % 2 ? "eighth" : "quarter"}`} style={{ animationDelay: `${-i * 0.9}s`, visibility: "hidden" }}
             aria-label={`${t.open(i)}: ${t.invite}`} onClick={(event) => open(i, event.currentTarget)}>
+            <span className="glow-note-glyph" aria-hidden="true" />
             <span className="glow-note-tip" aria-hidden="true">{t.invite}</span>
           </button>
         ))}

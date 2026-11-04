@@ -74,6 +74,7 @@ export function ClefTraveler({ root }: { root: RefObject<HTMLElement | null> }) 
     let anchors: Anchor[] = [];
     let legs: Leg[] = [];
     let start: Anchor | null = null;
+    let startAngle = 0;
     let lit: HTMLElement | null = null;
     let lastArrival: HTMLElement | null = null;
     let departed = true; // a light plays only after a real flight, not after a small scroll wobble
@@ -106,6 +107,7 @@ export function ClefTraveler({ root }: { root: RefObject<HTMLElement | null> }) 
       if (ribbon) {
         const rect = ribbon.getBoundingClientRect();
         start = { left: rect.left - hostRect.left, top: rect.top - hostRect.top, height: rect.height, pageTop: 0, host: null };
+        startAngle = Number(ribbon.dataset.clefAngle) || 0;
       } else if (anchors[0]) {
         start = { ...anchors[0], left: -CLEF_WIDTH_SPACES * anchors[0].height / 4 - 24, host: null };
       }
@@ -220,7 +222,7 @@ export function ClefTraveler({ root }: { root: RefObject<HTMLElement | null> }) 
         const seat = anchors[0], k = smooth(intro), s = start!;
         node.classList.toggle("is-flying", false);
         node.classList.toggle("is-intro", true);
-        at(s.left + (seat.left - s.left) * k * k, s.top + (seat.top - s.top) * (1 - (1 - k) * (1 - k)), s.height + (seat.height - s.height) * k, Math.sin(Math.PI * k) * -8);
+        at(s.left + (seat.left - s.left) * k * k, s.top + (seat.top - s.top) * (1 - (1 - k) * (1 - k)), s.height + (seat.height - s.height) * k, startAngle * (1 - k) + Math.sin(Math.PI * k) * -8);
         return;
       }
       node.classList.toggle("is-intro", false);

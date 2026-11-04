@@ -81,7 +81,7 @@ test('official muse-spark-1.3 standard prices fit the unchanged $0.02 request ca
   assert.ok(raw && /^[\x20-\x7e]*$/.test(raw), 'ASCII only');
   assert.equal(Buffer.byteLength(raw, 'utf8'), raw.length);
   assert.ok(raw.length <= live.maxInputChars);
-  assert.equal(JSON.parse(raw).reasoning_effort, 'minimal');
+  assert.equal(JSON.parse(raw).reasoning_effort, 'none');
   assert.match(JSON.parse(raw).messages[0].content, /supportive music-reading teacher/);
 });
 

@@ -345,7 +345,8 @@ async function screenFile(source: PageSource, locale: Locale): Promise<{ state: 
     const sheet = await contactSheet(source, pages);
     const request = buildScoreScreenRequest({ locale, data: sheet.data, width: sheet.width, height: sheet.height, pages: pages.length });
     const value = await requestScoreScreen({ endpoint: teacherEndpoint, accessToken: token, apiKey: teacherApiKey, request });
-    if (!value.ok) return { state: "unavailable", reason: value.reason ?? "unavailable" };
+    // A later sheet failing must not hide what an earlier one found: inappropriate content still stops the upload.
+    if (!value.ok) return results.some((r) => r.inappropriate) ? { state: "done", results } : { state: "unavailable", reason: value.reason ?? "unavailable" };
     results.push(value.result as Screen);
   }
   return { state: "done", results };

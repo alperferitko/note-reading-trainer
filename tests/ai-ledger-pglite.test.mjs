@@ -98,3 +98,105 @@ test('the operator snippet releases an unsent request_too_large reservation at z
   await assert.rejects(db.exec(snippet.replace('PASTE-REQUEST-ID-HERE', stale.reservationId)));
   await db.close();
 });
+
+const LEDGER = ['202610300001_ai_usage_ledger.sql', '202611020001_ai_usage_settlement_reconcile.sql', '202611030001_ai_usage_in_flight_concurrency.sql', '202611040004_ai_free_trial.sql'];
+/** The ledger with the free-trial migration on top; auth.users gets the created_at Supabase has. */
+async function trialDatabase(control = '') {
+  const db = new PGlite();
+  await db.exec(await sql('tests/ai-ledger-bootstrap.sql'));
+  await db.exec('alter table auth.users add column created_at timestamptz not null default now()');
+  for (const name of LEDGER) await db.exec(await sql(`migrations/${name}`));
+  await db.exec(`create or replace function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+    grant usage on schema auth to authenticated; grant execute on function auth.uid() to authenticated;
+    update ai_private.control set enabled=true, project_ref=repeat('s',20) ${control};`);
+  return db;
+}
+const reserveAs = async (db, user, key) => (await db.query(`select public.ai_usage_reserve(repeat('s',20),$1,$2,repeat('e',64),5000,'fixture-only') as r`, [user, key])).rows[0].r;
+const settle = (db, user, id) => db.query(`select public.ai_usage_settle(repeat('s',20),$1,$2,'{"schemaVersion":"1"}',3000,100,100)`, [user, id]);
+const NEW = '10000000-0000-0000-0000-000000000001';
+const OLD = '10000000-0000-0000-0000-000000000002';
+
+test('without trial_days the ledger keeps its plain daily limits (staging)', async () => {
+  const db = await trialDatabase();
+  await db.query(`update auth.users set created_at = now() - interval '400 days' where id = $1`, [OLD]);
+  assert.equal((await reserveAs(db, OLD, 'old-account')).status, 'reserved');
+  await db.close();
+});
+
+test('the free trial: new accounts for trial_days, old accounts from the launch, then trial_ended', async () => {
+  const db = await trialDatabase(`, trial_days=3, trial_launch_at=now() - interval '1 day'`);
+  await db.query(`update auth.users set created_at = now() - interval '2 hours' where id = $1`, [NEW]);
+  await db.query(`update auth.users set created_at = now() - interval '400 days' where id = $1`, [OLD]);
+  const first = await reserveAs(db, NEW, 'new-1');
+  assert.equal(first.status, 'reserved');
+  await settle(db, NEW, first.reservationId);
+  // An account from before the launch counts from the launch: one day in, two left.
+  const old = await reserveAs(db, OLD, 'old-1');
+  assert.equal(old.status, 'reserved');
+  await settle(db, OLD, old.reservationId);
+  // Four days after the launch the old account is past its window; the stored answer still replays.
+  await db.exec(`update ai_private.control set trial_launch_at = now() - interval '4 days'`);
+  assert.equal((await reserveAs(db, OLD, 'old-2')).status, 'trial_ended');
+  // The new account was created two hours ago: still inside.
+  const second = await reserveAs(db, NEW, 'new-2');
+  assert.equal(second.status, 'reserved');
+  await settle(db, NEW, second.reservationId);
+  await db.query(`update auth.users set created_at = now() - interval '3 days 1 minute' where id = $1`, [NEW]);
+  assert.equal((await reserveAs(db, NEW, 'new-3')).status, 'trial_ended');
+  assert.equal((await db.query(`select count(*)::int as n from ai_private.requests`)).rows[0].n, 3, 'a refused trial books nothing');
+  await db.close();
+});
+
+test('each refusal names its limit: minute, day, trial total and the global budget', async () => {
+  const db = await trialDatabase(`, trial_days=3, requests_per_minute=2, requests_per_day=3, trial_user_requests=4`);
+  const run = async (key) => { const r = await reserveAs(db, NEW, key); if (r.status === 'reserved') await settle(db, NEW, r.reservationId); return r; };
+  await run('a'); await run('b');
+  assert.deepEqual(await run('c'), { status: 'limited', scope: 'minute' });
+  await db.exec(`update ai_private.requests set created_at = created_at - interval '2 minutes'`);
+  await run('c');
+  assert.deepEqual(await run('d'), { status: 'limited', scope: 'day' });
+  // Yesterday's three still count for the trial: one more today, then the trial total is used up.
+  await db.exec(`update ai_private.requests set created_at = created_at - interval '1 day'; update auth.users set created_at = now() - interval '2 days'`);
+  assert.equal((await run('e')).status, 'reserved');
+  assert.deepEqual(await run('f'), { status: 'limited', scope: 'trial' });
+  await db.exec(`update ai_private.control set global_daily_micro = 1`);
+  assert.deepEqual(await reserveAs(db, OLD, 'g'), { status: 'limited', scope: 'global' });
+  await db.close();
+});
+
+test('ai_trial_status shows only the caller own window and counts, and only to signed-in users', async () => {
+  const db = await trialDatabase(`, trial_days=3, requests_per_day=25, trial_user_requests=60`);
+  const r = await reserveAs(db, NEW, 'status-1');
+  await settle(db, NEW, r.reservationId);
+  await db.query(`select set_config('request.jwt.claim.sub', $1, false)`, [NEW]);
+  await db.exec('set role authenticated');
+  const { rows: [{ s }] } = await db.query('select public.ai_trial_status() as s');
+  assert.equal(s.trial, true);
+  assert.equal(s.active, true);
+  assert.deepEqual([s.usedToday, s.dailyLimit, s.usedTotal, s.trialLimit], [1, 25, 1, 60]);
+  assert.ok(Date.parse(s.endsAt) - Date.parse(s.startsAt) === 3 * 86400000);
+  await db.exec('reset role');
+  await db.exec('set role anon');
+  await assert.rejects(db.query('select public.ai_trial_status()'), /permission denied/);
+  await db.exec('reset role');
+  await db.close();
+});
+
+test('a failed call frees its key: the row stays charged, the same key reserves anew, success still replays', async () => {
+  const db = await trialDatabase();
+  const failed = await reserveAs(db, NEW, 'weekly-key');
+  await db.query(`select public.ai_usage_settle(repeat('s',20),$1,$2,'{"schemaVersion":"1","error":{"code":"provider_timeout","status":504,"retryable":true}}',null,null,null)`, [NEW, failed.reservationId]);
+  const { rows: [old] } = await db.query(`select idempotency_key, response, charged_micro, state from ai_private.requests where id=$1`, [failed.reservationId]);
+  assert.match(old.idempotency_key, /^weekly-key-f[0-9a-f]{12}$/);
+  assert.equal(old.response, null);
+  assert.equal(Number(old.charged_micro), 5000, 'still charged in full');
+  assert.equal(old.state, 'uncertain');
+  const retry = await reserveAs(db, NEW, 'weekly-key');
+  assert.equal(retry.status, 'reserved');
+  await settle(db, NEW, retry.reservationId);
+  assert.equal((await reserveAs(db, NEW, 'weekly-key')).status, 'replay');
+  // The whole budget spent: paused, not "busy".
+  await db.exec(`update ai_private.control set global_total_micro = 1`);
+  assert.deepEqual(await reserveAs(db, OLD, 'after-budget'), { status: 'limited', scope: 'paused' });
+  await db.close();
+});

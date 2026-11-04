@@ -1,0 +1,86 @@
+name: AI gateway staging (manual only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_project_ref:
+        description: Exact reviewed staging project ref (never production)
+        required: true
+        type: string
+      confirm_disabled_provider:
+        description: Confirm provider calls will remain disabled during deployment
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notanota-ai-staging
+  cancel-in-progress: false
+
+jobs:
+  staging:
+    if: github.ref == 'refs/heads/hackathon/notanota-ai' && inputs.confirm_disabled_provider
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ai-staging
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: ci-local-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: ci-local-only
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+          cache: npm
+      - name: Validate immutable staging pins and approved CLI version
+        env:
+          CONFIRMED_REF: ${{ inputs.confirm_project_ref }}
+          STAGING_REF: ${{ vars.AI_STAGING_PROJECT_REF }}
+          PRODUCTION_REF: ${{ vars.AI_PRODUCTION_PROJECT_REF }}
+          CLI_VERSION: ${{ vars.AI_SUPABASE_CLI_VERSION }}
+        run: node scripts/verify-ai-staging-target.mjs
+      - run: npm ci
+      - run: npm run test:ai && npm run test:ai:http && npm run test:ai:learning && npm run test:ai:b3 && npm run test:ai:b4
+      - run: npm run typecheck && npm run lint && npm test
+      - name: Real PostgreSQL behaviour and two-process race checks (CI database only)
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -f supabase/tests/ai-ledger-bootstrap.sql
+          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/202610300001_ai_usage_ledger.sql
+          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/202611020001_ai_usage_settlement_reconcile.sql
+          psql -X -v ON_ERROR_STOP=1 -f supabase/tests/ai-usage-ledger.test.sql
+          psql -X -v ON_ERROR_STOP=1 -f supabase/tests/ai-usage-reconcile.test.sql
+          python3 scripts/test-ai-ledger-concurrency.py
+      - name: Install Deno in CI only
+        run: |
+          curl -fsSL https://deno.land/install.sh -o "$RUNNER_TEMP/install-deno.sh"
+          sh "$RUNNER_TEMP/install-deno.sh" v2.5.6
+          echo "$HOME/.deno/bin" >> "$GITHUB_PATH"
+      - name: Edge check and offline tests
+        working-directory: supabase/functions/ai-gateway
+        run: deno task check && deno task test
+      - name: Disable provider before deploying ONLY ai-gateway
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.AI_STAGING_SUPABASE_ACCESS_TOKEN }}
+          STAGING_REF: ${{ vars.AI_STAGING_PROJECT_REF }}
+          CLI_VERSION: ${{ vars.AI_SUPABASE_CLI_VERSION }}
+        run: |
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          npx --yes "supabase@$CLI_VERSION" secrets set AI_BACKEND_MODE=disabled --project-ref "$STAGING_REF"
+          npx --yes "supabase@$CLI_VERSION" functions deploy ai-gateway --use-api --project-ref "$STAGING_REF"
+          # No db push, link, Pages deployment, API key upload or paid smoke test.

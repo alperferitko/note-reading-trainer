@@ -35,9 +35,21 @@ import {
   deleteCurrentAccount,
 } from "@/lib/delete-account.mjs";
 import { EMAIL_MAX_LENGTH, normalizeValidEmail } from "@/lib/email-validation.mjs";
+import { gatewayEndpoint } from "@/lib/ai-client.mjs";
 
 type Locale = "tr" | "en";
-type Panel = "auth" | "account" | "delete" | "leaderboard" | "legal" | "confirm" | null;
+type Panel = "auth" | "account" | "delete" | "leaderboard" | "legal" | "confirm" | "trial" | null;
+/** The free NotaNota AI trial as the ledger reports it (public.ai_trial_status); counts only, never amounts. */
+type TrialStatus = { trial: true; enabled: boolean; startsAt: string; endsAt: string; active: boolean; dailyLimit: number; usedToday: number; trialLimit: number; usedTotal: number };
+// Only a build whose NotaNota AI gateway belongs to the same Supabase project as the session has a
+// trial to show (the rule app/ai-teacher.tsx uses before sending the token anywhere).
+const aiTrialConfigured = (() => {
+  const endpoint = gatewayEndpoint(import.meta.env.VITE_AI_GATEWAY_URL?.trim());
+  if (!endpoint || endpoint.kind === "local") return false;
+  try { return new URL(endpoint.url).host === new URL(import.meta.env.VITE_SUPABASE_URL?.trim() ?? "").host; } catch { return false; }
+})();
+const trialDays = (trial: TrialStatus) => Math.max(1, Math.round((Date.parse(trial.endsAt) - Date.parse(trial.startsAt)) / 86400000));
+const trialSeenKey = (userId: string) => `notanota-ai-trial-welcome:${userId}`;
 type AccountStatus = "saved" | "not_better" | "ineligible" | "backend_pending" | null;
 
 const PENDING_SCORE_KEY = "nota-nota-pending-score";
@@ -105,6 +117,7 @@ const TEXT = {
     emailSendError: "Doğrulama bağlantısı şu anda gönderilemedi. Lütfen biraz sonra tekrar dene.",
     backendPending: "Topluluk özellikleri özel kurulum tamamlanınca açılacak.",
     usernameTitle: "Kullanıcı adını seç",
+    trialTitle: (days: number) => `${days} gün ücretsiz NotaNota AI`,
     usernameCopy: "Bu ad sıralamada görünür, e-posta adresin görünmez. Kullanıcı adı sonradan değiştirilemez.",
     username: "Kullanıcı adı",
     usernameHint: "3–7 karakter; harf, rakam veya _",
@@ -169,6 +182,7 @@ const TEXT = {
     emailSendError: "The verification link could not be sent right now. Please try again shortly.",
     backendPending: "Community features will open after the private setup is complete.",
     usernameTitle: "Choose your username",
+    trialTitle: (days: number) => `${days} days of NotaNota AI, free`,
     usernameCopy: "This name is public on the leaderboard; your email is not. The username cannot be changed later.",
     username: "Username",
     usernameHint: "3–7 characters; letters, numbers, or _",
@@ -258,6 +272,9 @@ export function CommunityProvider({
   const [panelNotice, setPanelNotice] = useState("");
   const [accountStatus, setAccountStatus] = useState<AccountStatus>(null);
   const [deletionBusy, setDeletionBusy] = useState(false);
+  const [trial, setTrial] = useState<TrialStatus | null>(null);
+  // The welcome waits while another panel is open (a new account first picks a username).
+  const trialWelcomePending = useRef<string | null>(null);
   const [accountDeleted, setAccountDeleted] = useState(false);
   const pendingScoreInFlight = useRef(false);
   const streakRequestId = useRef(0);
@@ -324,6 +341,8 @@ export function CommunityProvider({
       onIdentityChangeRef.current?.(nextUser?.id ?? null);
       if (!nextUser) {
         streakRequestId.current += 1;
+        trialWelcomePending.current = null;
+        setTrial(null);
         setProfile(null);
         setStreak(null);
         setStreakError(false);
@@ -376,17 +395,42 @@ export function CommunityProvider({
     if (accountDeleted) deletionNoticeRef.current?.focus({ preventScroll: true });
   }, [accountDeleted]);
 
+  // Signed in on a build with NotaNota AI: read the trial window once per account and greet the
+  // learner the first time it is open on this device (a new account, or an older one at launch).
+  const userId = user?.id ?? null;
+  useEffect(() => {
+    if (!userId || !supabase || !aiTrialConfigured) return;
+    let alive = true;
+    void supabase.rpc("ai_trial_status").then(({ data, error }) => {
+      if (!alive) return;
+      const status = !error && data && typeof data === "object" && (data as { trial?: unknown }).trial === true ? data as TrialStatus : null;
+      setTrial(status);
+      if (!status?.active || !status.enabled) return;
+      try { if (window.localStorage.getItem(trialSeenKey(userId))) return; } catch { return; }
+      trialWelcomePending.current = userId;
+      setPanel((current) => current ?? "trial");
+    });
+    return () => { alive = false; };
+  }, [userId]);
+
   function openPanel(nextPanel: Exclude<Panel, "confirm">, notice = "") {
     setPanelNotice(notice);
     setPanel(nextPanel);
   }
 
+  // The welcome counts as seen only when the learner closes it, so one pushed aside by the
+  // username panel (a new account) still comes right after that panel.
   const closePanel = useCallback(() => {
     if (deletionBusy) return;
-    setPanel(null);
+    const waiting = trialWelcomePending.current;
+    if (panel === "trial" && waiting) {
+      trialWelcomePending.current = null;
+      try { window.localStorage.setItem(trialSeenKey(waiting), "1"); } catch { /* It may show once more. */ }
+    }
+    setPanel(panel !== "trial" && trialWelcomePending.current ? "trial" : null);
     setPanelNotice("");
     setAccountStatus(null);
-  }, [deletionBusy]);
+  }, [deletionBusy, panel]);
 
   const finishAccountDeletion = useCallback(() => {
     clearPendingScore();
@@ -448,8 +492,8 @@ export function CommunityProvider({
           <button type="button" onClick={() => setAccountDeleted(false)} aria-label={text.close}>×</button>
         </div>
       )}
-      {panel && (
-        <Modal title={panel === "account" && profile ? text.account : panelTitle(panel, text)} closeLabel={text.close} onClose={closePanel} wide={panel === "leaderboard"} dismissible={!deletionBusy}>
+      {panel && (panel !== "trial" || trial) && (
+        <Modal title={panel === "account" && profile ? text.account : panel === "trial" && trial ? text.trialTitle(trialDays(trial)) : panelTitle(panel, text)} closeLabel={text.close} onClose={closePanel} wide={panel === "leaderboard"} dismissible={!deletionBusy}>
           {panel === "auth" && <AuthPanel locale={locale} notice={panelNotice} />}
           {(panel === "auth" || panel === "account") && <p className="panel-settings-link"><button type="button" className="ghost-button" onClick={() => { closePanel(); window.dispatchEvent(new Event("notanota-open-settings")); }}>{locale === "tr" ? "Ayarlar" : "Settings"}</button></p>}
           {panel === "account" && (
@@ -462,6 +506,7 @@ export function CommunityProvider({
               onScoreStatus={setAccountStatus}
               onClose={closePanel}
               onDelete={() => openPanel("delete")}
+              trial={trial}
             />
           )}
           {panel === "delete" && user && supabase && (
@@ -473,6 +518,7 @@ export function CommunityProvider({
             />
           )}
           {panel === "leaderboard" && <LeaderboardPanel locale={locale} />}
+          {panel === "trial" && trial && <TrialWelcome locale={locale} trial={trial} onClose={closePanel} />}
           {panel === "legal" && <LegalNotice locale={locale} />}
           {panel === "confirm" && confirmationToken && (
             <div className="confirm-panel">
@@ -655,7 +701,33 @@ function AuthPanel({ locale, notice }: { locale: Locale; notice: string }) {
   );
 }
 
-function AccountPanel({ locale, user, profile, onProfile, notice, onScoreStatus, onClose, onDelete }: { locale: Locale; user: User | null; profile: Profile | null; onProfile: (username: string) => void; notice: string; onScoreStatus: (status: AccountStatus) => void; onClose: () => void; onDelete: () => void }) {
+function trialDate(value: string, locale: Locale) {
+  return new Date(value).toLocaleString(locale === "tr" ? "tr-TR" : "en-GB", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+}
+
+/** Shown once when the free trial opens: what is included, until when, and the fair-use allowance. */
+function TrialWelcome({ locale, trial, onClose }: { locale: Locale; trial: TrialStatus; onClose: () => void }) {
+  const tr = locale === "tr";
+  const until = trialDate(trial.endsAt, locale);
+  const items = tr
+    ? ["Kişisel öğretmenle sohbet ve haftalık çalışma planı", "Her turdan sonra Meta AI yorumu ve hedefli alıştırma", "Haftalık raporun açıklaması", "Yüklediğin partisyonun içerik kontrolü"]
+    : ["Chat with your personal teacher and a weekly plan", "Meta AI feedback and a targeted drill after each round", "An explanation of your weekly report", "A content check of the scores you upload"];
+  return (
+    <div className="trial-welcome">
+      <p className="trial-welcome-lead">{tr ? <><b>{until}</b> tarihine kadar NotaNota AI&apos;nin bütün özellikleri senin için ücretsiz.</> : <>Every NotaNota AI feature is free for you until <b>{until}</b>.</>}</p>
+      <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul>
+      <p className="trial-welcome-fair">{tr
+        ? `Herkese yetsin diye adil kullanım sınırı var: günde ${trial.dailyLimit}, deneme boyunca toplam ${trial.trialLimit} AI isteği. Sohbetteki her mesaj bir istektir; günlük hak her gece yenilenir.`
+        : `A fair-use limit keeps it available for everyone: ${trial.dailyLimit} AI requests a day, ${trial.trialLimit} for the whole trial. Each chat message is one request; the daily allowance renews every night.`}</p>
+      <div className="trial-welcome-actions">
+        <button type="button" className="primary-button" onClick={() => { onClose(); window.dispatchEvent(new Event("notanota-open-teacher")); }}>{tr ? "NotaNota AI ile başla" : "Start with NotaNota AI"}</button>
+        <button type="button" className="secondary-button" onClick={onClose}>{tr ? "Sonra" : "Later"}</button>
+      </div>
+    </div>
+  );
+}
+
+function AccountPanel({ locale, user, profile, onProfile, notice, onScoreStatus, onClose, onDelete, trial }: { locale: Locale; user: User | null; profile: Profile | null; onProfile: (username: string) => void; notice: string; onScoreStatus: (status: AccountStatus) => void; onClose: () => void; onDelete: () => void; trial: TrialStatus | null }) {
   const [username, setUsername] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -708,6 +780,11 @@ function AccountPanel({ locale, user, profile, onProfile, notice, onScoreStatus,
   return (
     <div className="account-panel">
       <p><span>{text.signedInAs}</span><strong>{user.email}</strong></p>
+      {trial && <p className="account-trial">{!trial.enabled
+        ? (locale === "tr" ? "NotaNota AI şu an kapalı; çalışmalar ve kural tabanlı yorumlar açık." : "NotaNota AI is switched off right now; practice and rule-based feedback stay available.")
+        : trial.active
+        ? (locale === "tr" ? `Ücretsiz NotaNota AI ${trialDate(trial.endsAt, locale)} tarihine kadar açık. Bugün ${trial.usedToday}/${trial.dailyLimit}, toplam ${trial.usedTotal}/${trial.trialLimit} istek kullandın.` : `Free NotaNota AI is open until ${trialDate(trial.endsAt, locale)}. Used today ${trial.usedToday}/${trial.dailyLimit}, in total ${trial.usedTotal}/${trial.trialLimit} requests.`)
+        : (locale === "tr" ? `${trialDays(trial)} günlük ücretsiz NotaNota AI denemen sona erdi.` : `Your ${trialDays(trial)}-day free NotaNota AI trial has ended.`)}</p>}
       {profile ? (
         <>
           <div className="username-display">@{profile.username}</div>

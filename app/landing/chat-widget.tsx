@@ -9,6 +9,7 @@ import { buildTeacherChatRequest, newIdempotencyKey, requestTeacherChat } from "
 import type { EvidenceRecord } from "@/lib/practice-evidence.mjs";
 import { learningProfileEnabled, loadProfile, profileForTeacher, saveProfile, EMPTY_PROFILE, type LearningProfile, type WeekPlanDay } from "@/lib/learning-profile";
 import { supabase } from "@/lib/supabase";
+import { AI_LIMIT_REASONS } from "@/lib/ai-limits";
 import { liveTeacherConfigured, teacherApiKey, teacherEndpoint } from "../ai-teacher";
 
 type Locale = "tr" | "en";
@@ -21,7 +22,6 @@ type LiveReply = { reply: string; ask: string | null; profileUpdates: Partial<Le
 type Message = { id: number; from: "you" | "teacher"; lines: string[]; reply?: Reply; live?: LiveReply; key?: string };
 const LIVE_REASONS: Record<string, [string, string]> = {
   sign_in_required: ["Canlı öğretmen için giriş yapman gerekir.", "Sign in to talk to the live teacher."],
-  quota_exceeded: ["Bugünkü AI kullanım sınırına ulaşıldı.", "Today's AI limit has been reached."],
   usage_limit_exceeded: ["AI bütçe sınırına ulaşıldı.", "The AI budget limit has been reached."],
   live_calls_disabled: ["Canlı model çağrıları şu an kapalı.", "Live model calls are switched off right now."],
   backend_not_configured: ["AI sunucusu şu an kapalı.", "The AI server is switched off right now."],
@@ -30,6 +30,7 @@ const LIVE_REASONS: Record<string, [string, string]> = {
   network_error: ["AI sunucusuna bağlanılamadı.", "Could not reach the AI server."],
   invalid_model_response: ["Model yanıtı doğrulamadan geçmedi, gösterilmedi.", "The model's answer failed validation and was not shown."],
   request_too_large: ["Mesaj çok uzun.", "The message is too long."],
+  ...AI_LIMIT_REASONS,
 };
 const NAMES = { tr: ["Do", "Re", "Mi", "Fa", "Sol", "La", "Si"], en: ["C", "D", "E", "F", "G", "A", "B"] } as const;
 const nameAt = (position: number, locale: Locale) => NAMES[locale][((position + 2) % 7 + 7) % 7];

@@ -1088,11 +1088,13 @@ export default function Home() {
     navigateTo(stages[suggestion.studio]);
   }
 
-  // The account panel opens Settings through an event (it lives outside the router).
+  // The account panel opens Settings, and the trial welcome NotaNota AI, through events (they live outside the router).
   useEffect(() => {
     const open = () => navigateTo("settings");
+    const teacher = () => navigateTo("teacher");
     window.addEventListener("notanota-open-settings", open);
-    return () => window.removeEventListener("notanota-open-settings", open);
+    window.addEventListener("notanota-open-teacher", teacher);
+    return () => { window.removeEventListener("notanota-open-settings", open); window.removeEventListener("notanota-open-teacher", teacher); };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- navigateTo is stable in behaviour
   }, []);
 

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { stagingConfig } from '../supabase/functions/_shared/ai/staging-config.mjs';
+import { productionConfig, stagingConfig } from '../supabase/functions/_shared/ai/staging-config.mjs';
 import { createStagingGateway } from '../supabase/functions/_shared/ai/staging-gateway.mjs';
 import { feedback, request } from './fixtures/ai/offline.mjs';
 
@@ -174,4 +174,42 @@ test('a perfect round (every note right, nothing to work on) is a valid live ans
   assert.equal(result.error, undefined, JSON.stringify(result.error));
   assert.equal(result.mode, 'live');
   assert.deepEqual(result.result.exercises, []);
+});
+
+const prodEnv = (overrides = {}) => env({ AI_BACKEND_MODE: 'production-meta', AI_STAGING_LIVE_APPROVAL: undefined, AI_STAGING_APPROVAL_EXPIRES_AT: undefined,
+  AI_PRODUCTION_LIVE_APPROVAL: 'APPROVED_BOUNDED_META_PRODUCTION', AI_PRODUCTION_APPROVAL_EXPIRES_AT: new Date(Date.now() + 30 * 86400000).toISOString(),
+  SUPABASE_URL: `https://${p}.supabase.co`, DENO_DEPLOYMENT_ID: `${p}_test_revision`, AI_ALLOWED_ORIGINS: 'https://production.example', ...overrides });
+const prod = overrides => { const values = prodEnv(overrides); return productionConfig(name => values[name], pins); };
+
+test('the production config opens only on the production project, origins and approval word', () => {
+  assert.equal(prod().projectRef, p);
+  assert.equal(prod().target, 'production-meta');
+  // Each target refuses the other one's project, origins and approval.
+  { const values = prodEnv(); assert.equal(stagingConfig(name => values[name], pins), null); }
+  { const values = env(); assert.equal(productionConfig(name => values[name], pins), null); }
+  assert.equal(prod({ SUPABASE_URL: `https://${s}.supabase.co` }), null);
+  assert.equal(prod({ DENO_DEPLOYMENT_ID: `${s}_test_revision` }), null);
+  assert.equal(prod({ AI_ALLOWED_ORIGINS: 'https://ai-stage.example' }), null);
+  assert.equal(prod({ AI_PRODUCTION_LIVE_APPROVAL: 'APPROVED_BOUNDED_META_STAGING' }), null);
+  // At most 62 days of approval; the model check may be up to 62 days old, not more.
+  assert.equal(prod({ AI_PRODUCTION_APPROVAL_EXPIRES_AT: new Date(Date.now() + 63 * 86400000).toISOString() }), null);
+  assert.equal(prod({ META_MODEL_VERIFIED_AT: new Date(Date.now() - 63 * 86400000).toISOString() }), null);
+  assert.ok(prod({ META_MODEL_VERIFIED_AT: new Date(Date.now() - 30 * 86400000).toISOString() }));
+  assert.deepEqual([...prod({ AI_PRODUCTION_TASKS: 'practice-feedback,teacher-chat' }).tasks], ['practice-feedback', 'teacher-chat']);
+});
+
+test('a refused reservation reaches the app as the limit that was hit', async () => {
+  const cases = [[{ status: 'limited', scope: 'minute' }, 'rate_limited', true], [{ status: 'limited', scope: 'day' }, 'quota_exceeded', false],
+    [{ status: 'limited', scope: 'trial' }, 'trial_quota_exceeded', false], [{ status: 'limited', scope: 'global' }, 'service_busy', false],
+    [{ status: 'limited', scope: 'paused' }, 'ai_paused', false],
+    [{ status: 'limited' }, 'quota_exceeded', true], [{ status: 'trial_ended' }, 'trial_ended', false]];
+  for (const [reply, code, retryable] of cases) {
+    let calls = 0;
+    const gateway = createStagingGateway({ config: prod(), createClient: () => ({ rpc: async () => ({ data: reply, error: null }) }),
+      transport: async () => { calls++; return Response.json({}); } });
+    const result = await gateway.execute(user, body(), { requestId: 'r', idempotencyKey: `limit-${code}` });
+    assert.equal(result.error.code, code, JSON.stringify(reply));
+    assert.equal(result.error.retryable, retryable);
+    assert.equal(calls, 0, 'nothing is sent to Meta');
+  }
 });

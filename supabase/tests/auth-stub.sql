@@ -10,6 +10,8 @@ end $$;
 
 create schema if not exists auth;
 create table if not exists auth.users (id uuid primary key);
+-- Supabase has it; the free trial counts from it.
+alter table auth.users add column if not exists created_at timestamptz not null default now();
 
 -- Supabase reads the caller from the request JWT; tests set the same setting.
 create or replace function auth.uid() returns uuid language sql stable as $$

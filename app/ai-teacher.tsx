@@ -6,6 +6,7 @@ import { buildFeedbackRequest, deterministicResult, describeMeasurement, gateway
 import { analyzeItems, validEvidence, type EvidenceRecord } from '@/lib/practice-evidence.mjs';
 import { pitchAt, pitchName } from '@/lib/music-pitch.mjs';
 import { supabase } from '@/lib/supabase';
+import { AI_LIMIT_REASONS } from '@/lib/ai-limits';
 import { AiIcon } from './landing/ai-icon';
 import { ChatTyping } from './chat-ui';
 import './ai-teacher.css';
@@ -30,7 +31,6 @@ const REASONS: Record<string, [string, string]> = {
   sign_in_required: ['Canlı AI için giriş yapman gerekir.', 'Sign in to use live AI.'],
   insufficient_evidence: ['Kişisel yorum için aynı notada en az 3 yardımsız cevap gerekir.', 'A personal comment needs at least 3 unaided answers on the same note.'],
   no_evidence: ['Bu oturumda ölçülmüş cevap yok.', 'No measured answers in this session.'],
-  quota_exceeded: ['Bugünkü AI kullanım sınırına ulaşıldı.', 'Today’s AI usage limit has been reached.'],
   timeout: ['AI zamanında yanıt vermedi.', 'The AI did not answer in time.'],
   backend_not_configured: ['AI sunucusu şu an kapalı.', 'The AI server is switched off right now.'],
   live_calls_disabled: ['Canlı model çağrıları kapalı.', 'Live model calls are switched off.'],
@@ -47,6 +47,7 @@ const REASONS: Record<string, [string, string]> = {
   invalid_request: ['İstek sunucu tarafından reddedildi.', 'The server rejected the request.'],
   invalid_model_configuration: ['Model ayarı bütçe sınırına uymuyor.', 'The model settings do not fit the budget limit.'],
   network_error: ['AI sunucusuna bağlanılamadı.', 'Could not reach the AI server.'],
+  ...AI_LIMIT_REASONS,
 };
 const LIMITS: Record<string, [string, string]> = {
   client_reported_not_verified: ['Ölçümler bu cihazdaki cevaplardan gelir; sunucu tarafından doğrulanmaz.', 'Measurements come from answers on this device and are not verified by a server.'],

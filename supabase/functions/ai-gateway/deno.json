@@ -1,0 +1,8 @@
+{
+  "compilerOptions": { "strict": true, "checkJs": false },
+  "nodeModulesDir": "none",
+  "tasks": {
+    "check": "deno check index.ts",
+    "test": "deno test --no-config edge.test.ts"
+  }
+}

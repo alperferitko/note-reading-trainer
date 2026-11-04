@@ -1,6 +1,6 @@
 import { EVIDENCE_LIMIT, EVIDENCE_MODULES, validEvidenceRecord } from '../vendor/practice-evidence.mjs';
 import { AIError, SUPPORTED_TASKS } from './contracts.mjs';
-import { CHAT_LIMITS, CHAT_REPLY_CHARS, LESSON_IDS, MAX_INTERESTS_CHARS, MAX_WEEKLY_MINUTES, PROFILE_ENUMS, PROFILE_FIELDS,
+import { ASK_FIELDS, PLAN_DAY_MINUTES, PLAN_FOCUS_CHARS, WEEK_DAYS, CHAT_LIMITS, CHAT_REPLY_CHARS, LESSON_IDS, MAX_INTERESTS_CHARS, MAX_WEEKLY_MINUTES, PROFILE_ENUMS, PROFILE_FIELDS,
   STRUGGLE_NOTE, STUDIO_IDS, SUGGESTION_LABEL_CHARS, TREBLE_NOTE_IDS, WEEKLY_LIMITS } from './catalog.mjs';
 
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -193,13 +193,26 @@ const suggestionList = value => {
   return value.map(validateSuggestion);
 };
 
-/** The teacher's reply. profileUpdates is a proposal only: the app saves it after the user confirms. */
+/** A proposed week: every day once, in order, minutes per day (0 = rest day) and a short focus. */
+function weekPlan(value) {
+  if (value === undefined || value === null) return null;
+  if (!keys(value, ['days']) || !Array.isArray(value.days) || value.days.length !== WEEK_DAYS.length) modelFail();
+  const days = value.days.map((day, i) => {
+    if (!keys(day, ['day', 'minutes', 'focus']) || day.day !== WEEK_DAYS[i] || !int(day.minutes, 0, PLAN_DAY_MINUTES)
+      || !(day.minutes === 0 ? day.focus === '' || plain(day.focus, PLAN_FOCUS_CHARS) : plain(day.focus, PLAN_FOCUS_CHARS))) modelFail();
+    return { day: day.day, minutes: day.minutes, focus: day.focus };
+  });
+  if (days.reduce((sum, day) => sum + day.minutes, 0) > MAX_WEEKLY_MINUTES) modelFail();
+  return { days };
+}
+
+/** The teacher's reply. profileUpdates and weekPlan are proposals only: the app saves them after the user confirms. */
 export function validateTeacherChat(value) {
-  if (!keys(value, ['reply', 'ask', 'profileUpdates', 'suggestions']) || !plain(value.reply, CHAT_REPLY_CHARS)
-    || !(value.ask === undefined || value.ask === null || PROFILE_FIELDS.includes(value.ask))) modelFail();
+  if (!keys(value, ['reply', 'ask', 'profileUpdates', 'suggestions', 'weekPlan']) || !plain(value.reply, CHAT_REPLY_CHARS)
+    || !(value.ask === undefined || value.ask === null || ASK_FIELDS.includes(value.ask))) modelFail();
   const updates = cleanProfile(value.profileUpdates, modelFail);
   return { reply: value.reply, ask: value.ask ?? null,
-    profileUpdates: updates && Object.keys(updates).length ? updates : null, suggestions: suggestionList(value.suggestions) };
+    profileUpdates: updates && Object.keys(updates).length ? updates : null, suggestions: suggestionList(value.suggestions), weekPlan: weekPlan(value.weekPlan) };
 }
 
 /** Narration of the app's numbers; no number is ever taken from the model. */

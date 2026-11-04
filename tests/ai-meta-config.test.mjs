@@ -82,7 +82,7 @@ test('official muse-spark-1.3 standard prices fit the unchanged $0.02 request ca
   assert.equal(Buffer.byteLength(raw, 'utf8'), raw.length);
   assert.ok(raw.length <= live.maxInputChars);
   assert.equal(JSON.parse(raw).reasoning_effort, 'minimal');
-  assert.match(JSON.parse(raw).messages[0].content, /supportive music-learning coach/);
+  assert.match(JSON.parse(raw).messages[0].content, /supportive music-reading teacher/);
 });
 
 test('a long history is trimmed to the weakest contexts so the Meta body stays under the limit', async () => {

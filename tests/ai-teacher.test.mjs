@@ -264,7 +264,7 @@ test('the worst-case weekly report fits the 8,000-character ASCII wire bound wit
   const payload = userPayload(sent[0]);
   assert.deepEqual(payload.metrics, clean.metrics);
   const system = JSON.parse(sent[0]).messages[0].content;
-  for (const rule of [/do not mention it as zero/, /responseTimeMs is answer speed in note reading, not rhythm accuracy/, /If dataQuality is thin, say plainly/]) assert.match(system, rule);
+  for (const rule of [/do not mention it as zero/, /responseTimeMs is answer speed in note reading, not rhythm accuracy/, /If dataQuality is thin, say gently that the week was short/]) assert.match(system, rule);
 });
 
 // ---- HTTP, staging enablement, client ----
@@ -399,4 +399,21 @@ test('requestWeeklyReport sends the derived key, and the answer must echo the ex
   const tampered = async (url, init) => { const body = await (await fresh(new Request(url, init))).json(); body.metrics.sessions += 1; return Response.json(body); };
   assert.equal((await requestWeeklyReport({ ...base, request: weekly({ ...request, locale: 'tr' }), fetchImpl: tampered })).reason, 'metrics_mismatch');
   assert.equal((await requestWeeklyReport({ ...base, request: weekly({ timezone: 'Nowhere/City' }) })).reason, 'invalid_request');
+});
+
+test('a proposed week covers mon..sun in order, rest days at zero, and never more than the weekly limit', async () => {
+  const { validateTeacherChat } = await import('../supabase/functions/_shared/ai/validation.mjs');
+  const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map((day, i) => ({ day, minutes: i === 6 ? 0 : 20, focus: i === 6 ? '' : 'Sol ve La okuma' }));
+  const base = { reply: 'Harika, haftanı beş güne böldüm.', ask: null, profileUpdates: null, suggestions: [] };
+  assert.deepEqual(validateTeacherChat({ ...base, weekPlan: { days } }).weekPlan.days[6], { day: 'sun', minutes: 0, focus: '' });
+  assert.equal(validateTeacherChat({ ...base, weekPlan: null }).weekPlan, null);
+  assert.equal(validateTeacherChat({ ...base, ask: 'restDays' }).ask, 'restDays');
+  const bad = [
+    { days: [...days].reverse() },
+    { days: days.slice(0, 6) },
+    { days: days.map((d) => ({ ...d, minutes: 250 })) },
+    { days: days.map((d, i) => (i === 0 ? { ...d, focus: 'x'.repeat(61) } : d)) },
+    { days, extra: true },
+  ];
+  for (const weekPlan of bad) assert.throws(() => validateTeacherChat({ ...base, weekPlan }), (error) => error.code === 'invalid_model_response');
 });

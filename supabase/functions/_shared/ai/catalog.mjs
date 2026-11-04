@@ -41,3 +41,10 @@ export const WEEKLY_LIMITS = Object.freeze({
 });
 // A note in noteStruggles: clef, letter, octave and an optional accidental, e.g. 'treble:g4', 'bass:f3#'.
 export const STRUGGLE_NOTE = /^(treble|bass):[a-g][0-8](#|b)?$/;
+
+// The teacher may also ask about things that are not saved profile fields: where the learner feels weak
+// and which days they do not want to practise. The weekly plan it proposes covers all seven days.
+export const ASK_FIELDS = Object.freeze([...PROFILE_FIELDS, 'struggles', 'restDays']);
+export const WEEK_DAYS = Object.freeze(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
+export const PLAN_FOCUS_CHARS = 60;
+export const PLAN_DAY_MINUTES = 300;

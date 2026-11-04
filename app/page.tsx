@@ -18,7 +18,7 @@ import { WeeklyReport } from './weekly-report';
 import { Staff as StaffFigure } from './landing/music';
 import { NotFound, Skeleton } from './landing/states';
 import { toMusicXml } from '@/lib/demo-piece.mjs';
-import { AITeacher } from './ai-teacher';
+import { AITeacher, liveTeacherConfigured } from './ai-teacher';
 import { WorkshopPage } from './workshop-page';
 import { LEARNING_LESSONS } from '@/lib/learning-path.mjs';
 import { MusicStaff } from "./notation";
@@ -438,7 +438,7 @@ const INSTRUMENT_COPY = {
   tr: {
     eyebrow: "Müzik aletleri",
     title: "Bir enstrüman seç.",
-    lead: "Notaların çalgı üzerindeki yerlerini ayrı çalışma alanlarında öğren. Gitar hazır; piyano ve keman sıradaki modüller.",
+    lead: "Notaların çalgı üzerindeki yerlerini bul: piyano tuşu, gitar perdesi, keman teli. Ekranda tıklayarak çalışılır; çalgının sesi dinlenmez.",
     available: "Çalışmaya hazır",
     coming: "Hazırlanıyor",
     guitar: "Gitar",
@@ -1328,31 +1328,31 @@ export default function Home() {
     practise: [
       { stage: "setup", href: STAGE_ROUTES.setup, label: "Nota okuma", hint: "Porte, anahtar ve aralık" },
       { stage: "rhythm", href: STAGE_ROUTES.rhythm, label: "Ritim", hint: "Vuruş ve ritim kalıpları" },
-      { stage: "pieces", href: STAGE_ROUTES.pieces, label: "Eser çalışma", hint: "Satır satır okuma, nota dosyası" },
-      { stage: "instruments", href: STAGE_ROUTES.instruments, label: "Enstrümanlar", hint: "Piyano, gitar, keman" },
+      { stage: "pieces", href: STAGE_ROUTES.pieces, label: "Eser çalışma", hint: "Porte satırları ve etütler" },
+      { stage: "instruments", href: STAGE_ROUTES.instruments, label: "Enstrümanlar", hint: "Piyano, gitar, kemanda yerini bul" },
       { stage: "listening", href: STAGE_ROUTES.listening, label: "İşitme", hint: "Aralık, akor, dikte" },
-      { stage: "listen-play", href: STAGE_ROUTES["listen-play"], label: "Mikrofonla çal", hint: "Perdeni tarayıcı dinler" },
+      { stage: "listen-play", href: STAGE_ROUTES["listen-play"], label: "Mikrofonla çal", hint: "Tek notanın perdesini dinler" },
     ],
     learn: [
       { stage: "lessons", href: STAGE_ROUTES.lessons, label: "Dersler", hint: "Kısa teori dersleri" },
-      { stage: "progress", href: STAGE_ROUTES.progress, label: "İlerlemem", hint: "Beceri haritası ve geçmiş" },
-      { stage: "teacher", href: STAGE_ROUTES.teacher, label: "NotaNota AI", hint: "Kişisel öğretmen" },
-      { stage: "practice", href: STAGE_ROUTES.practice, label: "Tüm çalışmalar", hint: "Hepsi tek sayfada" },
+      { stage: "progress", href: STAGE_ROUTES.progress, label: "İlerlemem", hint: "Bu cihazdaki beceri haritası" },
+      { stage: "teacher", href: STAGE_ROUTES.teacher, label: "NotaNota AI", hint: liveTeacherConfigured ? "Kişisel öğretmen" : "Örnek konuşmalar ve yorum" },
+      { stage: "practice", href: STAGE_ROUTES.practice, label: "Tüm çalışmalar", hint: "Çalışma alanları tek sayfada" },
     ],
   } : {
     practise: [
       { stage: "setup", href: STAGE_ROUTES.setup, label: "Note reading", hint: "Staff, clef and range" },
       { stage: "rhythm", href: STAGE_ROUTES.rhythm, label: "Rhythm", hint: "Pulse and rhythm patterns" },
       { stage: "pieces", href: STAGE_ROUTES.pieces, label: "Pieces", hint: "Line reading, score files" },
-      { stage: "instruments", href: STAGE_ROUTES.instruments, label: "Instruments", hint: "Piano, guitar, violin" },
+      { stage: "instruments", href: STAGE_ROUTES.instruments, label: "Instruments", hint: "Find notes on piano, guitar, violin" },
       { stage: "listening", href: STAGE_ROUTES.listening, label: "Listening", hint: "Intervals, chords, dictation" },
-      { stage: "listen-play", href: STAGE_ROUTES["listen-play"], label: "Play to the mic", hint: "The browser hears your pitch" },
+      { stage: "listen-play", href: STAGE_ROUTES["listen-play"], label: "Play to the mic", hint: "Listens to the pitch of one note" },
     ],
     learn: [
       { stage: "lessons", href: STAGE_ROUTES.lessons, label: "Lessons", hint: "Short theory lessons" },
-      { stage: "progress", href: STAGE_ROUTES.progress, label: "My progress", hint: "Skill map and history" },
-      { stage: "teacher", href: STAGE_ROUTES.teacher, label: "NotaNota AI", hint: "A personal teacher" },
-      { stage: "practice", href: STAGE_ROUTES.practice, label: "All practice", hint: "Everything on one page" },
+      { stage: "progress", href: STAGE_ROUTES.progress, label: "My progress", hint: "Skill map on this device" },
+      { stage: "teacher", href: STAGE_ROUTES.teacher, label: "NotaNota AI", hint: liveTeacherConfigured ? "A personal teacher" : "Sample conversations and feedback" },
+      { stage: "practice", href: STAGE_ROUTES.practice, label: "All practice", hint: "Practice areas on one page" },
     ],
   };
   const navGroup: Stage | "more" = stage === "quiz" || stage === "done" || stage === "setup" ? "setup"

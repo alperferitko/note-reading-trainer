@@ -35,6 +35,7 @@ const T = {
     waiting: "Ses bekleniyor", unclear: "Ses net değil; tek bir notayı tutarak çal",
     heard: (label: string, cents: number) => `Duyulan: ${label} (${cents > 0 ? "+" : ""}${cents} sent)`,
     right: "Doğru perde.",
+    rightLate: "Doğru perde. İlk deneme yanlış olduğu için bu nota yanlış sayıldı.",
     wrong: (heard: string, expected: string, octave: boolean) => `Duyulan ${heard}, beklenen ${expected}${octave ? "; doğru nota, yanlış oktav" : ""}. Tekrar dene ya da geç.`,
     skip: "Bu notayı geç", finish: "Bitir",
     resultsH: "Sonuç",
@@ -63,6 +64,7 @@ const T = {
     waiting: "Waiting for sound", unclear: "Sound is unclear; hold a single note",
     heard: (label: string, cents: number) => `Heard: ${label} (${cents > 0 ? "+" : ""}${cents} cents)`,
     right: "Right pitch.",
+    rightLate: "Right pitch. The first try was wrong, so this note counts as wrong.",
     wrong: (heard: string, expected: string, octave: boolean) => `Heard ${heard}, expected ${expected}${octave ? "; right note, wrong octave" : ""}. Try again or skip.`,
     skip: "Skip this note", finish: "Finish",
     resultsH: "Results",
@@ -134,7 +136,7 @@ export function MicPractice({ locale, onNavigate }: { locale: Locale; onNavigate
     const first = !decided.current;
     if (first) { decided.current = true; record(heard, verdict.result === "correct"); }
     if (verdict.result === "correct") {
-      setMessage({ kind: "ok", text: t.right });
+      setMessage({ kind: "ok", text: first ? t.right : t.rightLate });
       const responseMs = Math.round(performance.now() - shownAt.current);
       const entry: Result = first ? { position: written.position, midi: written.midi, result: "correct", heard, responseMs }
         : { position: written.position, midi: written.midi, result: "wrong", heard, octaveOff: false };

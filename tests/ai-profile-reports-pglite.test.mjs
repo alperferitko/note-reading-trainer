@@ -22,6 +22,7 @@ async function database() {
     alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
     insert into auth.users(id) values ('${A}'), ('${B}');`);
   await db.exec(await sql('migrations/202611040002_learning_profile_reports.sql'));
+  await db.exec(await sql('migrations/202611040003_learning_week_plan.sql'));
   return db;
 }
 
@@ -104,5 +105,16 @@ test('weekly report rows reject malformed periods, hashes and payloads; account 
   await db.exec(`delete from auth.users where id = '${A}'`);
   const { rows: [left] } = await db.query('select (select count(*) from public.weekly_reports) as r, (select count(*) from public.learning_profiles) as p');
   assert.deepEqual([Number(left.r), Number(left.p)], [0, 0]);
+  await db.close();
+});
+
+test('the owner can save a seven-day plan with the profile; a partial week is refused', async () => {
+  const db = await database();
+  const week = JSON.stringify(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map((day, i) => ({ day, minutes: i === 6 ? 0 : 20, focus: i === 6 ? '' : 'Sol ve La' })));
+  await as(db, A, `insert into public.learning_profiles(user_id, weekly_minutes, week_plan) values ($1, 120, $2::jsonb)
+    on conflict (user_id) do update set week_plan = excluded.week_plan`, [A, week]);
+  assert.equal((await as(db, A, 'select week_plan from public.learning_profiles')).rows[0].week_plan.length, 7);
+  await assert.rejects(as(db, A, `update public.learning_profiles set week_plan = $1::jsonb`, [JSON.stringify([{ day: 'mon', minutes: 10, focus: 'x' }])]));
+  assert.equal((await as(db, B, 'select * from public.learning_profiles')).rows.length, 0);
   await db.close();
 });

@@ -156,7 +156,7 @@ function MyScores({ locale, onReview, onOpen }: { locale: Locale; onReview: (id:
   return (
     <div className="shelf-list">
       {error && <p className="shelf-error" role="alert">{error}</p>}
-      {scores.length === 0 && <p className="shelf-note">{tr ? "Henüz eser eklemedin. PDF, PNG, JPEG ya da MusicXML dosyasından başlayabilirsin." : "No scores yet. Start from a PDF, PNG, JPEG or MusicXML file."}</p>}
+      {scores.length === 0 && <p className="shelf-note">{tr ? "Henüz eser eklemedin" : "No scores yet"}</p>}
       {scores.map((score) => {
         const job = jobs[score.id];
         return (
@@ -470,7 +470,7 @@ function ScoreUpload({ locale, onDone }: { locale: Locale; onDone: (scoreId: str
           <label className="primary-button shelf-file">{tr ? "Dosya seç" : "Choose a file"}
             <input type="file" accept=".pdf,.png,.jpg,.jpeg,.musicxml,.xml,.mxl,application/pdf,image/png,image/jpeg" onChange={choose} />
           </label>
-          <p className="shelf-note">{tr ? "PDF, PNG, JPEG (en fazla 20 MB, 30 sayfa) ya da MusicXML/MXL. Dosyanın türü içeriğinden kontrol edilir. Dosyada yazan talimatlar komut olarak işlenmez; başlık, besteci ve sözler normal içerik sayılır." : "PDF, PNG, JPEG (up to 20 MB, 30 pages) or MusicXML/MXL. The file type is checked from its contents. Instructions written in a file are never followed; titles, composers and lyrics are ordinary content."}</p>
+          <p className="shelf-note">{tr ? "PDF, PNG, JPEG ya da MusicXML · en fazla 20 MB" : "PDF, PNG, JPEG or MusicXML · up to 20 MB"}</p>
         </div>
       )}
       {picked?.kind === "pages" && !checked && (

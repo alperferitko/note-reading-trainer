@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { EVIDENCE_EVENT, WEAKNESS_RULES, analyzeItems, readEvidence, type EvidenceRecord, type ItemSummary } from '@/lib/practice-evidence.mjs';
+import { EVIDENCE_EVENT, analyzeItems, readEvidence, type EvidenceRecord, type ItemSummary } from '@/lib/practice-evidence.mjs';
 import { LETTERS, SOLFEGE, namesLocale, pitchAt, pitchName } from '@/lib/music-pitch.mjs';
 import './targeted-review.css';
 
@@ -55,20 +55,21 @@ export function TargetedReviewCard({ locale, weak, label, onStart, disabledReaso
 }) {
   const tr = locale === 'tr';
   const shown = weak.slice(0, 6);
-  return <section className="targeted-review" aria-labelledby="targeted-review-title">
-    <p className="kicker">{tr ? 'HEDEFLİ TEKRAR' : 'TARGETED REVIEW'}</p>
-    <h2 id="targeted-review-title">{weak.length ? (tr ? 'Zorlandığın notalara yeniden dön.' : 'Return to the notes you found difficult.') : (tr ? 'Hedefli tekrar için henüz kanıt yok.' : 'Not enough evidence for targeted review yet.')}</h2>
-    {weak.length ? <>
-      <p>{tr
-        ? 'Aşağıdaki notalar bu ayarlarda tekrar tekrar yanlış cevaplandı. Hedefli oturumda bunlar birer kez daha sorulur; diğer bütün notalar da yine sorulduğu için gelişimin yeniden ölçülür.'
-        : 'These notes were answered incorrectly more than once with these settings. A targeted session asks each of them one extra time; every other note is still asked, so your progress is measured again.'}</p>
+  // Nothing to review yet: say nothing here; the rule is explained once a note qualifies.
+  if (!weak.length) return null;
+  return <section className="targeted-review targeted-review--compact" aria-labelledby="targeted-review-title">
+    <div className="targeted-review-row">
+      <div>
+        <h2 id="targeted-review-title">{tr ? `Zorlandığın ${weak.length} nota` : `${weak.length} notes you found hard`}</h2>
+        <ul className="targeted-review-chips">{shown.map(item => <li key={item.key}>{label(item)}</li>)}{weak.length > shown.length && <li className="is-more">+{weak.length - shown.length}</li>}</ul>
+      </div>
+      <button type="button" className="secondary-button" onClick={onStart} disabled={Boolean(disabledReason)}>{tr ? 'Hedefli tekrarı başlat' : 'Start targeted review'}</button>
+    </div>
+    <details className="targeted-review-why">
+      <summary>{tr ? 'Neden bu notalar?' : 'Why these notes?'}</summary>
       <ul className="targeted-review-list">{shown.map(item => <li key={item.key}><strong>{label(item)}</strong><small>{weaknessReason(item, locale)}</small></li>)}</ul>
-      {weak.length > shown.length && <p className="targeted-review-more">{tr ? `+${weak.length - shown.length} nota daha` : `+${weak.length - shown.length} more notes`}</p>}
-      <button type="button" className="primary-button" onClick={onStart} disabled={Boolean(disabledReason)}>{tr ? 'Hedefli oturumu başlat' : 'Start targeted session'} <span aria-hidden="true">→</span></button>
-      <small>{disabledReason || (tr ? 'Hedefli oturumlar normal moddadır ve sıralamaya gönderilmez.' : 'Targeted sessions use standard mode and are not submitted to leaderboards.')}</small>
-    </> : <p>{tr
-      ? `Bir nota, aynı ayarlarda son yardımsız denemelerinden en az ${WEAKNESS_RULES.minAttempts} tanesinin ${WEAKNESS_RULES.minErrors} veya daha fazlası yanlış olduğunda burada görünür. Tek bir kötü oturum tanı sayılmaz.`
-      : `A note appears here once at least ${WEAKNESS_RULES.minErrors} of your latest ${WEAKNESS_RULES.minAttempts} or more unaided attempts with the same settings were incorrect. A single poor session is not treated as a diagnosis.`}</p>}
+      <small>{disabledReason || (tr ? 'Hedefli oturumda bu notalar birer kez daha sorulur, diğerleri de sorulur. Normal moddadır ve sıralamaya gönderilmez.' : 'A targeted session asks these notes one extra time and the others too. It uses standard mode and is not submitted to leaderboards.')}</small>
+    </details>
   </section>;
 }
 

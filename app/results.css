@@ -76,3 +76,19 @@
 @media (max-width: 760px) { .rv-card, .ai-teacher.ai-teacher--compact { padding: 20px; } }
 /* Global buttons carry a top margin; inside these rows the row gap is the only spacing, so they line up. */
 html body .app-shell :is(.rv-actions, .rv-leaderboard, .community-result-inline) > button, html body .app-shell .ai-teacher--compact button { margin: 0; }
+
+/* Note-reading setup: one start (the saved settings), a compact targeted review, the settings below. */
+.targeted-review.targeted-review--compact { display: grid; gap: 12px; padding: 20px 24px; }
+.targeted-review-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
+.targeted-review--compact h2 { margin: 0 0 8px; font-family: var(--fx-display); font-size: 20px; font-weight: 600; }
+.targeted-review-chips { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px; }
+.targeted-review-chips li { padding: 4px 12px; border-radius: 999px; background: var(--background-deep); font-size: 14px; }
+.targeted-review-chips li.is-more { color: var(--foreground-muted); }
+.app-shell .targeted-review--compact .secondary-button { width: auto; margin: 0; }
+.targeted-review-why summary { cursor: pointer; color: var(--primary); font: 600 14px var(--fx-ui); }
+.targeted-review-why[open] summary { margin-bottom: 12px; }
+.targeted-review-why small { display: block; margin-top: 8px; color: var(--foreground-muted); }
+.hero-copy.hero-copy--compact { display: block; min-height: 0; padding: 0; margin: 32px 0 8px; }
+.hero-copy--compact h2 { margin: 0; font-family: var(--fx-display); font-size: clamp(24px, 2.4vw, 30px); font-weight: 600; }
+.hero-copy--compact .hero-lead, .hero-copy--compact .hero-staff { display: none; }
+.targeted-review-row > div { flex: 1 1 420px; min-width: 0; }

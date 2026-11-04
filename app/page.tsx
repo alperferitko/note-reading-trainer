@@ -1453,6 +1453,7 @@ export default function Home() {
       {stage === "setup" && (
         <section className="setup-shell">
           <section className="reading-session-summary" aria-labelledby="reading-session-summary-title">
+            <h1 className="sr-only">{locale === "tr" ? "Nota okuma" : "Note reading"}</h1>
             <div>
               <p className="kicker">{readingProfileCopy.summaryEyebrow}</p>
               <h2 id="reading-session-summary-title">{readingProfileCopy.summaryTitle}</h2>
@@ -1475,6 +1476,7 @@ export default function Home() {
             evidence={evidence}
             weakCount={weakReading.length}
             summary={readingSummary}
+            presets={["beginner"]}
             onBeginner={() => {
               setLevel("temel"); setMode("porte"); setSessionType("standard"); setClef("treble"); setAccidentals("natural");
               persistReadingSettings({ level: "temel", mode: "porte", sessionType: "standard" });
@@ -1487,9 +1489,8 @@ export default function Home() {
 
           <TargetedReviewCard locale={locale} weak={weakReading} label={(item) => writtenNoteLabel(item, locale)} onStart={startTargetedSession} />
 
-          <div className="hero-copy">
-            <p className="kicker">{copy.kicker}</p>
-            <h1>{copy.heroLine1}<br /><em>{copy.heroLine2}</em></h1>
+          <div className="hero-copy hero-copy--compact">
+            <h2>{locale === "tr" ? "Ayarlar" : "Settings"}</h2>
             <p className="hero-lead">{copy.heroLead}</p>
             <div className="hero-staff" aria-hidden="true">
               <div className="hero-staff-heading">
@@ -1566,7 +1567,6 @@ export default function Home() {
             <button className="primary-button" type="button" onClick={startSession}>
               {copy.start} <span aria-hidden="true">→</span>
             </button>
-            <p className="setup-note">{sessionType === "standard" ? copy.setupNote : extra.endlessSetupNote}</p>
           </div>
         </section>
       )}

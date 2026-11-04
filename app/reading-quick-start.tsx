@@ -31,7 +31,7 @@ const TEXT = {
 } as const;
 
 /** Three real presets and the last rounds, above the detailed reading settings. */
-export function ReadingQuickStart({ locale, evidence, weakCount, summary, onBeginner, onWeak, onLast }: {
+export function ReadingQuickStart({ locale, evidence, weakCount, summary, onBeginner, onWeak, onLast, presets = ["beginner", "weak", "last"] }: {
   locale: Locale;
   evidence: EvidenceRecord[];
   weakCount: number;
@@ -39,6 +39,7 @@ export function ReadingQuickStart({ locale, evidence, weakCount, summary, onBegi
   onBeginner: () => void;
   onWeak: () => void;
   onLast: () => void;
+  presets?: ("beginner" | "weak" | "last")[];
 }) {
   const t = TEXT[locale];
   const recent = useMemo(() => {
@@ -58,11 +59,11 @@ export function ReadingQuickStart({ locale, evidence, weakCount, summary, onBegi
     <section className="quick-start" aria-labelledby="quick-start-h">
       <h2 id="quick-start-h">{t.title}</h2>
       <div className="quick-start-presets">
-        <button type="button" onClick={onBeginner}><strong>{t.beginner[0]}</strong><span>{t.beginner[1]}</span></button>
-        <button type="button" onClick={onWeak} disabled={weakCount === 0} aria-describedby={weakCount === 0 ? "quick-weak-none" : undefined}>
+        {presets.includes("beginner") && <button type="button" onClick={onBeginner}><strong>{t.beginner[0]}</strong><span>{t.beginner[1]}</span></button>}
+        {presets.includes("weak") && <button type="button" onClick={onWeak} disabled={weakCount === 0} aria-describedby={weakCount === 0 ? "quick-weak-none" : undefined}>
           <strong>{t.weak[0]}</strong><span>{weakCount ? t.weak[1](weakCount) : t.weakNone}</span>
-        </button>
-        <button type="button" onClick={onLast}><strong>{t.last[0]}</strong><span>{t.last[1](summary)}</span></button>
+        </button>}
+        {presets.includes("last") && <button type="button" onClick={onLast}><strong>{t.last[0]}</strong><span>{t.last[1](summary)}</span></button>}
       </div>
       {weakCount === 0 && <span id="quick-weak-none" hidden>{t.weakNone}</span>}
       <div className="quick-start-recent">

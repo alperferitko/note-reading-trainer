@@ -1058,6 +1058,14 @@ export function CommunityPracticeRecorder({ active, activityKey }: { active: boo
   return null;
 }
 
+/** One quiet line for result screens: only a loaded streak is shown; loading, guest and errors show nothing. */
+export function CommunityPracticeStreakChip() {
+  const { locale, user, streak } = useCommunity();
+  if (!user || !streak) return null;
+  const copy = STREAK_COPY[locale];
+  return <p className="practice-streak-chip"><b>{copy.title(streak.currentStreak)}</b>{streak.todayCompleted ? <span>{copy.todayComplete}</span> : null}</p>;
+}
+
 export function CommunityPracticeStreak({ compact = false }: { compact?: boolean }) {
   const {
     locale,
@@ -1137,7 +1145,7 @@ export function CommunityPracticeStreak({ compact = false }: { compact?: boolean
   );
 }
 
-export function CommunityResult({ score, eligible }: { score: ScoreSubmission; eligible: boolean }) {
+export function CommunityResult({ score, eligible, inline = false }: { score: ScoreSubmission; eligible: boolean; inline?: boolean }) {
   const { locale, user, profile, openPanel } = useCommunity();
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
@@ -1165,6 +1173,16 @@ export function CommunityResult({ score, eligible }: { score: ScoreSubmission; e
     }
   }
 
+  if (inline) {
+    return (
+      <div className="community-result-inline">
+        {eligible
+          ? <button type="button" className="secondary-button" onClick={save} disabled={busy || !communityConfigured}>{!communityConfigured ? text.backendPending : !user ? text.saveScore : !profile ? text.chooseUsername : text.saveScore}</button>
+          : <small>{eligibilityCopy}</small>}
+        {status && <small className="community-message" aria-live="polite">{status}</small>}
+      </div>
+    );
+  }
   return (
     <div className={`community-result-card ${eligible ? "" : "community-result-card--ineligible"}`}>
       <div>

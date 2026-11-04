@@ -9,6 +9,7 @@ import "../app/notebook.css";
 import "../app/frost.css";
 import "../app/palettes.css";
 import "../app/shell.css";
+import "../app/results.css";
 
 const root = document.getElementById("root");
 

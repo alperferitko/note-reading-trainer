@@ -1,16 +1,8 @@
 "use client";
-/* eslint-disable @next/next/no-img-element -- Relative public assets must work on both the custom domain and GitHub Pages subpath. */
 
 import { FormEvent, lazy, MouseEvent, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import {
-  CommunityHeader,
-  CommunityLeaderboardButton,
-  CommunityPracticeRecorder,
-  CommunityPracticeStreak,
-  CommunityProvider,
-  CommunityResult,
-} from "./community";
+import { CommunityHeader, CommunityLeaderboardButton, CommunityPracticeRecorder, CommunityProvider, CommunityResult, CommunityPracticeStreakChip } from "./community";
 import { pitchAt, pitchName, matchesPitch, accidentalsFor, parsePitchAnswer, namesLocale } from "@/lib/music-pitch.mjs";
 import { SITE_PAGES, pageRoute, pageFromPath, isKnownRoute } from "@/lib/site-routes.mjs";
 import { LearningStudio } from './learning-studio';
@@ -23,6 +15,7 @@ import { StudioMenu, type StudioLink } from './site-nav';
 import { PricingPage } from './landing/pricing-page';
 import { ChatWidget, type TeacherSuggestion } from './landing/chat-widget';
 import { WeeklyReport } from './weekly-report';
+import { Staff as StaffFigure } from './landing/music';
 import { NotFound, Skeleton } from './landing/states';
 import { toMusicXml } from '@/lib/demo-piece.mjs';
 import { AITeacher } from './ai-teacher';
@@ -708,14 +701,6 @@ function Staff({ note, locale, compact = false, revealAnswer = false, animated =
   );
 }
 
-function Stat({ label, value, accent }: { label: string; value: string | number; accent?: boolean }) {
-  return (
-    <div className={`stat ${accent ? "stat--accent" : ""}`}>
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
 
 export default function Home() {
   const [locale, setLocale] = useState<Locale>("tr");
@@ -1706,107 +1691,103 @@ export default function Home() {
       )}
 
       {stage === "done" && (
-        <section className="results-shell">
+        <section className="results-shell results-v2">
           <CommunityPracticeRecorder active={completedDailyPractice} activityKey={`notes-${sessionStartedAt}`} />
-          <LocalResult id={`notes-${sessionStartedAt}`} module={locale==='tr'?'Nota okuma':'Note reading'} correct={correctCount} wrong={totalWrong} milliseconds={totalResponseTimeMs} locale={locale} />
-          <TargetedReviewResult locale={locale} session={`notes-${sessionStartedAt}`} targeted={targetedKeys} evidence={evidence} label={(item) => writtenNoteLabel(item, locale)} />
-          <div className="results-intro">
-            <span className="brand-mark result-flourish" aria-hidden="true">
-              <img src="./notanota-monogram-96.webp" alt="" />
-            </span>
+          <div className="rv-top">
             <p className="kicker">{completedStandardSession ? copy.sessionComplete : copy.sessionSummary}</p>
-            <h1 ref={resultsHeadingRef} tabIndex={-1}>{sessionType === "endless" ? extra.endlessResultTitle : sessionInsight.title}</h1>
-            <p>{sessionType === "endless" ? extra.endedSession(correctCount, totalTime) : endedEarly ? extra.stoppedSession(correctCount) : copy.completedCopy(selectedLevel.title)}</p>
+            <LocalResult id={`notes-${sessionStartedAt}`} module={locale==='tr'?'Nota okuma':'Note reading'} correct={correctCount} wrong={totalWrong} milliseconds={totalResponseTimeMs} locale={locale} />
           </div>
 
-          <dl className="result-session-meta" aria-label={copy.sessionSummary}>
-            <div><dt>{locale === "tr" ? "Seviye" : "Range"}</dt><dd>{selectedLevel.title}</dd></div>
-            <div><dt>{locale === "tr" ? "Çalışma biçimi" : "Practice mode"}</dt><dd>{copy.modes[mode].title}</dd></div>
-            <div><dt>{locale === "tr" ? "Oturum" : "Session"}</dt><dd>{sessionType === "standard" ? extra.standard.title : extra.endless.title}</dd></div>
-            <div><dt>{locale === "tr" ? "Toplam süre" : "Total time"}</dt><dd>{totalTime}</dd></div>
-          </dl>
-
-          {completedDailyPractice && <CommunityPracticeStreak compact />}
-
-          {sessionType === "standard" && <aside className={`session-insight session-insight--${sessionInsight.tone} ${totalWrong > 0 && hardestNotes[0] ? "session-insight--split" : ""}`} aria-label={copy.sessionSummary}>
-            <div className="session-insight-copy">
-              <p>{sessionInsight.body}</p>
-              {sessionInsight.pace && <strong>{sessionInsight.pace}</strong>}
-              {sessionInsight.nextStep && <span>{sessionInsight.nextStep}</span>}
-            </div>
-            {totalWrong > 0 && hardestNotes[0] && (
-              <div className="confusion-insight">
-                <p className="kicker">{copy.patternEyebrow}</p>
-                {dominantConfusion ? (
-                  <>
-                    <div className="confusion-pair" aria-label={`${noteName(dominantConfusion.expected, locale)} → ${namesLocale(locale) === "tr" ? dominantConfusion.guessed.solfege : dominantConfusion.guessed.letter}`}>
-                      <b>{noteName(dominantConfusion.expected, locale)}</b><span aria-hidden="true">→</span><b>{namesLocale(locale) === "tr" ? dominantConfusion.guessed.solfege : dominantConfusion.guessed.letter}</b>
+          <div className="rv-grid">
+            {/* How did I do: one result, the measure that matters most, two helpers, the next step. */}
+            <section className="rv-card rv-main" aria-labelledby="rv-title">
+              <h1 id="rv-title" ref={resultsHeadingRef} tabIndex={-1}>{sessionType === "endless" ? extra.endlessResultTitle
+                : completedStandardSession && totalWrong === 0 ? (locale === "tr" ? "Bütün notalar ilk denemede doğru" : "Every note right on the first try")
+                  : hardestNotes.length ? (locale === "tr"
+                    ? `${hardestNotes.slice(0, 2).map(({ note }) => noteName(note, locale)).join(" ve ")} biraz daha tekrar istiyor`
+                    : `${hardestNotes.slice(0, 2).map(({ note }) => noteName(note, locale)).join(" and ")} need${hardestNotes.length > 1 ? "" : "s"} a little more practice`)
+                    : sessionInsight.title.replace(/[.!]+$/, "")}</h1>
+              <p className="rv-lead">{sessionType === "endless" ? extra.endedSession(correctCount, totalTime) : endedEarly ? extra.stoppedSession(correctCount) : copy.completedCopy(selectedLevel.title)}
+                {sessionType === "standard" && endedEarly && uniqueCount > correctCount ? (locale === "tr" ? ` ${uniqueCount - correctCount} nota bu turda tamamlanmadı.` : ` ${uniqueCount - correctCount} notes were not finished this round.`) : ""}</p>
+              {sessionType === "endless" ? (
+                <div className="rv-measures endless-results-card">
+                  <div className="rv-hero-metric"><strong>{correctCount}</strong><span>{extra.correctAnswers}</span></div>
+                  <dl className="rv-helpers"><div><dt>{extra.totalTime}</dt><dd>{totalTime}</dd></div></dl>
+                </div>
+              ) : (
+                <div className="rv-measures">
+                  <div className="rv-hero-metric">
+                    <div className="score-ring">
+                      <svg viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+                        <circle className="score-ring-track" cx="60" cy="60" r="52" pathLength="100" />
+                        <circle className="score-ring-progress" cx="60" cy="60" r="52" pathLength="100" strokeDasharray="100" strokeDashoffset={100 - firstTryRate} />
+                      </svg>
+                      <div className="score-ring-copy"><strong>{firstTryCorrect}/{uniqueCount}</strong></div>
                     </div>
-                    <p>{copy.confusionCopy(
-                      noteName(dominantConfusion.expected, locale),
-                      dominantConfusion.expected.location[locale],
-                      namesLocale(locale) === "tr" ? dominantConfusion.guessed.solfege : dominantConfusion.guessed.letter,
-                    )}</p>
-                    <small>{copy.confusionNext}</small>
-                  </>
-                ) : (
-                  <p>{copy.reviewFocus(noteName(hardestNotes[0].note, locale), hardestNotes[0].note.location[locale])}</p>
+                    <span>{locale === "tr" ? "notayı ilk denemede doğru okudun" : "notes read right on the first try"}</span>
+                  </div>
+                  <dl className="rv-helpers">
+                    <div><dt>{locale === "tr" ? "Tekrar gereken cevap" : "Answers that needed a retry"}</dt><dd>{totalWrong}</dd></div>
+                    <div><dt>{copy.averageResponse}</dt><dd>{averageTime}</dd></div>
+                  </dl>
+                </div>
+              )}
+              {completedDailyPractice && <CommunityPracticeStreakChip />}
+              <div className="rv-actions">
+                <button className="primary-button" type="button" onClick={startSession}>{locale === "tr" ? "Bir tur daha" : "One more round"}</button>
+                <button className="ghost-button" type="button" onClick={() => navigateTo("setup")}>{copy.changeLevel}</button>
+              </div>
+            </section>
+
+            {/* What should I work on: the few notes that needed most help, and a way to practise exactly those. */}
+            {sessionType === "standard" && <section className="rv-card rv-focus" aria-labelledby="rv-focus-title">
+              <h2 id="rv-focus-title">{locale === "tr" ? "Odaklan" : "Focus on"}</h2>
+              {hardestNotes.length ? <>
+                {clef === "treble" && accidentals === "natural" && (
+                  <StaffFigure className="rv-staff" space={9} width={300} label={locale === "tr" ? "Zorlanılan notalar portede" : "The hard notes on the staff"}
+                    notes={hardestNotes.slice(0, 3).map(({ note }, i, all) => ({ id: note.id, position: note.position, x: (i + 1) / (all.length + 1), tone: "focus" as const, label: noteName(note, locale) }))} />
                 )}
-              </div>
-            )}
-          </aside>}
+                <ul className="rv-notes">
+                  {hardestNotes.slice(0, 3).map(({ note, count }) => (
+                    <li key={note.id}><span className="note-pill">{noteName(note, locale)}</span><span>{note.shortLocation[locale]}</span><b>{copy.wrongCount(count)}</b></li>
+                  ))}
+                </ul>
+                {dominantConfusion
+                  ? <p className="rv-note">{copy.confusionCopy(noteName(dominantConfusion.expected, locale), dominantConfusion.expected.location[locale], namesLocale(locale) === "tr" ? dominantConfusion.guessed.solfege : dominantConfusion.guessed.letter)}</p>
+                  : <p className="rv-note">{copy.reviewFocus(noteName(hardestNotes[0].note, locale), hardestNotes[0].note.location[locale])}</p>}
+                <div className="rv-actions">
+                  <button className="primary-button" type="button" onClick={startTargetedSession}>{locale === "tr" ? "Bu notalarla çalış" : "Practise these notes"}</button>
+                  <button className="ghost-button" type="button" onClick={()=>window.dispatchEvent(new CustomEvent('notanota-open-lesson',{detail:{lessonId:accidentals!=='natural'?'accidentals':clef==='bass'?'bass-clef':'treble-anchors'}}))}>{locale==='tr'?'Kısa dersi aç':'Open the short lesson'}</button>
+                </div>
+              </> : <p className="rv-note">{answerTimes.length === 0 ? copy.noAnswers : completedStandardSession ? copy.perfect : copy.cleanSoFar}</p>}
+              <TargetedReviewResult locale={locale} session={`notes-${sessionStartedAt}`} targeted={targetedKeys} evidence={evidence} label={(item) => writtenNoteLabel(item, locale)} />
+            </section>}
 
-          {sessionType === "endless" ? (
-            <div className="endless-results-card">
-              <Stat label={extra.correctAnswers} value={correctCount} accent />
-              <Stat label={extra.totalTime} value={totalTime} />
-            </div>
-          ) : <div className="results-card">
-            <div className="score-ring">
-              <svg viewBox="0 0 120 120" aria-hidden="true" focusable="false">
-                <circle className="score-ring-track" cx="60" cy="60" r="52" pathLength="100" />
-                <circle className="score-ring-progress" cx="60" cy="60" r="52" pathLength="100" strokeDasharray="100" strokeDashoffset={100 - firstTryRate} />
-              </svg>
-              <div className="score-ring-copy"><strong>%{firstTryRate}</strong><span>{copy.firstTry}</span></div>
-            </div>
-            <div className="stats-grid">
-              <Stat label={sessionType === "standard" ? copy.uniqueQuestions : extra.correctAnswers} value={sessionType === "standard" ? uniqueCount : correctCount} />
-              <Stat label={copy.firstTryCorrect} value={firstTryCorrect} accent />
-              <Stat label={copy.totalWrong} value={totalWrong} />
-              <Stat label={copy.averageResponse} value={averageTime} />
-            </div>
-          </div>}
+            {/* What can I do now: the teacher's reading of this round, in the chat's own look. */}
+            <AITeacher key={`${sessionStartedAt}-${locale}`} compact locale={locale} session={`notes-${sessionStartedAt}`} evidence={evidence}
+              onRepeat={startSession} onProgress={() => navigateTo('progress')} onPractiseWeak={startAiExercises} />
+          </div>
 
-          <CommunityResult score={scoreSubmission} eligible={leaderboardEligible} />
+          <details className="rv-details">
+            <summary>{locale === "tr" ? "Oturum ayrıntıları" : "Session details"}</summary>
+            <dl className="result-session-meta" aria-label={copy.sessionSummary}>
+              <div><dt>{locale === "tr" ? "Seviye" : "Range"}</dt><dd>{selectedLevel.title}</dd></div>
+              <div><dt>{locale === "tr" ? "Çalışma biçimi" : "Practice mode"}</dt><dd>{copy.modes[mode].title}</dd></div>
+              <div><dt>{locale === "tr" ? "Oturum" : "Session"}</dt><dd>{sessionType === "standard" ? extra.standard.title : extra.endless.title}</dd></div>
+              <div><dt>{locale === "tr" ? "Toplam süre" : "Total time"}</dt><dd>{totalTime}</dd></div>
+              {sessionType === "standard" && <>
+                <div><dt>{copy.uniqueQuestions}</dt><dd>{uniqueCount}</dd></div>
+                <div><dt>{copy.firstTryCorrect}</dt><dd>{firstTryCorrect} (%{firstTryRate})</dd></div>
+                <div><dt>{copy.totalWrong}</dt><dd>{totalWrong}</dd></div>
+                <div><dt>{extra.correctAnswers}</dt><dd>{correctCount}</dd></div>
+              </>}
+            </dl>
+            {sessionInsight.pace && <p className="rv-note">{sessionInsight.pace}</p>}
+          </details>
 
-          <AITeacher key={`${sessionStartedAt}-${locale}`} locale={locale} session={`notes-${sessionStartedAt}`} evidence={evidence}
-            onRepeat={startSession} onProgress={() => navigateTo('progress')} onPractiseWeak={startAiExercises} />
-          <p className="result-teacher-link"><button type="button" className="ghost-button" onClick={() => navigateTo('teacher')}>{locale==='tr'?'AI öğretmen örneğini gör':'See the AI teacher sample'}</button></p>
-
-          {answerTimes.length > 0 && <aside className="reading-lesson-guidance">
-            <div><p className="kicker">{locale==='tr'?'Bir sonraki adım':'Your next step'}</p><h2>{locale==='tr'?'Bilgiyi kısa bir dersle pekiştir.':'Reinforce your knowledge with a short lesson.'}</h2><p>{locale==='tr'?'Seçtiğin anahtar ve nota türüne uygun temel anlatıma dönüp yeni örneklerle devam edebilirsin. Bu öneri tek başına bir beceri eksikliği göstermez.':'Review the basics for your chosen clef and note type, then try new examples. This suggestion does not by itself indicate a skill gap.'}</p></div>
-            <button type="button" onClick={()=>window.dispatchEvent(new CustomEvent('notanota-open-lesson',{detail:{lessonId:accidentals!=='natural'?'accidentals':clef==='bass'?'bass-clef':'treble-anchors'}}))}>{locale==='tr'?'Kısa dersi aç':'Open short lesson'} →</button>
-          </aside>}
-
-          {sessionType === "standard" && <div className="hardest-card">
-            <div><p className="kicker">{copy.reviewList}</p><h2>{copy.hardest}</h2></div>
-            {hardestNotes.length ? (
-              <div className="hardest-list">
-                {hardestNotes.map(({ note, count }) => (
-                  <div key={note.id}><span className="note-pill">{noteName(note, locale)}</span><span>{note.shortLocation[locale]}</span><b>{copy.wrongCount(count)}</b></div>
-                ))}
-              </div>
-            ) : (
-              <p className={`perfect-copy ${answerTimes.length === 0 ? "perfect-copy--empty" : ""}`}>
-                {answerTimes.length === 0 ? copy.noAnswers : completedStandardSession ? copy.perfect : copy.cleanSoFar}
-              </p>
-            )}
-          </div>}
-
-          <div className="result-actions">
-            <button className="primary-button" type="button" onClick={startSession}>{copy.repeat} <span>↻</span></button>
-            <button className="secondary-button" type="button" onClick={() => navigateTo("setup")}>{copy.changeLevel}</button>
+          <div className="rv-leaderboard">
             <CommunityLeaderboardButton label={shell.leaderboard} />
+            <CommunityResult inline score={scoreSubmission} eligible={leaderboardEligible} />
           </div>
         </section>
       )}

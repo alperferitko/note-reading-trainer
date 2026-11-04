@@ -127,7 +127,7 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(page, /ledgerPositionsFor/);
   assert.match(page, /\[-10, -8, -6, -4, -2, 10, 12, 14, 16, 18\]/);
   assert.match(page, /if \(sessionType === "endless"\) \{[\s\S]*setFeedback\(null\);[\s\S]*navigateTo\("done"\);[\s\S]*return;/);
-  assert.match(page, /sessionType === "endless" \? \([\s\S]*className="endless-results-card"/);
+  assert.match(page, /sessionType === "endless" \? \([\s\S]*className="[^"]*endless-results-card/);
   assert.match(page, /extra\.endedSession\(correctCount, totalTime\)/);
   assert.match(styles, /\.endless-results-card/);
   assert.match(page, /questionKey\.current\+\+/);
@@ -378,7 +378,9 @@ test("oturum mantığı benzersiz başlangıç ve yanlışları tekrar kuyruğun
   assert.match(styles, /\.mobile-module-navigation/);
   // The header shows the N + otaNota wordmark, coloured by the theme through a CSS mask.
   assert.match(page, /<BrandWordmark \/>/);
-  assert.match(page, /className="brand-mark result-flourish" aria-hidden="true">[\s\S]*notanota-monogram-96\.webp/);
+  // Results: how did I do, what to work on, the teacher; secondary details behind one disclosure.
+  assert.match(page, /className="rv-card rv-main"[\s\S]*className="rv-card rv-focus"[\s\S]*<AITeacher[^>]*compact/);
+  assert.match(page, /<details className="rv-details">/);
   assert.doesNotMatch(page, /className="brand-mark" aria-hidden="true">♪/);
   assert.doesNotMatch(page, /name="note"/);
   assert.match(styles, /font-family: "Bodoni MT", Didot/);
@@ -527,7 +529,7 @@ test("günlük çalışma serisi gerçek tamamlamaları hesapta güvenle ve dür
     page,
     /<CommunityPracticeRecorder active=\{completedDailyPractice\} activityKey=\{`notes-\$\{sessionStartedAt\}`\} \/>/,
   );
-  assert.match(page, /\{completedDailyPractice && <CommunityPracticeStreak compact \/>\}/);
+  assert.match(page, /\{completedDailyPractice && <CommunityPracticeStreakChip \/>\}/);
 
   // The live quiz answer streak is explicitly named so it cannot be confused
   // with the account's day streak.

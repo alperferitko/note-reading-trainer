@@ -6,6 +6,8 @@ import { buildFeedbackRequest, deterministicResult, describeMeasurement, gateway
 import { analyzeItems, validEvidence, type EvidenceRecord } from '@/lib/practice-evidence.mjs';
 import { pitchAt, pitchName } from '@/lib/music-pitch.mjs';
 import { supabase } from '@/lib/supabase';
+import { AiIcon } from './landing/ai-icon';
+import { ChatTyping } from './chat-ui';
 import './ai-teacher.css';
 
 type Module = 'reading' | 'score' | 'piano' | 'guitar' | 'violin';
@@ -54,9 +56,9 @@ const LIMITS: Record<string, [string, string]> = {
   mock_not_live_inference: ['Bu bir test yanıtıdır; gerçek modelden gelmedi.', 'This is a test answer; it did not come from a real model.'],
 };
 
-export function AITeacher({ locale, session, evidence, onRepeat, onProgress, onPractiseWeak, module = 'reading' }: {
+export function AITeacher({ locale, session, evidence, onRepeat, onProgress, onPractiseWeak, module = 'reading', compact = false }: {
   locale: 'tr' | 'en'; session: string; evidence: EvidenceRecord[]; onRepeat: () => void; onProgress: () => void;
-  onPractiseWeak?: (exercises: Feedback['exercises']) => void; module?: Module;
+  onPractiseWeak?: (exercises: Feedback['exercises']) => void; module?: Module; compact?: boolean;
 }) {
   const tr = locale === 'tr';
   const pick = (pair: [string, string] | undefined, fallback: string) => pair ? pair[tr ? 0 : 1] : fallback;
@@ -116,6 +118,46 @@ export function AITeacher({ locale, session, evidence, onRepeat, onProgress, onP
     [tr ? 'Yardımsız cevap' : 'Unaided answers', assessment.unaidedAttempts],
   ] as const : [];
   const practise = (exercises.length > 0 || (assessment?.weaknesses.length ?? 0) > 0) && onPractiseWeak;
+
+  // The result screen's version: the chat's identity, no repeated numbers (the screen shows them), the four
+  // states (not asked, waiting, answered, failed) told apart, and anything long behind "Devamını gör".
+  if (compact) {
+    const observations = mode !== 'deterministic' ? shown.result.observations : [];
+    const evidenceLine = (refs: string[]) => refs.map((ref) => {
+      const measurement = summary.measurements.find((m) => m.id === ref);
+      return `${contextLabels.get(measurement?.context ?? '') ?? ref}: ${describeMeasurement(summary, ref, locale) ?? ref}`;
+    }).join('; ');
+    return <aside className="ai-teacher ai-teacher--compact" data-mode={mode} aria-label="NotaNota AI" aria-busy={busy}>
+      <header className="chat-head ai-teacher-head">
+        <span className="chat-head-icon"><AiIcon size={24} /></span>
+        <h2>NotaNota AI</h2>
+        {mode === 'live' && <span className="chat-badge">{badge}</span>}
+      </header>
+      <div className="ai-teacher-body" aria-live="polite">
+        {mode !== 'deterministic' && <p className="ai-teacher-summary">{shown.result.summary}</p>}
+        {busy && <p className="chat-waiting"><ChatTyping />{tr ? 'Meta yanıtı bekleniyor…' : 'Waiting for Meta…'}</p>}
+        {failed && !busy && <p className="ai-teacher-alert" role="status"><span>{reason}</span> <code className="ai-teacher-code">{shown.reason}</code></p>}
+        {!failed && !busy && mode === 'deterministic' && !canAsk && <p className="ai-teacher-reason">{reason ?? (tr ? 'Bu tur için yapay zekâ yorumu yok.' : 'No AI comment for this round.')}</p>}
+        {canAsk && !busy && <div className="ai-teacher-ask">
+          <p>{tr ? 'Bu turu Meta AI yorumlasın: neden zorlandığını açıklasın ve sana özel bir alıştırma önersin.' : 'Let Meta AI explain this round and suggest an exercise for you.'}</p>
+          <button type="button" className="primary-button" onClick={ask}>{failed ? (tr ? 'Yeniden dene' : 'Try again') : (tr ? 'Meta AI\'ya yorumlat' : 'Ask Meta AI')}</button>
+          <small className="ai-teacher-evidence">{tr ? 'Yalnız toplu ölçümler gönderilir.' : 'Only aggregate measurements are sent.'}</small>
+        </div>}
+        {exercises.length > 0 && <div className="chat-suggest ai-teacher-suggest">
+          <div><span>{tr ? 'Önerilen alıştırma' : 'Suggested practice'}</span><b>{exercises.map((item) => contextLabels.get(item.contextRef) ?? item.contextRef).join(', ')}</b>
+            <small>{tr ? `${exercises[0].repetitions} tekrar` : `${exercises[0].repetitions} repetitions`}</small></div>
+          {onPractiseWeak && <button type="button" className="chat-suggest-go" onClick={() => onPractiseWeak(exercises)}>{tr ? 'Bu alıştırmayı başlat' : 'Start this exercise'}</button>}
+        </div>}
+        {(observations.length > 0 || limitations.length > 0) && <details className="ai-teacher-more">
+          <summary>{tr ? 'Devamını gör' : 'See more'}</summary>
+          {observations.length > 0 && <ul className="ai-teacher-observations">
+            {observations.map((item, index) => <li key={index}><p>{item.text}</p><p className="ai-teacher-evidence">{tr ? 'Dayandığı ölçüm: ' : 'Based on: '}{evidenceLine(item.evidenceRefs)}</p></li>)}
+          </ul>}
+          {limitations.length > 0 && <><p className="ai-teacher-evidence">{tr ? 'Neyi ölçmedik:' : 'What was not measured:'}</p><ul className="ai-teacher-limits-list">{limitations.map((item) => <li key={item}>{pick(LIMITS[item], item)}</li>)}</ul></>}
+        </details>}
+      </div>
+    </aside>;
+  }
 
   return <aside className="ai-teacher" data-mode={mode} aria-label={tr ? 'NotaNota AI Öğretmen' : 'NotaNota AI Teacher'}>
     <div className="ai-teacher-top">

@@ -6,6 +6,7 @@ import "./notebook.css";
 import "./frost.css";
 import "./palettes.css";
 import "./shell.css";
+import "./results.css";
 import { PALETTE_BOOT_SCRIPT } from "@/lib/palettes.mjs";
 
 export async function generateMetadata(): Promise<Metadata> {

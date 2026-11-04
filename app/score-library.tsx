@@ -7,7 +7,9 @@ import { readMusicXml } from "@/lib/musicxml.mjs";
 import { checkScore, applyCorrections } from "@/lib/score-check.mjs";
 import { createScore, uploadSource, listMyScores, getScore, saveCorrection, submitForReview, requestRecognition, deleteScore,
   listLibrary, openLibraryScore, reportError, scoreErrorCode, SCORE_LICENSES } from "@/lib/score-library.mjs";
-import { openPages, canvasGray, sha256Hex, type PageSource } from "@/lib/pdf-pages";
+import { openPages, canvasGray, contactSheet, sha256Hex, type PageSource } from "@/lib/pdf-pages";
+import { buildScoreScreenRequest, requestScoreScreen } from "@/lib/ai-client.mjs";
+import { liveTeacherConfigured, teacherApiKey, teacherEndpoint } from "./ai-teacher";
 import { readMxl } from "@/lib/mxl";
 import { ScoreView } from "./score-workspace";
 import "./score-library.css";
@@ -321,6 +323,33 @@ function ReviewQueue({ locale }: { locale: Locale }) {
 /* ---------- Upload: choose → check → read → (save) ---------- */
 
 type PageCheck = { verdict: "score" | "unclear" | "not_score"; staves: number };
+type Screen = { verdict: "score" | "not_score" | "unclear"; inappropriate: boolean; category: string; handwriting: "none" | "light" | "covers_notes"; notes: string };
+/** Pages per content check and the most pages a file may have when it is checked. */
+const SHEET_PAGES = 8, SCREEN_MAX_PAGES = 16;
+
+/**
+ * Meta looks at the whole file (every page, as thumbnails on one or two sheets) before anything is saved:
+ * is it music, is anything inappropriate, do scribbles hide notes. Text in the file is data for it, never
+ * instructions. It is a model's judgement, not a guarantee; an unavailable check never blocks a personal
+ * upload, and nothing reaches the shared library without an administrator.
+ */
+async function screenFile(source: PageSource, locale: Locale): Promise<{ state: "done"; results: Screen[] } | { state: "unavailable"; reason: string } | { state: "too_many" }> {
+  if (!liveTeacherConfigured || !supabase) return { state: "unavailable", reason: "gateway_not_configured" };
+  if (source.pageCount > SCREEN_MAX_PAGES) return { state: "too_many" };
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token ?? null;
+  const all = Array.from({ length: source.pageCount }, (_, i) => i);
+  const results: Screen[] = [];
+  for (let start = 0; start < all.length; start += SHEET_PAGES) {
+    const pages = all.slice(start, start + SHEET_PAGES);
+    const sheet = await contactSheet(source, pages);
+    const request = buildScoreScreenRequest({ locale, data: sheet.data, width: sheet.width, height: sheet.height, pages: pages.length });
+    const value = await requestScoreScreen({ endpoint: teacherEndpoint, accessToken: token, apiKey: teacherApiKey, request });
+    if (!value.ok) return { state: "unavailable", reason: value.reason ?? "unavailable" };
+    results.push(value.result as Screen);
+  }
+  return { state: "done", results };
+}
 type Picked =
   | { kind: "xml"; name: string; bytes: Uint8Array; xml: string; title: string | null; composer: string | null }
   | { kind: "pages"; name: string; bytes: Uint8Array; type: "pdf" | "png" | "jpeg"; mime: string; source: PageSource; thumbs: string[]; selected: number[]; checks: Record<number, PageCheck> };
@@ -335,6 +364,7 @@ function ScoreUpload({ locale, onDone }: { locale: Locale; onDone: (scoreId: str
   const [checked, setChecked] = useState(false);
   const [meta, setMeta] = useState({ title: "", composer: "", instrument: "", difficulty: "", sourceNote: "" });
   const [notice, setNotice] = useState<string | null>(null);
+  const [screened, setScreened] = useState(false);
   useEffect(() => () => { if (picked?.kind === "pages") picked.source.close(); }, [picked]);
 
   async function choose(event: ChangeEvent<HTMLInputElement>) {
@@ -389,10 +419,21 @@ function ScoreUpload({ locale, onDone }: { locale: Locale; onDone: (scoreId: str
       if (!usable.length) { setError(tr ? "Bu dosyada okunabilir bir partisyon bulamadık. Porte çizgilerinin net göründüğü bir tarama ya da fotoğraf yükle." : "We couldn't find a readable score in this file. Upload a scan or photo where the staff lines are clear."); return; }
       const dropped = picked.selected.length - usable.length;
       const unclear = usable.filter((i) => checks[i].verdict === "unclear").length;
+      setBusy(tr ? "Dosyanın içeriği kontrol ediliyor…" : "Checking what the file contains…");
+      const screen = await screenFile(picked.source, locale);
+      if (screen.state === "too_many") { setError(tr ? `İçerik kontrolü en fazla ${SCREEN_MAX_PAGES} sayfalık dosyalarda yapılabiliyor. Çalışmak istediğin sayfaları ayrı bir PDF olarak kaydedip onu yükle.` : `The content check works on files of up to ${SCREEN_MAX_PAGES} pages. Save the pages you want to practise as a separate PDF and upload that.`); return; }
+      const results = screen.state === "done" ? screen.results : [];
+      // Inappropriate content anywhere in the file stops the upload; nothing is saved or sent on.
+      if (results.some((r) => r.inappropriate)) { setPicked(null); setError(tr ? "Bu dosyada uygunsuz olabilecek bir içerik görüldüğü için yüklemeyi durdurduk; dosya kaydedilmedi. Yalnız partisyon sayfalarını içeren bir dosya yükleyebilirsin." : "We stopped the upload because the file may contain inappropriate content; it was not saved. You can upload a file with only the score pages."); return; }
+      if (results.length && results.every((r) => r.verdict === "not_score") && unclear === usable.length) { setError(tr ? "Bu dosyada okunabilir bir partisyon bulamadık. Porte çizgilerinin net göründüğü bir tarama ya da fotoğraf yükle." : "We couldn't find a readable score in this file. Upload a scan or photo where the staff lines are clear."); return; }
       setNotice([
         dropped ? (tr ? `${dropped} sayfada porte bulunamadı; bu sayfalar çıkarıldı.` : `No staff was found on ${dropped} page(s); they were left out.`) : "",
         unclear ? (tr ? `${unclear} sayfada porte net değil; tanımadan sonra işaretlenen yerleri dikkatle kontrol et.` : `Staves are unclear on ${unclear} page(s); check the flagged places carefully after reading.`) : "",
+        results.some((r) => r.handwriting === "covers_notes") ? (tr ? "Bazı karalamalar notaları kapatıyor olabilir. Kapalı yerleri tahmin etmiyoruz: daha net bir görüntü yükle ya da tanımadan sonra o yerleri düzelt." : "Some scribbles may hide notes. We don't guess hidden notes: upload a clearer image or correct those places after reading.") : "",
+        results.some((r) => r.verdict === "unclear") ? (tr ? "İçerik kontrolü bazı sayfalardan emin olamadı; eser yalnız senin hesabında kalır ve ortak kütüphane için incelemeden geçer." : "The content check was unsure about some pages; the score stays in your account and goes through review for the library.") : "",
+        screen.state === "unavailable" ? (tr ? "İçerik kontrolü şu an yapılamadı; eser yalnız senin hesabında kalır ve yönetici incelemesi olmadan ortak kütüphaneye çıkmaz." : "The content check is not available right now; the score stays in your account and never reaches the library without an administrator's review.") : "",
       ].filter(Boolean).join(" ") || null);
+      setScreened(screen.state === "done");
       setChecked(true);
     } catch { setError(tr ? "Sayfa çizilemedi." : "The page could not be drawn."); } finally { setBusy(null); }
   }
@@ -464,7 +505,9 @@ function ScoreUpload({ locale, onDone }: { locale: Locale; onDone: (scoreId: str
           <label>{tr ? "Enstrüman" : "Instrument"}<select value={meta.instrument} onChange={(e) => setMeta({ ...meta, instrument: e.target.value })}><option value="">–</option>{INSTRUMENTS.map((id) => <option key={id} value={id}>{INSTRUMENT[id][tr ? 0 : 1]}</option>)}</select></label>
           <label>{tr ? "Zorluk" : "Difficulty"}<select value={meta.difficulty} onChange={(e) => setMeta({ ...meta, difficulty: e.target.value })}><option value="">–</option>{Object.keys(LEVELS).map((id) => <option key={id} value={id}>{LEVELS[id][tr ? 0 : 1]}</option>)}</select></label>
           <label className="shelf-wide">{tr ? "Kaynak (isteğe bağlı)" : "Source (optional)"}<input maxLength={200} value={meta.sourceNote} onChange={(e) => setMeta({ ...meta, sourceNote: e.target.value })} placeholder={tr ? "Örneğin: Mutopia #528 ya da öğretmenimin fotokopisi" : "For example: Mutopia #528 or my teacher's copy"} /></label>
-          <p className="shelf-note shelf-wide">{tr ? "Eser yalnız senin hesabına kaydedilir. Uygunsuz içerik denetimi bu sürümde otomatik değil; hiçbir eser yönetici incelemesi olmadan ortak kütüphaneye çıkmaz." : "The score is saved to your account only. Automatic inappropriate-content screening is not connected in this version; no score reaches the shared library without an administrator's review."}</p>
+          <p className="shelf-note shelf-wide">{screened
+            ? (tr ? "Dosyanın tamamı içerik kontrolünden geçti. Eser yalnız senin hesabına kaydedilir; ortak kütüphaneye yönetici incelemesi olmadan çıkmaz. Otomatik kontrol bir model yargısıdır, kesin güvence değildir." : "The whole file passed the content check. The score is saved to your account only and never reaches the library without an administrator's review. The automatic check is a model's judgement, not a guarantee.")
+            : (tr ? "Eser yalnız senin hesabına kaydedilir; hiçbir eser yönetici incelemesi olmadan ortak kütüphaneye çıkmaz." : "The score is saved to your account only; no score reaches the shared library without an administrator's review.")}</p>
           <div className="shelf-actions shelf-wide">
             <button type="submit" className="primary-button" disabled={!meta.title.trim() || Boolean(busy)}>{picked.kind === "xml" ? (tr ? "Kaydet ve kontrol et" : "Save and check") : (tr ? "Kaydet ve tanımayı başlat" : "Save and start reading")}</button>
             <button type="button" className="ghost-button" onClick={() => onDone(null)}>{tr ? "Vazgeç" : "Cancel"}</button>

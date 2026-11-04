@@ -90,3 +90,35 @@ export async function sha256Hex(bytes: Uint8Array): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', bytes.slice());
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
+
+/**
+ * Up to eight chosen pages drawn side by side on one JPEG (within the gateway's image budget, about
+ * 860 x 860 px, base64 under ~290 000 characters), for a single content check of the whole upload instead of one call per page.
+ */
+export async function contactSheet(source: PageSource, pages: number[]): Promise<{ data: string; width: number; height: number }> {
+  const chosen = pages.slice(0, 8);
+  const columns = chosen.length <= 1 ? 1 : chosen.length <= 4 ? 2 : 4;
+  const rows = Math.ceil(chosen.length / columns);
+  const cell = Math.floor(1024 / Math.max(columns, rows * 1.3));
+  const drawn = await Promise.all(chosen.map((index) => source.render(index, Math.round(cell * 1.3))));
+  const cellW = Math.max(...drawn.map((c) => c.width)), cellH = Math.max(...drawn.map((c) => c.height));
+  // The gateway prices an image at ceil(w/28) x ceil(h/28) tiles (doubled) and accepts at most 1020 tiles
+  // within the per-request budget; shrink until the sheet fits with a little room.
+  let scale = Math.min(1, 1024 / Math.max(cellW * columns, cellH * rows));
+  while (Math.ceil((cellW * columns * scale) / 28) * Math.ceil((cellH * rows * scale) / 28) > 980) scale *= 0.95;
+  const sheet = document.createElement('canvas');
+  sheet.width = Math.max(64, Math.round(cellW * columns * scale));
+  sheet.height = Math.max(64, Math.round(cellH * rows * scale));
+  const context = sheet.getContext('2d')!;
+  context.fillStyle = '#fff';
+  context.fillRect(0, 0, sheet.width, sheet.height);
+  drawn.forEach((canvas, i) => {
+    const x = (i % columns) * cellW * scale, y = Math.floor(i / columns) * cellH * scale;
+    context.drawImage(canvas, x, y, canvas.width * scale, canvas.height * scale);
+  });
+  for (const quality of [0.8, 0.7, 0.6, 0.5, 0.4]) {
+    const data = sheet.toDataURL('image/jpeg', quality).split(',')[1] ?? '';
+    if (data.length <= 290000) return { data, width: sheet.width, height: sheet.height };
+  }
+  throw new PageSourceError('corrupt');
+}

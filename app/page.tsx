@@ -21,7 +21,8 @@ import { SettingsPage } from './settings-page';
 import { LOCALE_CHOICE_KEY } from '@/lib/locale-default.mjs';
 import { StudioMenu, type StudioLink } from './site-nav';
 import { PricingPage } from './landing/pricing-page';
-import { ChatWidget } from './landing/chat-widget';
+import { ChatWidget, type TeacherSuggestion } from './landing/chat-widget';
+import { WeeklyReport } from './weekly-report';
 import { NotFound, Skeleton } from './landing/states';
 import { toMusicXml } from '@/lib/demo-piece.mjs';
 import { AITeacher } from './ai-teacher';
@@ -1094,6 +1095,14 @@ export default function Home() {
     setPendingStart("focus");
   }
 
+  /** A suggestion from the live teacher opens the real practice it names: a drill on those notes or a studio. */
+  function runTeacherSuggestion(suggestion: TeacherSuggestion) {
+    if (suggestion.kind === "focus-drill") { startFocusDrill(suggestion.notes, Math.min(6, Math.max(1, suggestion.repetitions))); return; }
+    if (suggestion.kind === "lesson") { navigateTo("lessons"); return; }
+    const stages: Record<typeof suggestion.studio, Stage> = { reading: "setup", rhythm: "rhythm", score: "pieces", ear: "listening", instrument: "instruments", lessons: "lessons" };
+    navigateTo(stages[suggestion.studio]);
+  }
+
   function handleTeacherAction(action: TeacherAction) {
     if (action.kind === "focus") { startFocusDrill(action.notes, action.repeats); return; }
     setScoreInitial({ xml: toMusicXml(), from: action.from, to: action.to });
@@ -1419,9 +1428,10 @@ export default function Home() {
       {stage === "settings" && <SettingsPage locale={locale} soundEnabled={noteSoundEnabled} onToggleSound={toggleNoteSound} onChangeLocale={changeLocale} onNavigate={(target) => navigateTo(target as Stage)} />}
       {stage === "pricing" && <PricingPage locale={locale} onOpenChat={() => window.dispatchEvent(new Event("notanota-open-chat"))} onStudio={() => navigateTo("setup")} />}
       {stage === "notfound" && <NotFound locale={locale} onHome={() => navigateTo("landing")} onStudio={() => navigateTo("practice")} />}
-      {!immersiveSession && <ChatWidget locale={locale} onAction={handleTeacherAction} />}
+      {!immersiveSession && <ChatWidget locale={locale} onAction={handleTeacherAction} onSuggestion={runTeacherSuggestion} evidence={evidence} />}
       {stage === "teacher" && <Suspense fallback={<Skeleton kind="panel" locale={locale} />}><AiWorkspace locale={locale} evidence={evidence} owner={communityUserId} onQuickStart={startSession} onStartPlan={startPlan} onPractiseRange={practiseRange} onStudio={() => navigateTo("setup")} onTeacherAction={handleTeacherAction} /></Suspense>}
       {stage === "palettes" && <Suspense fallback={<Skeleton kind="panel" locale={locale} />}><PaletteReview locale={locale} soundEnabled={noteSoundEnabled} /></Suspense>}
+      {stage === "progress" && <div className="weekly-wrap"><WeeklyReport locale={locale} evidence={evidence} onSuggestion={runTeacherSuggestion} /></div>}
       {(stage === "lessons" || stage === "progress" || stage === "practice") && <LearningStudio key={stage} view={stage} locale={locale} onNavigate={navigateTo} initialLessonId={stage === "lessons" ? requestedLessonId : null} />}
       {stage === "score-import" && <Suspense fallback={<Skeleton kind="score" locale={locale} />}><ScoreWorkspace key={`${scoreInitial?.xml.length ?? 0}-${scoreInitial?.from ?? 0}-${scoreInitial?.to ?? 0}`} locale={locale} noteSoundEnabled={noteSoundEnabled} onNavigate={navigateTo} initial={scoreInitial} /></Suspense>}
       {stage === "listen-play" && <Suspense fallback={<Skeleton kind="panel" locale={locale} />}><MicPractice locale={locale} onNavigate={navigateTo} /></Suspense>}

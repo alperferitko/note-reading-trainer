@@ -50,3 +50,6 @@ button.chat-suggest-go:focus-visible { outline: 3px solid var(--primary); outlin
   .chat-badge { padding: 3px 8px; font-size: 12px; }
   .chat-suggest { flex-wrap: wrap; }
 }
+.chat-note { margin: 0; font-size: 13px; color: var(--foreground-muted); }
+.chat-goals { justify-self: start; }
+.chat-code { font-size: 12px; color: var(--foreground-muted); }

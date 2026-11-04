@@ -19,6 +19,9 @@ const configured = gatewayEndpoint(import.meta.env.VITE_AI_GATEWAY_URL?.trim());
 const endpoint = configured && (configured.kind === 'local' || (() => { try { return new URL(supabaseUrl).host === new URL(configured.url).host; } catch { return false; } })()) ? configured : null;
 /** True only in a build pointed at the staging gateway of the same Supabase project. */
 export const liveTeacherConfigured = Boolean(endpoint);
+/** The checked gateway endpoint (same Supabase project as the session), or null. */
+export const teacherEndpoint = endpoint;
+export const teacherApiKey = publishableKey;
 
 const REASONS: Record<string, [string, string]> = {
   gateway_not_configured: ['Canlı AI bu sürümde bağlı değil.', 'Live AI is not connected in this build.'],

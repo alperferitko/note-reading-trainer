@@ -36,3 +36,19 @@ Deno.test("Edge Web APIs: teacher chat and the weekly report key (Web Crypto) wo
   if (weekly.status !== 200 || (await weekly.json()).task !== "weekly-report") throw new Error("weekly report failed");
   if ((await post(report, "edge-other-key")).status !== 400) throw new Error("foreign weekly key accepted");
 });
+Deno.test("Edge Web APIs: score-screen (atob, Web Crypto key, larger body cap) works in Deno", async () => {
+  const { screenKey } = await import("../_shared/ai/screen-key.mjs");
+  const handler = createAIHttpHandler({ gateway: createLocalMockGateway(),
+    authenticate: async (jwt: string) => jwt === "valid.test.signature" ? { id: "edge-user" } : null });
+  const bytes = [0xff, 0xd8, 0xff, 0xe0, ...Array.from({ length: 210000 }, (_, i) => i % 251), 0xff, 0xd9];
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  const data = btoa(binary);
+  const body = { schemaVersion: "1", task: "score-screen", locale: "en", image: { mime: "image/jpeg", data, width: 768, height: 512 }, pages: 2 };
+  const post = (key: string) => handler(new Request("http://localhost", { method: "POST", headers: {
+    authorization: "Bearer valid.test.signature", "content-type": "application/json", "idempotency-key": key,
+  }, body: JSON.stringify(body) }));
+  const response = await post(await screenKey(data));
+  if (response.status !== 200 || (await response.json()).result?.verdict !== "score") throw new Error("score screen failed");
+  if ((await post("edge-other-key")).status !== 400) throw new Error("foreign screen key accepted");
+});

@@ -7,6 +7,12 @@ export const DEFAULT_USAGE_POLICY = Object.freeze({
   maxRequestUsd: 0.02, userDailyUsd: 0.20, globalDailyUsd: 2,
 });
 
+/**
+ * Template margin of the input-token bound: the wire text is pure ASCII and a byte-level tokenizer
+ * emits at most one token per byte, plus this reviewed margin (staging-config, score-screen guard).
+ */
+export const TOKEN_TEMPLATE_MARGIN = 4096;
+
 export function createUsagePolicy(overrides = {}) {
   const policy = { ...DEFAULT_USAGE_POLICY, ...overrides };
   if (Object.keys(overrides).some(key => !Object.hasOwn(DEFAULT_USAGE_POLICY, key)) || policy.liveEnabled !== false

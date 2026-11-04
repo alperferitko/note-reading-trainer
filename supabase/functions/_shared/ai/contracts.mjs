@@ -3,7 +3,7 @@
  * The HTTP boundary must VERIFY the JWT before constructing AuthContext.
  *
  * @typedef {'meta'|'baseten'|'claude'} AIProvider
- * @typedef {'practice-feedback'|'adaptive-exercises'|'teacher-chat'|'weekly-report'|'quality-evaluation'} AITask
+ * @typedef {'practice-feedback'|'adaptive-exercises'|'teacher-chat'|'weekly-report'|'score-screen'|'quality-evaluation'} AITask
  * @typedef {{userId:string, authenticated:true}} AuthContext
  * @typedef {{schemaVersion:'1', task:AITask, locale:'tr'|'en', scope:{module:string, sessionId?:string}, evidence:{records:object[]}} AIRequest
  * @typedef {{purpose?:'hobby'|'detailed', instrument?:'piano'|'guitar'|'violin'|'voice'|'flute'|'other'|'none', level?:'none'|'beginner'|'some'|'reads', weeklyMinutes?:number, interests?:string}} LearnerProfile
@@ -14,6 +14,8 @@
  * @typedef {AIWeekMetrics & {pieces:{title:string, from:number, to:number}[], previous:AIWeekMetrics|null}} AIWeeklyMetrics
  * @typedef {{schemaVersion:'1', task:'weekly-report', locale:'tr'|'en', timezone:string, period:{start:string, end:string}, metrics:AIWeeklyMetrics}} AIWeeklyReportRequest
  * @typedef {{headline:string, narrative:string, highlights:string[], nextWeek:AISuggestion[]}} AIWeeklyNarrative
+ * @typedef {{schemaVersion:'1', task:'score-screen', locale:'tr'|'en', image:{mime:'image/jpeg', data:string, width:number, height:number}, pages:number}} AIScoreScreenRequest
+ * @typedef {{verdict:'score'|'not_score'|'unclear', inappropriate:boolean, category:'none'|'sexual'|'violence'|'hate'|'self_harm'|'personal_data'|'other', handwriting:'none'|'light'|'covers_notes', notes:string}} AIScoreScreen
  * @typedef {{id:string, context:string, kind:'accuracy'|'response-time'|'tap-timing-error', value:number|null, unit:'percent'|'ms', sampleSize:number}} EvidenceMeasurement
  * @typedef {{schemaVersion:'1', analysisVersion:string, source:'client-reported', generatedAt:string, period:{from:string|null,to:string|null}, sampleSize:number, eligible:boolean, contexts:object[], measurements:EvidenceMeasurement[], limitations:string[]}} LearningEvidenceSummary
  * @typedef {{summary:string, observations:{text:string,evidenceRefs:string[]}[], exercises:{id:'context-review',contextRef:string,repetitions:number}[], limitations:string[]}} AIPracticeFeedback
@@ -27,7 +29,7 @@
 
 export const SCHEMA_VERSION = '1';
 export const ANALYSIS_VERSION = 'question-evidence-v1';
-export const SUPPORTED_TASKS = Object.freeze(['practice-feedback', 'adaptive-exercises', 'teacher-chat', 'weekly-report']);
+export const SUPPORTED_TASKS = Object.freeze(['practice-feedback', 'adaptive-exercises', 'teacher-chat', 'weekly-report', 'score-screen']);
 /** Tasks on by default. The others must be listed explicitly (AI_STAGING_TASKS in staging). */
 export const DEFAULT_TASKS = Object.freeze(['practice-feedback', 'adaptive-exercises']);
 

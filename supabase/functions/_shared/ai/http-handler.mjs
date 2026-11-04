@@ -1,14 +1,18 @@
 import { AIError } from './contracts.mjs';
+import { SCREEN_LIMITS } from './catalog.mjs';
 
 const IDEMPOTENCY = /^[A-Za-z0-9_-]{1,120}$/;
 const HEADERS = ['authorization', 'apikey', 'content-type', 'idempotency-key', 'x-client-info'];
 const HTTP_ERRORS = new Set(['authentication_required', 'origin_not_allowed', 'method_not_allowed',
   'unsupported_media_type', 'invalid_request', 'request_too_large', 'request_timeout', 'backend_not_configured']);
 
-/** Read a byte-bounded stream BEFORE parsing JSON, including absent/false Content-Length. */
-async function readJson(request, maxBytes, signal) {
+/**
+ * Read a byte-bounded stream BEFORE parsing JSON, including absent/false Content-Length.
+ * Up to readBytes are read; a body above maxBytes is accepted only as a score-screen request.
+ */
+async function readJson(request, maxBytes, readBytes, signal) {
   const length = request.headers.get('content-length');
-  if (length !== null && (!/^\d+$/.test(length) || Number(length) > maxBytes)) {
+  if (length !== null && (!/^\d+$/.test(length) || Number(length) > readBytes)) {
     throw new AIError('request_too_large', 413);
   }
   if (!request.body) throw new AIError('invalid_request');
@@ -24,14 +28,18 @@ async function readJson(request, maxBytes, signal) {
       if (signal.aborted) throw new AIError('request_timeout', 408, true);
       if (done) break;
       size += value.byteLength;
-      if (size > maxBytes) { cancel(); throw new AIError('request_too_large', 413); }
+      if (size > readBytes) { cancel(); throw new AIError('request_too_large', 413); }
       chunks.push(value);
     }
     const bytes = new Uint8Array(size);
     let offset = 0;
     for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
-    try { return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)); }
-    catch { throw new AIError('invalid_request'); }
+    let payload;
+    try { payload = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)); }
+    catch { throw new AIError(size > maxBytes ? 'request_too_large' : 'invalid_request', size > maxBytes ? 413 : 400); }
+    // Every other task keeps the usual cap; only the screening image may be larger.
+    if (size > maxBytes && payload?.task !== 'score-screen') throw new AIError('request_too_large', 413);
+    return payload;
   } finally {
     signal.removeEventListener('abort', cancel);
     reader.releaseLock();
@@ -41,15 +49,15 @@ async function readJson(request, maxBytes, signal) {
 /**
  * Web-standard handler shared by Deno and offline Node tests. No test auth bypass.
  * @param {{gateway?: {execute: Function}|null, authenticate?: (jwt: string, signal?: AbortSignal) => Promise<{id: string}|null>,
- *   allowedOrigins?: string[], enabled?: boolean, maxBodyBytes?: number, deadlineMs?: number}} [options]
+ *   allowedOrigins?: string[], enabled?: boolean, maxBodyBytes?: number, screenBodyBytes?: number, deadlineMs?: number}} [options]
  */
 export function createAIHttpHandler({ gateway, authenticate, allowedOrigins = [], enabled = true,
-  maxBodyBytes = 262144, deadlineMs = 15000 } = {}) {
+  maxBodyBytes = 262144, screenBodyBytes = SCREEN_LIMITS.maxBodyBytes, deadlineMs = 15000 } = {}) {
   const origins = new Set(allowedOrigins);
   if ([...origins].some(origin => {
     try { return new URL(origin).origin !== origin || !['http:', 'https:'].includes(new URL(origin).protocol); }
     catch { return true; }
-  }) || !Number.isSafeInteger(maxBodyBytes) || maxBodyBytes < 1
+  }) || !Number.isSafeInteger(maxBodyBytes) || maxBodyBytes < 1 || !Number.isSafeInteger(screenBodyBytes) || screenBodyBytes < 1
     || !Number.isSafeInteger(deadlineMs) || deadlineMs < 1) throw new Error('invalid_http_configuration');
 
   return async request => {
@@ -98,7 +106,7 @@ export function createAIHttpHandler({ gateway, authenticate, allowedOrigins = []
         const user = await authenticate(match[1], controller.signal);
         if (controller.signal.aborted) throw new AIError('request_timeout', 408, true);
         if (!user || typeof user.id !== 'string' || !IDEMPOTENCY.test(user.id)) throw new AIError('authentication_required', 401);
-        const payload = await readJson(request, maxBodyBytes, controller.signal);
+        const payload = await readJson(request, maxBodyBytes, Math.max(maxBodyBytes, screenBodyBytes), controller.signal);
         if (controller.signal.aborted) throw new AIError('request_timeout', 408, true);
         return gateway.execute({ authenticated: true, userId: user.id }, payload,
           { requestId, idempotencyKey: request.headers.get('idempotency-key'), signal: controller.signal });

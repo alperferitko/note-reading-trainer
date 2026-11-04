@@ -1,10 +1,12 @@
 import { AIError } from './contracts.mjs';
 import { buildEvidenceSummary, deterministicFeedback } from './evidence-summary.mjs';
 import { createModelRegistry } from './model-registry.mjs';
-import { createUsagePolicy, usageCost } from './usage-policy.mjs';
+import { TOKEN_TEMPLATE_MARGIN, createUsagePolicy, usageCost } from './usage-policy.mjs';
 import { validateProviderResult, validateRequest, validateTaskOutput } from './validation.mjs';
 import { isStagingAuthorization } from './staging-config.mjs';
 import { weeklyReportKey } from './weekly-key.mjs';
+import { screenKey } from './screen-key.mjs';
+import { SCREEN_LIMITS, screenImageTokens } from './catalog.mjs';
 
 const identifier = value => typeof value === 'string' && /^[A-Za-z0-9_-]{1,120}$/.test(value);
 const fingerprint = async request => {
@@ -21,6 +23,9 @@ function adapterRequest(request, summary, modelId, maxOutputTokens) {
   if (request.task === 'weekly-report') {
     return { ...base, evidenceSummary: null,
       report: { timezone: request.timezone, period: { ...request.period }, metrics: structuredClone(request.metrics) } };
+  }
+  if (request.task === 'score-screen') {
+    return { ...base, evidenceSummary: null, screen: { image: { ...request.image }, pages: request.pages } };
   }
   return { ...base, evidenceSummary: structuredClone(summary) };
 }
@@ -64,6 +69,8 @@ export function createAIGateway({ registry = createModelRegistry(), adapters = [
         if (task === 'weekly-report' && context.idempotencyKey !== await weeklyReportKey(request.period, request.metrics)) {
           throw new AIError('invalid_request');
         }
+        // Same for a screened image: the same picture is judged, and paid for, once.
+        if (task === 'score-screen' && context.idempotencyKey !== await screenKey(request.image.data)) throw new AIError('invalid_request');
         const model = registry.select(task, policy.providerOrder);
         if (!model) {
           if (feedbackTask) return baseline('ai_not_configured');
@@ -75,7 +82,15 @@ export function createAIGateway({ registry = createModelRegistry(), adapters = [
         const adapter = transports.find(item => item.provider === model.provider && item.mode === model.mode);
         if (!adapter || typeof adapter.generate !== 'function') throw new AIError('provider_unavailable', 503, true);
         if (!store || typeof store.reserve !== 'function' || typeof store.settle !== 'function') throw new AIError('usage_store_unavailable', 503);
-        const outputLimit = Math.min(policy.maxOutputTokens, model.maxOutputTokens);
+        const outputLimit = Math.min(policy.maxOutputTokens, model.maxOutputTokens, task === 'score-screen' ? SCREEN_LIMITS.maxOutputTokens : Infinity);
+        if (task === 'score-screen') {
+          // The image is not counted in the text bound, so it is priced here before anything is reserved
+          // or sent: the text token bound, a conservative image estimate and the whole output budget at
+          // the model's rates must fit the per-request reservation. Unknown prices are never free.
+          const estimate = usageCost(model, { inputTokens: model.maxInputChars + TOKEN_TEMPLATE_MARGIN
+            + screenImageTokens(request.image.width, request.image.height), outputTokens: outputLimit });
+          if (estimate === null || estimate > policy.maxRequestUsd) throw new AIError('request_too_large', 413);
+        }
         // Chat context is shrunk by the adapter (oldest turns, then evidence contexts) before sending.
         if (feedbackTask && JSON.stringify(summary).length > model.maxInputChars) throw new AIError('request_too_large', 413);
         const reservation = await store.reserve({ userId: auth.userId, idempotencyKey: context.idempotencyKey,
@@ -115,14 +130,20 @@ export function createAIGateway({ registry = createModelRegistry(), adapters = [
         const cost = actualUsd;
         if (cost !== null && cost > policy.maxRequestUsd) throw new AIError('usage_limit_exceeded', 503);
         const limitations = [...(summary?.limitations ?? []), ...(task === 'teacher-chat' && !summary ? ['no_practice_history_supplied'] : []),
-          ...(task === 'weekly-report' ? ['metrics_computed_by_app'] : []), ...(!live ? ['mock_not_live_inference'] : [])];
+          ...(task === 'weekly-report' ? ['metrics_computed_by_app'] : []), ...(task === 'score-screen' ? ['judged_from_page_thumbnails'] : []),
+          ...(!live ? ['mock_not_live_inference'] : [])];
         const response = { schemaVersion: '1', requestId, ...(feedbackTask ? {} : { task }), mode: live ? 'live' : 'mock',
-          ...(task === 'weekly-report' ? { timezone: request.timezone, period: request.period, metrics: request.metrics } : { evidenceSummary: summary }),
+          // The screened image is never echoed back or stored with the answer.
+          ...(task === 'weekly-report' ? { timezone: request.timezone, period: request.period, metrics: request.metrics }
+            : task === 'score-screen' ? { pages: request.pages } : { evidenceSummary: summary }),
           result, provenance: { provider: model.provider, modelId: model.modelId, analysisVersion: summary?.analysisVersion ?? null },
           usage: { ...providerResult.usage, estimatedUsd: cost }, limitations };
         await store.settle(reservationId, { response: structuredClone(response), actualUsd: cost, usage: measuredUsage });
         reservationId = null;
-        log({ requestId, task, provider: model.provider, mode: response.mode, durationMs: Math.max(0, clock() - started), inputTokens: providerResult.usage.inputTokens, outputTokens: providerResult.usage.outputTokens, estimatedUsd: cost });
+        // Sizes and codes only: never the image, its base64 or the model's notes.
+        const screen = task === 'score-screen' ? { imageChars: request.image.data.length, width: request.image.width, height: request.image.height,
+          pages: request.pages, verdict: result.verdict, inappropriate: result.inappropriate, category: result.category, handwriting: result.handwriting } : {};
+        log({ requestId, task, provider: model.provider, mode: response.mode, durationMs: Math.max(0, clock() - started), inputTokens: providerResult.usage.inputTokens, outputTokens: providerResult.usage.outputTokens, estimatedUsd: cost, ...screen });
         return response;
       } catch (caught) {
         // Only internal allowlisted error codes may cross the boundary.

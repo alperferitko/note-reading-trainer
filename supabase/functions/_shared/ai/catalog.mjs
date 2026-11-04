@@ -48,3 +48,20 @@ export const ASK_FIELDS = Object.freeze([...PROFILE_FIELDS, 'struggles', 'restDa
 export const WEEK_DAYS = Object.freeze(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
 export const PLAN_FOCUS_CHARS = 60;
 export const PLAN_DAY_MINUTES = 300;
+
+// score-screen: one JPEG contact sheet of an uploaded file's pages, judged before the file is saved.
+// maxDataChars bounds the base64 string; maxBodyBytes is this task's HTTP body cap (310 KiB), the only
+// body allowed above the gateway's usual 256 KiB. maxOutputTokens is well under the 800 output cap.
+export const SCREEN_LIMITS = Object.freeze({
+  maxDataChars: 300000, minSide: 64, maxSide: 1024, maxPages: 8, notesChars: 200,
+  maxBodyBytes: 317440, maxOutputTokens: 200,
+});
+export const SCREEN_VERDICTS = Object.freeze(['score', 'not_score', 'unclear']);
+export const SCREEN_CATEGORIES = Object.freeze(['none', 'sexual', 'violence', 'hate', 'self_harm', 'personal_data', 'other']);
+export const SCREEN_HANDWRITING = Object.freeze(['none', 'light', 'covers_notes']);
+/**
+ * Conservative image-token estimate for the pre-send budget guard. Meta publishes only an approximate
+ * ~1300-1500 tokens for a 1280 px image; one token per 28x28 px tile, doubled, stays above that figure
+ * (1280x1280 would give 4,232; the largest accepted 1024x1024 gives 2,738).
+ */
+export const screenImageTokens = (width, height) => Math.ceil(width / 28) * Math.ceil(height / 28) * 2;

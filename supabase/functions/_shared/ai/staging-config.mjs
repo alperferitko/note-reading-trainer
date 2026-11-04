@@ -1,4 +1,5 @@
 import { DEFAULT_TASKS, SUPPORTED_TASKS } from './contracts.mjs';
+import { TOKEN_TEMPLATE_MARGIN } from './usage-policy.mjs';
 
 const approved = new WeakSet();
 const ref = value => typeof value === 'string' && /^[a-z]{20}$/.test(value);
@@ -36,11 +37,11 @@ export function stagingConfig(get, pins, now = Date.now()) {
     // byte-level tokenizer emits at most one token per byte, plus a reviewed template margin.
     // META_TOKEN_BOUND_VERIFIED attests that this bound holds for the configured model.
     const maxInputChars = 8000;
-    const maxInputTokens = maxInputChars + 4096;
+    const maxInputTokens = maxInputChars + TOKEN_TEMPLATE_MARGIN;
     const maxOutputTokens = 800;
     const reservedUsd = Math.ceil((maxInputTokens * inputRate + maxOutputTokens * outputRate)) / 1000000;
     if (reservedUsd <= 0 || reservedUsd > 0.02) return null;
-    // Tasks served live. Unset keeps the reviewed B4 pair; the chat and weekly report must be listed
+    // Tasks served live. Unset keeps the reviewed B4 pair; the chat, weekly report and score screen must be listed
     // explicitly. An unknown or repeated name disables the whole configuration (fail closed).
     const tasks = get('AI_STAGING_TASKS') ? get('AI_STAGING_TASKS').split(',').map(value => value.trim()) : [...DEFAULT_TASKS];
     if (!tasks.length || !tasks.every(task => SUPPORTED_TASKS.includes(task)) || new Set(tasks).size !== tasks.length) return null;

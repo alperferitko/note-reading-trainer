@@ -1,7 +1,7 @@
 import { EVIDENCE_LIMIT, EVIDENCE_MODULES, validEvidenceRecord } from '../vendor/practice-evidence.mjs';
 import { AIError, SUPPORTED_TASKS } from './contracts.mjs';
 import { ASK_FIELDS, PLAN_DAY_MINUTES, PLAN_FOCUS_CHARS, WEEK_DAYS, CHAT_LIMITS, CHAT_REPLY_CHARS, LESSON_IDS, MAX_INTERESTS_CHARS, MAX_WEEKLY_MINUTES, PROFILE_ENUMS, PROFILE_FIELDS,
-  STRUGGLE_NOTE, STUDIO_IDS, SUGGESTION_LABEL_CHARS, TREBLE_NOTE_IDS, WEEKLY_LIMITS } from './catalog.mjs';
+  SCREEN_CATEGORIES, SCREEN_HANDWRITING, SCREEN_LIMITS, SCREEN_VERDICTS, STRUGGLE_NOTE, STUDIO_IDS, SUGGESTION_LABEL_CHARS, TREBLE_NOTE_IDS, WEEKLY_LIMITS } from './catalog.mjs';
 
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const text = (value, max) => typeof value === 'string' && value.trim().length > 0 && value.length <= max;
@@ -15,12 +15,15 @@ export function validateRequest(input, now, maxInputChars) {
   let encoded;
   try { encoded = JSON.stringify(input); } catch { invalid(); }
   if (typeof encoded !== 'string') invalid();
-  if (encoded.length > maxInputChars) throw new AIError('request_too_large', 413);
+  // The screening image is the only request allowed above the usual bound, and only up to its own cap.
+  const cap = object(input) && input.task === 'score-screen' ? SCREEN_LIMITS.maxBodyBytes : maxInputChars;
+  if (encoded.length > cap) throw new AIError('request_too_large', 413);
   if (!object(input) || input.schemaVersion !== '1' || !['tr', 'en'].includes(input.locale)) invalid();
   if (input.task === 'quality-evaluation') throw new AIError('task_not_enabled', 403);
   if (!SUPPORTED_TASKS.includes(input.task)) invalid();
   if (input.task === 'teacher-chat') return validateChatRequest(input, now);
   if (input.task === 'weekly-report') return validateWeeklyRequest(input, now);
+  if (input.task === 'score-screen') return validateScreenRequest(input);
   if (!keys(input, ['schemaVersion', 'task', 'locale', 'scope', 'evidence'])) invalid();
   if (!keys(input.scope, ['module', 'sessionId']) || !EVIDENCE_MODULES.includes(input.scope.module)
     || (input.scope.sessionId !== undefined && !text(input.scope.sessionId, 80))) invalid();
@@ -166,6 +169,29 @@ function validateWeeklyRequest(input, now) {
     period: { start: input.period.start, end: input.period.end }, metrics };
 }
 
+// Standard padded base64 only: no data: prefix, whitespace or URL-safe alphabet.
+const BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+const required = (value, fields) => keys(value, fields) && fields.every(field => Object.hasOwn(value, field));
+
+/** True when a base64 string decodes to bytes that start with the JPEG marker FF D8 FF. */
+export function isJpegBase64(data) {
+  if (typeof data !== 'string' || data.length < 8 || !BASE64.test(data)) return false;
+  const head = atob(data.slice(0, 4));
+  return head.charCodeAt(0) === 0xff && head.charCodeAt(1) === 0xd8 && head.charCodeAt(2) === 0xff;
+}
+
+/** One JPEG contact sheet of 1-8 pages. Every field is required and nothing else is accepted. */
+function validateScreenRequest(input) {
+  const L = SCREEN_LIMITS;
+  const { image } = input;
+  if (!required(input, ['schemaVersion', 'task', 'locale', 'image', 'pages']) || !int(input.pages, 1, L.maxPages)
+    || !required(image, ['mime', 'data', 'width', 'height']) || image.mime !== 'image/jpeg'
+    || typeof image.data !== 'string' || image.data.length > L.maxDataChars || !isJpegBase64(image.data)
+    || !int(image.width, L.minSide, L.maxSide) || !int(image.height, L.minSide, L.maxSide)) invalid();
+  return { schemaVersion: '1', task: 'score-screen', locale: input.locale,
+    image: { mime: 'image/jpeg', data: image.data, width: image.width, height: image.height }, pages: input.pages };
+}
+
 const modelFail = () => { throw new AIError('invalid_model_response', 503); };
 
 /** One suggestion of the shared union. Unknown kinds, ids and extra fields are rejected, never dropped. */
@@ -224,10 +250,23 @@ export function validateWeeklyReport(value) {
   return { headline: value.headline, narrative: value.narrative, highlights: [...value.highlights], nextWeek: suggestionList(value.nextWeek) };
 }
 
+/**
+ * The screening verdict. inappropriate and category must agree: false only with 'none', true never
+ * with 'none'. notes is one short plain sentence; every field is required and nothing else is accepted.
+ */
+export function validateScoreScreen(value) {
+  if (!required(value, ['verdict', 'inappropriate', 'category', 'handwriting', 'notes']) || !SCREEN_VERDICTS.includes(value.verdict)
+    || typeof value.inappropriate !== 'boolean' || !SCREEN_CATEGORIES.includes(value.category)
+    || value.inappropriate !== (value.category !== 'none') || !SCREEN_HANDWRITING.includes(value.handwriting)
+    || !plain(value.notes, SCREEN_LIMITS.notesChars)) modelFail();
+  return { verdict: value.verdict, inappropriate: value.inappropriate, category: value.category, handwriting: value.handwriting, notes: value.notes };
+}
+
 /** Each task's output validator. */
 export function validateTaskOutput(task, value, summary) {
   if (task === 'teacher-chat') return validateTeacherChat(value);
   if (task === 'weekly-report') return validateWeeklyReport(value);
+  if (task === 'score-screen') return validateScoreScreen(value);
   return validateFeedback(value, summary);
 }
 

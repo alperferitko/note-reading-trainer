@@ -5,6 +5,7 @@ import { buildWeeklyReportRequest, metricsHash, requestWeeklyReport } from "@/li
 import type { EvidenceRecord } from "@/lib/practice-evidence.mjs";
 import { learningProfileEnabled, loadProfile, localTimezone } from "@/lib/learning-profile";
 import { supabase } from "@/lib/supabase";
+import { AI_LIMIT_REASONS } from "@/lib/ai-limits";
 import { liveTeacherConfigured, teacherApiKey, teacherEndpoint } from "./ai-teacher";
 import { ChatSuggestion } from "./chat-ui";
 import type { TeacherSuggestion } from "./landing/chat-widget";
@@ -143,7 +144,7 @@ export function WeeklyReport({ locale, evidence, onSuggestion }: { locale: Local
           </> : live ? <div className="weekly-ask">
             <p className="weekly-note">{t.askNote}</p>
             <button type="button" className="primary-button" disabled={state === "waiting"} onClick={ask}>{state === "waiting" ? t.waiting : t.ask}</button>
-            {state === "error" && <p className="weekly-note" role="status">{t.failed} <code>{reason}</code></p>}
+            {state === "error" && <p className="weekly-note" role="status">{reason && AI_LIMIT_REASONS[reason] ? AI_LIMIT_REASONS[reason][locale === "tr" ? 0 : 1] : <>{t.failed} <code>{reason}</code></>}</p>}
           </div> : <p className="weekly-note">{liveTeacherConfigured ? t.signIn : (locale === "tr" ? "AI açıklaması bu sürümde bağlı değil." : "The AI explanation is not connected in this build.")}</p>}
         </div>
       </>}

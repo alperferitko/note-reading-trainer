@@ -18,11 +18,14 @@ function record(i, { session = 'notes-1', item = 'treble:f5', correct = false, m
 }
 const eligible = () => [0, 1, 2, 3].map(i => record(i, { correct: i === 0 }));
 
-test('only the pinned staging gateway or a loopback mock is accepted', () => {
+test('only the two pinned project gateways or a loopback mock are accepted', () => {
+  const PRODUCTION = 'https://prodprodprodprodprod.supabase.co/functions/v1/ai-gateway';
   assert.deepEqual(gatewayEndpoint(STAGING, PINS), { url: STAGING, kind: 'staging' });
+  assert.deepEqual(gatewayEndpoint(PRODUCTION, PINS), { url: PRODUCTION, kind: 'production' });
+  assert.equal(gatewayEndpoint(PRODUCTION, { ...PINS, productionProjectRef: null }), null);
   assert.equal(gatewayEndpoint('http://localhost:54321/functions/v1/ai-gateway', PINS).kind, 'local');
   for (const bad of [
-    'https://prodprodprodprodprod.supabase.co/functions/v1/ai-gateway',
+    'https://prodprodprodprodprod.supabase.co/functions/v1/other',
     'https://otherotherotherother.supabase.co/functions/v1/ai-gateway',
     `${STAGING}?x=1`, `${STAGING}#a`, STAGING.replace('https:', 'http:'), 'https://coftskrofgcfzsuqdtpn.supabase.co/functions/v1/other',
     'https://evil.example/functions/v1/ai-gateway', 'not a url', '', null,

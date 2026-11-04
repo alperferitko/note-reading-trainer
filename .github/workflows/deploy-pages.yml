@@ -22,6 +22,12 @@ jobs:
       VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
       VITE_GOOGLE_AUTH_ENABLED: ${{ vars.VITE_GOOGLE_AUTH_ENABLED }}
+      # NotaNota AI on the live site. Empty until the production backend is set up; then the repository
+      # variables point at https://<production ref>.supabase.co/functions/v1/ai-gateway and turn on
+      # the score library and learning goals, whose tables the production launch SQL creates.
+      VITE_AI_GATEWAY_URL: ${{ vars.VITE_AI_GATEWAY_URL }}
+      VITE_SCORE_LIBRARY: ${{ vars.VITE_SCORE_LIBRARY }}
+      VITE_LEARNING_PROFILE: ${{ vars.VITE_LEARNING_PROFILE }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v6

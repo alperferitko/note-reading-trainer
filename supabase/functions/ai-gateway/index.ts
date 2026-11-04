@@ -2,7 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.110.7";
 import { createAIHttpHandler } from "../_shared/ai/http-handler.mjs";
 import { createSupabaseAuthenticator } from "../_shared/ai/supabase-auth.mjs";
 import { createLocalMockGateway, localMockConfig } from "../_shared/ai/local-mock.mjs";
-import { stagingConfig } from "../_shared/ai/staging-config.mjs";
+import { productionConfig, stagingConfig } from "../_shared/ai/staging-config.mjs";
 import { createStagingGateway } from "../_shared/ai/staging-gateway.mjs";
 import pins from "../_shared/ai/staging-target.mjs";
 
@@ -16,11 +16,12 @@ const runtime = (globalThis as typeof globalThis & {
 
 const get = (name: string) => runtime.env.get(name);
 const local = localMockConfig(get);
-const staging = stagingConfig(get, pins);
-const config = local ?? staging;
+// Each project only ever matches its own target: the URL and deployment id pin the project ref.
+const live = stagingConfig(get, pins) ?? productionConfig(get, pins);
+const config = local ?? live;
 const handler = config
   ? createAIHttpHandler({
-    gateway: local ? createLocalMockGateway() : createStagingGateway({ config: staging, createClient, transport: globalThis.fetch }),
+    gateway: local ? createLocalMockGateway() : createStagingGateway({ config: live, createClient, transport: globalThis.fetch }),
     authenticate: createSupabaseAuthenticator({ createClient, url: config.url, publishableKey: config.publishableKey }),
     allowedOrigins: config.allowedOrigins,
   })

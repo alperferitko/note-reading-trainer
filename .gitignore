@@ -83,3 +83,5 @@ next-env.d.ts
 # staging preview build and its self-signed certificate
 /out-staging/
 /.staging-cert/
+
+/out-sql/

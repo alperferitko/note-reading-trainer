@@ -18,7 +18,7 @@ export function createPostgresUsageStore({ client, projectRef, modelId }) {
       const result = await rpc('ai_usage_reserve', { p_project_ref: projectRef, p_user_id: userId,
         p_idempotency_key: idempotencyKey, p_fingerprint: fingerprint,
         p_reserved_micro: usdToMicro(reservedUsd), p_model_id: modelId });
-      if (!['reserved', 'replay', 'conflict', 'limited'].includes(result.status)
+      if (!['reserved', 'replay', 'conflict', 'limited', 'trial_ended'].includes(result.status)
         || (result.status === 'replay' && (!result.response || result.response.schemaVersion !== '1'))
         || (result.status === 'reserved' && !/^[a-f0-9-]{36}$/.test(result.reservationId))) throw new AIError('usage_store_unavailable', 503);
       if (result.status === 'reserved') owners.set(result.reservationId, userId);

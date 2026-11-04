@@ -518,3 +518,17 @@ html:not([data-theme=dark]) .footer-riders { color: #f0b43a; }
   html body .app-shell > footer.site-footer .site-footer-sky { padding-top: 64px; padding-bottom: 8px; }
   html body .app-shell > footer.site-footer .site-footer-sky::before { content: none; }
 }
+
+/* Desktop (1000 px and wider): at the very end of the page the whole footer is on screen at once, the
+   brand and every link in the sky and the lit staff on the lake. The footer is never taller than the
+   window, so the page ends where the painting does; the painting keeps its proportion, anchored at the
+   bottom, and only gives up sky at the top when the window is short. The link block is tighter and sits
+   a little lower, on the calm sky and the pale far mountains, well above the water. */
+@media (min-width: 1000px) {
+  html body .app-shell > footer.site-footer { min-height: 0; height: min(100svh, calc(100vw * 1024 / 1536), 1080px); }
+  html body .app-shell > footer.site-footer .site-footer-sky { padding-top: clamp(48px, 8svh, 96px); }
+  html body .app-shell footer.site-footer .site-footer-group a { min-height: 30px; }
+  html body .app-shell > footer.site-footer .site-footer-group h2 { margin-bottom: 6px; }
+  html body .app-shell > footer.site-footer .site-footer-legal { margin-top: 12px; padding-top: 10px; }
+  html body .app-shell > footer.site-footer .site-footer-legal :is(span, a) { min-height: 28px; }
+}

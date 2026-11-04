@@ -8,7 +8,7 @@ import { weeklyReportKey } from './weekly-key.mjs';
 import { screenKey } from './screen-key.mjs';
 import { SCREEN_LIMITS, screenImageTokens } from './catalog.mjs';
 
-const LIMIT_CODES = Object.freeze({ minute: 'rate_limited', day: 'quota_exceeded', trial: 'trial_quota_exceeded', global: 'service_busy' });
+const LIMIT_CODES = Object.freeze({ minute: 'rate_limited', day: 'quota_exceeded', trial: 'trial_quota_exceeded', global: 'service_busy', paused: 'ai_paused' });
 const identifier = value => typeof value === 'string' && /^[A-Za-z0-9_-]{1,120}$/.test(value);
 const fingerprint = async request => {
   const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(request)));
@@ -102,7 +102,8 @@ export function createAIGateway({ registry = createModelRegistry(), adapters = [
         // come back tomorrow, the trial is over); anything unexpected stays a plain quota error.
         if (reservation.status === 'trial_ended') throw new AIError('trial_ended', 403);
         if (reservation.status !== 'reserved' || !identifier(reservation.reservationId)) {
-          throw new AIError(LIMIT_CODES[reservation.scope] ?? 'quota_exceeded', 429, reservation.scope !== 'trial');
+          // Only the per-minute limit clears by itself within moments; the others last until tomorrow or longer.
+          throw new AIError(LIMIT_CODES[reservation.scope] ?? 'quota_exceeded', reservation.scope === 'paused' ? 503 : 429, reservation.scope === 'minute' || !reservation.scope);
         }
         reservationId = reservation.reservationId;
         if (context?.signal?.aborted || (live && !isStagingAuthorization(stagingAuthorization))) {
@@ -153,7 +154,7 @@ export function createAIGateway({ registry = createModelRegistry(), adapters = [
         return response;
       } catch (caught) {
         // Only internal allowlisted error codes may cross the boundary.
-        const safeCodes = ['authentication_required', 'invalid_request', 'request_too_large', 'task_not_enabled', 'live_calls_disabled', 'provider_unavailable', 'usage_store_unavailable', 'idempotency_conflict', 'quota_exceeded', 'rate_limited', 'trial_quota_exceeded', 'trial_ended', 'service_busy', 'provider_timeout', 'invalid_model_response', 'usage_limit_exceeded'];
+        const safeCodes = ['authentication_required', 'invalid_request', 'request_too_large', 'task_not_enabled', 'live_calls_disabled', 'provider_unavailable', 'usage_store_unavailable', 'idempotency_conflict', 'quota_exceeded', 'rate_limited', 'trial_quota_exceeded', 'trial_ended', 'service_busy', 'ai_paused', 'provider_timeout', 'invalid_model_response', 'usage_limit_exceeded'];
         const error = caught instanceof AIError && safeCodes.includes(caught.code) ? caught : new AIError('ai_unavailable', 503, true);
         const response = errorResponse(error);
         if (reservationId) {

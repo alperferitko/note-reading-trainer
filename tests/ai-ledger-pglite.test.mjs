@@ -181,3 +181,22 @@ test('ai_trial_status shows only the caller own window and counts, and only to s
   await db.exec('reset role');
   await db.close();
 });
+
+test('a failed call frees its key: the row stays charged, the same key reserves anew, success still replays', async () => {
+  const db = await trialDatabase();
+  const failed = await reserveAs(db, NEW, 'weekly-key');
+  await db.query(`select public.ai_usage_settle(repeat('s',20),$1,$2,'{"schemaVersion":"1","error":{"code":"provider_timeout","status":504,"retryable":true}}',null,null,null)`, [NEW, failed.reservationId]);
+  const { rows: [old] } = await db.query(`select idempotency_key, response, charged_micro, state from ai_private.requests where id=$1`, [failed.reservationId]);
+  assert.match(old.idempotency_key, /^weekly-key-f[0-9a-f]{12}$/);
+  assert.equal(old.response, null);
+  assert.equal(Number(old.charged_micro), 5000, 'still charged in full');
+  assert.equal(old.state, 'uncertain');
+  const retry = await reserveAs(db, NEW, 'weekly-key');
+  assert.equal(retry.status, 'reserved');
+  await settle(db, NEW, retry.reservationId);
+  assert.equal((await reserveAs(db, NEW, 'weekly-key')).status, 'replay');
+  // The whole budget spent: paused, not "busy".
+  await db.exec(`update ai_private.control set global_total_micro = 1`);
+  assert.deepEqual(await reserveAs(db, OLD, 'after-budget'), { status: 'limited', scope: 'paused' });
+  await db.close();
+});

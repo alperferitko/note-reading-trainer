@@ -199,8 +199,9 @@ test('the production config opens only on the production project, origins and ap
 });
 
 test('a refused reservation reaches the app as the limit that was hit', async () => {
-  const cases = [[{ status: 'limited', scope: 'minute' }, 'rate_limited', true], [{ status: 'limited', scope: 'day' }, 'quota_exceeded', true],
-    [{ status: 'limited', scope: 'trial' }, 'trial_quota_exceeded', false], [{ status: 'limited', scope: 'global' }, 'service_busy', true],
+  const cases = [[{ status: 'limited', scope: 'minute' }, 'rate_limited', true], [{ status: 'limited', scope: 'day' }, 'quota_exceeded', false],
+    [{ status: 'limited', scope: 'trial' }, 'trial_quota_exceeded', false], [{ status: 'limited', scope: 'global' }, 'service_busy', false],
+    [{ status: 'limited', scope: 'paused' }, 'ai_paused', false],
     [{ status: 'limited' }, 'quota_exceeded', true], [{ status: 'trial_ended' }, 'trial_ended', false]];
   for (const [reply, code, retryable] of cases) {
     let calls = 0;

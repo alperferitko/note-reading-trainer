@@ -18,3 +18,6 @@
 .weekly-ask { display: grid; gap: 10px; justify-items: start; }
 .app-shell .weekly .primary-button { width: auto; }
 .weekly-wrap { width: min(calc(1240px - 2 * var(--fx-margin)), calc(100% - 2 * var(--fx-margin))); margin: 32px auto 0; }
+.weekly-more summary { cursor: pointer; color: var(--primary); font: 600 14px var(--fx-ui); margin-top: 8px; }
+.weekly-more[open] ul { margin-top: 8px; }
+.weekly-stats { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }

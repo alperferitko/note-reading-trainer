@@ -100,30 +100,34 @@ export function WeeklyReport({ locale, evidence, onSuggestion }: { locale: Local
 
   const week = metrics;
   const prev = metrics.previous;
+  // The comparison line appears only when there is a previous week to compare with.
   const stat = (label: string, value: string, before?: string | null) => (
-    <div><dt>{label}</dt><dd>{value}</dd>{before !== undefined && <small>{before === null ? "–" : `${t.previous}: ${before}`}</small>}</div>
+    <div><dt>{label}</dt><dd>{value}</dd>{before !== undefined && before !== null && <small>{`${t.previous}: ${before}`}</small>}</div>
   );
+  const day = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString(locale === "tr" ? "tr-TR" : "en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+  // Measurements that were not taken are named in one line, never shown as a zero.
+  const missing = [!week.responseTimeMs && t.speed, !week.rhythmTiming && t.rhythm].filter(Boolean).join(locale === "tr" ? " ve " : " and ");
   return (
     <section className="weekly" aria-labelledby="weekly-title">
       <div className="weekly-head">
         <h2 id="weekly-title">{t.title}</h2>
-        <p>{t.period(request.period.start, request.period.end, timezone)}</p>
+        <p>{t.period(day(request.period.start), day(request.period.end), timezone)}</p>
       </div>
       {week.dataQuality === "none" ? <p className="weekly-note">{t.none}</p> : <>
         {week.dataQuality === "thin" && <p className="weekly-note weekly-note--thin">{t.thin}</p>}
         <dl className="weekly-stats">
           {stat(t.sessions, String(week.sessions), prev ? String(prev.sessions) : null)}
           {stat(t.days, String(week.practiceDays), prev ? String(prev.practiceDays) : null)}
-          {stat(t.correct, String(week.answers.correct), prev ? String(prev.answers.correct) : null)}
-          {stat(t.wrong, String(week.answers.wrong), prev ? String(prev.answers.wrong) : null)}
-          {stat(t.speed, week.responseTimeMs ? fmtMs(week.responseTimeMs.median, locale) : t.notMeasured, prev ? (prev.responseTimeMs ? fmtMs(prev.responseTimeMs.median, locale) : t.notMeasured) : null)}
-          {stat(t.rhythm, week.rhythmTiming ? `${week.rhythmTiming.meanAbsOffsetMs} ms` : t.notMeasured, prev ? (prev.rhythmTiming ? `${prev.rhythmTiming.meanAbsOffsetMs} ms` : t.notMeasured) : null)}
+          {stat(locale === "tr" ? "Doğru / yanlış" : "Right / wrong", `${week.answers.correct} / ${week.answers.wrong}`, prev ? `${prev.answers.correct} / ${prev.answers.wrong}` : null)}
+          {week.responseTimeMs && stat(t.speed, fmtMs(week.responseTimeMs.median, locale), prev ? (prev.responseTimeMs ? fmtMs(prev.responseTimeMs.median, locale) : t.notMeasured) : null)}
+          {week.rhythmTiming && stat(t.rhythm, `${week.rhythmTiming.meanAbsOffsetMs} ms`, prev ? (prev.rhythmTiming ? `${prev.rhythmTiming.meanAbsOffsetMs} ms` : t.notMeasured) : null)}
         </dl>
-        {!prev && <p className="weekly-note">{t.noPrevious}</p>}
-        <p className="weekly-note">{t.speedNote} {t.local}</p>
+        <p className="weekly-note">{[!prev ? t.noPrevious : "", missing ? (locale === "tr" ? `Bu hafta ölçülmedi: ${missing}.` : `Not measured this week: ${missing}.`) : "", week.responseTimeMs ? t.speedNote : "", t.local].filter(Boolean).join(" ")}</p>
         {week.noteStruggles.length > 0 && <div className="weekly-struggles">
           <h3>{t.struggles}</h3>
-          <ul>{week.noteStruggles.map((item) => <li key={item.note}><b>{noteLabel(item.note, locale)}</b> · {locale === "tr" ? `${item.attempts} denemede ${item.errors} hata` : `${item.errors} errors in ${item.attempts} attempts`}</li>)}</ul>
+          <ul>{week.noteStruggles.slice(0, 3).map((item) => <li key={item.note}><b>{noteLabel(item.note, locale)}</b> · {locale === "tr" ? `${item.attempts} denemede ${item.errors} hata` : `${item.errors} errors in ${item.attempts} attempts`}</li>)}</ul>
+          {week.noteStruggles.length > 3 && <details className="weekly-more"><summary>{locale === "tr" ? `${week.noteStruggles.length - 3} nota daha` : `${week.noteStruggles.length - 3} more notes`}</summary>
+            <ul>{week.noteStruggles.slice(3).map((item) => <li key={item.note}><b>{noteLabel(item.note, locale)}</b> · {locale === "tr" ? `${item.attempts} denemede ${item.errors} hata` : `${item.errors} errors in ${item.attempts} attempts`}</li>)}</ul></details>}
         </div>}
         <div className="weekly-ai">
           <h3>{t.ai}</h3>

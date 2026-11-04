@@ -451,11 +451,14 @@ html body .app-shell > footer.site-footer .site-footer-legal { margin-top: 24px;
 .footer-staff .fs-lines use { fill: none; stroke: currentColor; stroke-width: 1.8; opacity: .85; }
 .footer-staff .fs-clef, .footer-staff .fs-riders { fill: currentColor; }
 .footer-staff .fs-stem { fill: none; stroke: currentColor; stroke-width: 1.7; }
-.footer-staff { filter: drop-shadow(0 0 3px rgba(255, 214, 120, .85)) drop-shadow(0 0 10px rgba(255, 200, 90, .45)); }
-.footer-staff .fs-riders { animation: fs-glow 4.6s ease-in-out infinite; }
-@keyframes fs-glow { 0%, 100% { opacity: .9; } 50% { opacity: 1; } }
-.site-footer.is-paused .footer-staff .fs-riders { animation-play-state: paused; }
-html:not([data-theme=dark]) .footer-staff { color: #f0b43a; filter: drop-shadow(0 0 3px rgba(255, 226, 150, .95)) drop-shadow(0 0 9px rgba(255, 196, 80, .55)) drop-shadow(0 1px 1px rgba(80, 50, 0, .45)); }
+/* The still staff keeps the big glow on its own layer, painted once; the moving notes glow per note. */
+.footer-staff--still { filter: drop-shadow(0 0 3px rgba(255, 214, 120, .85)) drop-shadow(0 0 10px rgba(255, 200, 90, .45)); will-change: transform; }
+/* Each gliding note is its own compositor layer: painted (with its glow) once, then only transformed. */
+.footer-riders { position: absolute; inset: 0; pointer-events: none; color: #ffd98a; }
+.footer-rider { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; will-change: transform, opacity; }
+.footer-rider svg { position: absolute; overflow: visible; fill: currentColor; filter: drop-shadow(0 0 3px rgba(255, 214, 120, .9)) drop-shadow(0 0 7px rgba(255, 200, 90, .45)); }
+.footer-rider .fs-stem { fill: none; stroke: currentColor; stroke-width: 1.7; }
+html:not([data-theme=dark]) .footer-staff--still { color: #f0b43a; filter: drop-shadow(0 0 3px rgba(255, 226, 150, .95)) drop-shadow(0 0 9px rgba(255, 196, 80, .55)) drop-shadow(0 1px 1px rgba(80, 50, 0, .45)); }
 
 @media (max-width: 760px) {
   /* Phone: the links come first on the painting's own sky colour, then the scene in its own frame,
@@ -503,3 +506,5 @@ html body .app-shell > footer.site-footer { overflow: clip; }
 /* Keep the last legal link clear of the round chat button in the corner. */
 html body .app-shell > footer.site-footer .site-footer-legal { padding-right: 84px; }
 @media (max-width: 760px) { html body .app-shell > footer.site-footer .site-footer-legal { padding-right: 72px; } }
+html:not([data-theme=dark]) .footer-riders { color: #f0b43a; }
+@media (max-width: 760px) { .footer-rider .fs-stem { stroke-width: 2.2; } }

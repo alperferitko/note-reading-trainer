@@ -278,13 +278,12 @@ export function ClefTraveler({ root }: { root: RefObject<HTMLElement | null> }) 
       }
     };
 
-    // Content above a staff can change height (a hint, a panel); re-measure once scrolling settles.
-    let settle = 0;
+    // Scrolling only places the clef; measuring reads every heading and button on the page, so it runs
+    // when the page's size changes (the ResizeObserver below catches content that grows above a staff),
+    // never in the middle of a scroll, where it cost a dropped frame each time the wheel paused.
     const onScroll = () => {
       if (intro < 1 && window.scrollY > 4) { intro = 1; if (introFrame) window.cancelAnimationFrame(introFrame); introFrame = 0; }
       if (!frame) frame = window.requestAnimationFrame(place);
-      window.clearTimeout(settle);
-      settle = window.setTimeout(measure, 160);
     };
     const resize = new ResizeObserver(() => measure());
     resize.observe(host);
@@ -303,7 +302,6 @@ export function ClefTraveler({ root }: { root: RefObject<HTMLElement | null> }) 
       window.removeEventListener("resize", measure);
       if (frame) window.cancelAnimationFrame(frame);
       if (introFrame) window.cancelAnimationFrame(introFrame);
-      window.clearTimeout(settle);
     };
   }, [enabled, root]);
 

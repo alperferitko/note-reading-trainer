@@ -81,7 +81,7 @@ test('official muse-spark-1.3 standard prices fit the unchanged $0.02 request ca
   assert.ok(raw && /^[\x20-\x7e]*$/.test(raw), 'ASCII only');
   assert.equal(Buffer.byteLength(raw, 'utf8'), raw.length);
   assert.ok(raw.length <= live.maxInputChars);
-  assert.equal(JSON.parse(raw).reasoning_effort, 'none');
+  assert.equal(JSON.parse(raw).reasoning_effort, 'minimal');
   assert.match(JSON.parse(raw).messages[0].content, /supportive music-reading teacher/);
 });
 
@@ -154,4 +154,24 @@ test('failures are classed: refused before sending and a definite 4xx settle at 
   await assert.rejects(answering(429).generate(request), error => error.failureClass === 'provider_rejected' && zero(error) && error.retryable);
   await assert.rejects(answering(503).generate(request), error => error.failureClass === 'provider_error' && !error.billingUsage);
   await assert.rejects(answering(408).generate(request), error => error.failureClass === 'provider_error' && !error.billingUsage);
+});
+
+test('a perfect round (every note right, nothing to work on) is a valid live answer with no exercises', async () => {
+  const live = config({ META_INPUT_USD_PER_MILLION: '1.25', META_OUTPUT_USD_PER_MILLION: '4.25' });
+  let sent = null;
+  const value = body();
+  value.evidence.records = value.evidence.records.map((row) => ({ ...row, correct: true, answer: row.expected ?? row.answer }));
+  const gateway = createStagingGateway({ config: live, createClient: () => rpc(), transport: async (_url, init) => {
+    sent = JSON.parse(init.body);
+    const evidence = JSON.parse(sent.messages[1].content).evidence;
+    const ref = evidence.measurements[0]?.id;
+    const output = { summary: 'Bu turda bütün notaları doğru okudun.', observations: ref ? [{ text: 'Sol anahtarındaki notalar bu turda sağlamdı.', evidenceRefs: [ref] }] : [], exercises: [], limitations: [] };
+    return Response.json({ model: 'verified-model-id', choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(output) } }], usage: { prompt_tokens: 900, completion_tokens: 80 } });
+  } });
+  const result = await gateway.execute(user, value, { requestId: 'r', idempotencyKey: 'perfect-round' });
+  assert.ok(sent, 'the request was sent');
+  assert.match(sent.messages[0].content, /invent no difficulty/);
+  assert.equal(result.error, undefined, JSON.stringify(result.error));
+  assert.equal(result.mode, 'live');
+  assert.deepEqual(result.result.exercises, []);
 });

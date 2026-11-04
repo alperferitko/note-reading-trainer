@@ -111,7 +111,7 @@ test('the Meta wire body: one text part within the ASCII bound, one image part, 
   assert.ok(/^[\x20-\x7e]*$/.test(wire), 'the whole body is ASCII');
   const body = JSON.parse(wire);
   assert.equal(body.max_completion_tokens, 200);
-  assert.equal(body.reasoning_effort, 'none');
+  assert.equal(body.reasoning_effort, 'minimal');
   assert.equal(body.response_format.json_schema.name, 'notanota_score_screen_v1');
   assert.equal(body.response_format.json_schema.strict, true);
   assert.deepEqual(body.response_format.json_schema.schema.required, ['verdict', 'inappropriate', 'category', 'handwriting', 'notes']);

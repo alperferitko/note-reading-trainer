@@ -52,17 +52,15 @@ next-env.d.ts
 # local package cache
 /.npm-cache/
 
-# generated build output (preserve the Sites Vite source plugin)
-/build/*
-!/build/sites-vite-plugin.ts
+# generated build output
+/build/
 
 # Cloudflare local secrets
 .dev.vars
 .dev.vars.*
 
-# local AI tooling (preserve the hosting declaration imported by Vite)
-/.openai/*
-!/.openai/hosting.json
+# local AI tooling
+/.openai/
 /.agents/
 
 # local databases

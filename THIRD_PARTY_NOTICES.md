@@ -8,7 +8,7 @@ The NotaNota source code is under the [MIT License](./LICENSE). The components b
 |---|---|---|
 | Figtree | `app/fonts/figtree-*.woff2` | SIL Open Font License 1.1, © 2022 The Figtree Project Authors ([app/fonts/OFL.txt](./app/fonts/OFL.txt)) |
 | TASA Orbiter | `app/fonts/tasa-orbiter-*.woff2` | SIL Open Font License 1.1, © 2022–2025 The TASA Typeface Collection Project Authors ([app/fonts/OFL.txt](./app/fonts/OFL.txt)) |
-| Switzer | `app/fonts/switzer-*.woff2` | © 2015–2021 Indian Type Foundry, ITF Free Font License (Fontshare). Not open source and not covered by the MIT License. |
+| Inter | `app/fonts/inter-*.woff2` | SIL Open Font License 1.1, © 2016 The Inter Project Authors ([app/fonts/OFL.txt](./app/fonts/OFL.txt)) |
 | Lora, Source Sans 3, Caveat | `public/fonts/*.woff2` | SIL Open Font License 1.1 (`public/fonts/OFL-*.txt`) |
 | Noto Music, Liberation Serif | Glyph outlines in `app/scene/*.svg` (note shapes, the NotaNota wordmark letters) | SIL Open Font License 1.1 |
 

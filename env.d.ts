@@ -4,11 +4,11 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL?: string;
   readonly VITE_SUPABASE_PUBLISHABLE_KEY?: string;
   readonly VITE_GOOGLE_AUTH_ENABLED?: string;
-  /** Pinned staging ai-gateway URL, or a loopback mock. Any other value is ignored by lib/ai-client.mjs. */
+  /** ai-gateway URL of the pinned staging or production project (same project as VITE_SUPABASE_URL), or a loopback mock. Any other value is ignored by lib/ai-client.mjs. */
   readonly VITE_AI_GATEWAY_URL?: string;
-  /** "true" only in builds whose Supabase project has the score library migration (staging). */
+  /** "true" only in builds whose Supabase project has the score library migration. */
   readonly VITE_SCORE_LIBRARY?: string;
-  /** "true" only where the learning profile and weekly report migration is applied (staging). */
+  /** "true" only where the learning profile and weekly report migrations are applied. */
   readonly VITE_LEARNING_PROFILE?: string;
 }
 

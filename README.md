@@ -1,73 +1,82 @@
-# NotaNota
+# NotaNota AI
 
-A bilingual (Turkish / English) music-reading studio: read notes and scores, keep rhythm, train your ear and find notes on an instrument, with a personal AI teacher that works from what you actually answered.
+A music-reading studio that helps learners read notes and scores fluently, with a Meta-powered teacher that works from what they actually answered.
 
-**Live:** [notanota.online](https://notanota.online)
+AI can help us learn, but the joy of picking up an instrument and making music yourself is deeply human. NotaNota uses AI to make that path more accessible and to keep learners motivated, while the practice itself stays theirs.
 
-![NotaNota practice studio](./public/og.png)
+### Try the live app and AI features: https://notanota.online
 
-## What you can practise
+English version: [notanota.online/en](https://notanota.online/en/)
 
-| Area | What it does | What it measures |
+For the easiest evaluation, use the live application. Running the repository locally does not automatically enable the hosted AI backend.
+
+## Try it in five minutes
+
+1. **Sign in.**
+   - Choose **Sign in** (top right), enter your email and choose **Send verification link**.
+   - Open the link in the email, then press **Confirm my email** on the page that opens.
+   - Pick a username. A welcome window explains the free trial.
+2. **Practise.**
+   - Go to **Studio → Note reading**.
+   - In the first setup window choose **I'm just getting started**, then **Save setup**, then **Start session**.
+   - Name the notes. When the round ends, press **Results →**.
+3. **Get AI feedback.** On the results screen, the **NotaNota AI** card has an **Ask Meta AI** button.
+   - Meta comments on a note only after it has at least three unaided answers.
+   - Notes you miss come back in the same round. After a clean first round, play one more; answers are kept on your device.
+4. **Chat with the teacher.** Open **NotaNota AI → Ask the teacher**, or use the chat button at the bottom right.
+   - Say hello or ask for a weekly plan.
+   - The teacher asks about your goal, instrument and practice time, and can save a day-by-day plan.
+5. **Optional.**
+   - Weekly report: **Studio → My progress → Let Meta AI explain this week**.
+   - Score check: **NotaNota AI → Add a score**, then upload a PDF or photo.
+
+### Account, free trial and limits
+
+AI features need a free account (email link). Practice, statistics and rule-based feedback need no account.
+
+Each account gets 3 days of NotaNota AI from sign-up. Accounts created before the launch on 4 November 2026 count from the launch. A fair-use limit is enforced on the server:
+
+| Per account | Limit |
+|---|---|
+| Per minute | 6 requests |
+| Per day | 25 requests (resets at 00:00 UTC) |
+| Whole trial | 60 requests |
+
+Each chat message is one request. A shared daily and total budget pauses AI for everyone when it is reached.
+
+## What it does
+
+| Area | What you do | What is measured |
 |---|---|---|
-| Note reading | Treble and bass clef, naturals, sharps and flats in four ranges; from the staff or from a written position; normal and endless modes | First-attempt accuracy and response time per note |
-| Rhythm | Steady pulse and five tapped patterns (rests, eighths, dotted, sixteenths) in 4/4 | Mean timing offset of your taps in ms |
-| Score reading | Ten graded studies and staff lines with bars, rests, 3/4, key signatures and bass clef | Note names, rests and timing, reported separately |
-| Instruments | Find the note on piano (one staff or grand staff), guitar (0–3, 0–5, 0–12 frets) and violin (1st and 3rd position) | Correct position on screen; the instrument's sound is not listened to |
-| Listening | Pitch direction, intervals, chord quality and short melodic dictation | Correct answers |
-| Microphone | Play the shown note on piano, guitar or violin; audio stays in the browser | Pitch of a single note (±35 cents); no rhythm or live score following |
-| Lessons | 24 short lessons with prerequisites, knowledge checks and spaced review | Lesson progress |
-| MusicXML | Open a `.musicxml`, `.xml` or `.mxl` file, see the score and practise its single-line bars | Same as score reading |
+| Note reading | Name notes in treble and bass clef, with naturals, sharps and flats, in four ranges | First-try accuracy and response time per note |
+| Rhythm | Tap a steady pulse and five patterns in 4/4 | Mean timing offset of your taps |
+| Score reading | Ten graded studies and staff lines, plus your own MusicXML files | Note names, rests and timing |
+| Instruments | Find the note on piano, guitar and violin | The position you pick on screen |
+| Listening | Pitch direction, intervals, chord quality, short dictation | Correct answers |
+| Microphone | Play the shown note on a real instrument | Pitch of one note (±35 cents) |
+| Lessons | 24 short theory lessons with spaced review | Lesson progress |
 
-Progress and the skill map are kept in the browser. Accounts (passwordless email or Google) add a username, a private daily streak and the leaderboards.
+All of this runs in the browser and works without AI. Progress and the skill map stay on the device. An account adds a username, a private streak and the leaderboards.
 
-## NotaNota AI
+## How Meta is used
 
-- **Round feedback.** After a round, Meta AI comments on the notes you struggled with and suggests the next drill. A clean round is not turned into invented difficulty.
-- **Teacher chat.** A personal teacher that asks about your goal, instrument and week, and can save a day-by-day plan.
-- **Weekly report.** The app computes the numbers; the model only explains them.
-- **Score check.** An uploaded PDF or photo is screened before it is saved: is it a score, and is anything inappropriate in it.
+All model calls go through one server-side gateway, the Supabase Edge Function `ai-gateway`, to the Meta Model API. The model is Muse Spark; the exact model id is set in server configuration.
 
-The model never sees raw answers or account data, only a measured summary. Every answer is validated before it is shown, and rule-based feedback takes over when AI is unavailable.
+| Task | What Meta does | What is sent to Meta |
+|---|---|---|
+| Practice feedback | Comments on the notes you struggled with and suggests the next drill; a clean round gets no invented difficulty | A summary the gateway computes from your recent answers in that module: accuracy and response time for each note. Typed answers, ids and account data are left out. |
+| Teacher chat and weekly plan | Short onboarding, encouragement and a day-by-day plan | The newest chat messages that fit the limit, your saved learning preferences (purpose, instrument, level, weekly minutes, interests) and, if you have practice history, the same performance summary |
+| Weekly report | Explains the week in plain words | Only the metrics the app computed: sessions, practice days, right and wrong answers, hard notes, median answer time, rhythm offset, the previous week, and titles and bar ranges of pieces you practised |
+| Score check | Says whether an upload looks like a score and flags inappropriate content or handwriting over the notes | Images made in the browser from the uploaded pages: up to 8 page thumbnails per image, at most 16 pages. The image is not stored with the answer. |
 
-**Free trial.** Every account gets 3 days of NotaNota AI from sign-up; accounts older than the launch count from the launch. A fair-use limit applies, enforced in the database:
+**Not done by Meta.** Pitch detection, timing, scoring and statistics are deterministic code. Microphone audio is analysed in the browser and never uploaded. The model never receives your email or user id.
 
-| Scope | Limit |
-|---|---|
-| Per account | 6 requests a minute, 25 a day, 60 for the whole trial |
-| Everyone together | a daily and a total USD budget, after which AI pauses |
+**Checks around every call.**
+- Every answer must match a JSON schema and the measured evidence before it is shown.
+- If an answer fails a check, the app shows rule-based feedback and says why.
+- Each request is reserved in a usage ledger in Postgres (per-request, per-user and global budgets) before anything is sent, and settled afterwards.
 
-## Architecture
-
-```
-Browser (React 19, Vite) ── GitHub Pages, static
-   │  practice, measurement and progress run here
-   ▼
-Supabase
-   ├─ Auth, Postgres with row-level security (profiles, streaks, leaderboards, scores, goals)
-   ├─ Edge Function ai-gateway ── Meta Model API (muse-spark)
-   │     JWT check, per-target approval, usage ledger (reserve → settle), output validation
-   └─ Edge Function delete-account
-Optional: worker/omr ── reads uploaded PDF/PNG scores into MusicXML (Audiveris)
-```
-
-No provider key reaches the browser: the Meta key lives only in Edge Function secrets.
-
-## Repository
-
-| Path | Contents |
-|---|---|
-| `app/` | Pages, practice modules, the shell (navbar, footer) and styles |
-| `lib/` | Music logic, measurement, AI client and Supabase helpers, mostly framework-free `.mjs` |
-| `supabase/functions/` | `ai-gateway` and its shared modules (`_shared/ai`), `delete-account` |
-| `supabase/migrations/` | Database schema in order: community, leaderboards, AI ledger, score library, learning profile, free trial |
-| `supabase/templates/` | Auth email templates |
-| `scripts/` | Build helpers, staging preview, production AI setup |
-| `tests/` | Node test runner suites; SQL runs on PGlite (PostgreSQL in WebAssembly) |
-| `worker/omr/` | Score recognition worker and its benchmark |
-| `docs/` | Setup notes; `docs/hackathon/` design and AI decisions; `docs/archive/` earlier plans |
-
-## Local development
+## Local setup
 
 Requires Node.js 22.13 or newer.
 
@@ -75,43 +84,69 @@ Requires Node.js 22.13 or newer.
 git clone https://github.com/alperferitko/note-reading-trainer.git
 cd note-reading-trainer
 npm ci
-cp .env.example .env.local
+cp .env.example .env.local   # optional; blank values keep accounts and AI off
 npm run dev
 ```
 
-With blank Supabase variables the practice studio works on its own; accounts and AI stay off.
+With blank variables the whole practice studio works. Accounts need a Supabase project; see [docs/community-setup.md](./docs/community-setup.md).
 
-| Variable | Purpose |
-|---|---|
-| `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` | Accounts, streaks and leaderboards |
-| `VITE_GOOGLE_AUTH_ENABLED` | Shows Google sign-in |
-| `VITE_AI_GATEWAY_URL` | NotaNota AI; must be the `ai-gateway` of the same Supabase project |
-| `VITE_SCORE_LIBRARY`, `VITE_LEARNING_PROFILE` | Score uploads and library; goals and weekly reports |
+AI needs the gateway, its migrations and server secrets:
+- The backend is described in [docs/archive/ai-staging-b3.md](./docs/archive/ai-staging-b3.md).
+- Production setup uses `scripts/production-ai-sql.mjs` and `scripts/meta-activate.ps1`.
+- `AI_BACKEND_MODE=local-mock` runs the gateway against a local Supabase with labelled test answers instead of Meta.
+- The Meta key lives only in Edge Function secrets, never in `VITE_` variables.
+
+To see the real AI features, use the live site.
 
 ## Tests
 
 ```bash
 npm run lint
-npm test                 # build, then the core suites
-npm run test:ai          # gateway, teacher, weekly metrics, score screen
-npm run test:ai:b4       # ledger and free trial on PostgreSQL, AI client, Meta configuration
-npm run test:scores      # score library SQL
-npm run test:features    # MusicXML, pitch detection, practice plan
-npm run test:pages       # static Pages output
+npm run typecheck
+npm test                  # build + core suites (rendering, music logic, evidence, SQL checks)
+npm run test:ai           # gateway, teacher, weekly metrics, score check
+npm run test:ai:http      # HTTP boundary: auth, CORS, size and time limits
+npm run test:ai:b3        # live-call authorization
+npm run test:ai:b4        # usage ledger and free trial on PostgreSQL (PGlite), client, Meta configuration
+npm run test:ai:learning  # learning assessment
+npm run test:scores       # score library SQL
+npm run test:upload       # upload and score checks
 ```
 
-## Deployment
+On every push to `main`, GitHub Actions runs:
+- lint
+- the core, AI and upload test suites
+- the static build
 
-- **Frontend.** Every push to `main` runs lint, tests and the static build in GitHub Actions and publishes to GitHub Pages. Build variables come from the repository's Actions variables.
-- **AI backend, staging.** `npm run preview:staging` builds against staging; `scripts/meta-activate.ps1` writes its secrets, with an approval of at most 24 hours.
-- **AI backend, production.** Three steps:
-  1. `node scripts/production-ai-sql.mjs` writes one SQL file for the SQL Editor.
-  2. `scripts/meta-activate.ps1 -Production` writes the secrets, with an approval of at most 62 days.
-  3. `npx supabase functions deploy ai-gateway --project-ref <production ref>` deploys the gateway.
+## Architecture and limitations
 
-  Always name the project with `--project-ref`.
-- **Accounts and email.** See [docs/community-setup.md](./docs/community-setup.md) and [docs/weekly-leaderboard-setup.md](./docs/weekly-leaderboard-setup.md).
+```
+Browser (React 19 + Vite, static on GitHub Pages)
+  practice, measurement, progress, pitch detection
+        │ signed-in AI requests only
+        ▼
+Supabase: Auth · Postgres with row-level security · Edge Functions
+        │ ai-gateway: JWT check, approval, usage ledger, output validation
+        ▼
+Meta Model API
+```
 
-## Privacy
+| Path | Contents |
+|---|---|
+| `app/`, `lib/` | Interface, music logic, measurement, AI client |
+| `supabase/functions/` | `ai-gateway` and its shared modules, `delete-account` |
+| `supabase/migrations/` | Schema: community, leaderboards, AI ledger, score library, learning profile, free trial |
+| `scripts/` | Build helpers, staging preview, production AI setup |
+| `worker/omr/` | Optical music recognition worker and its benchmark |
+| `tests/` | Node test runner suites; SQL runs on PGlite |
 
-Leaderboards show only a username and the qualifying score. Email addresses and practice dates stay private. Signed-in users can delete their account and its records from the account panel. The in-app KVKK / privacy notice describes the data flow and service providers.
+**Limitations**
+- **Score recognition:** reading uploaded PDFs and photos needs the separate OMR worker, which is not running on the live site. Uploads are checked and saved but wait in the queue. MusicXML files can be opened and practised directly at [notanota.online/en/eser-okuma/musicxml](https://notanota.online/en/eser-okuma/musicxml/).
+- **Microphone:** it checks the pitch of a single note. It does not measure rhythm or tone, and does not follow a score live.
+- **Instruments:** practice happens on screen; the instrument's own sound is not listened to.
+- **Progress:** except for streaks and leaderboards, progress stays in the browser and is not synced between devices.
+- **AI use:** limited by the free trial and the budgets above.
+
+## License
+
+The NotaNota source code is released under the [MIT License](./LICENSE). Fonts, sounds, sample scores and logos keep their own licenses; see [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).

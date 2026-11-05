@@ -50,6 +50,17 @@ jobs:
       - name: Test Vinext build and trainer behavior
         run: npm test
 
+      # No build needed: the AI gateway, usage ledger (PostgreSQL in PGlite), score library and upload checks.
+      - name: Test AI gateway, ledger and uploads
+        run: |
+          npm run test:ai
+          npm run test:ai:http
+          npm run test:ai:b3
+          npm run test:ai:b4
+          npm run test:ai:learning
+          npm run test:scores
+          npm run test:upload
+
       - name: Build static GitHub Pages frontend
         run: npm run build:pages
 
